@@ -5,6 +5,7 @@ interface ChatResponseBody {
   content: string
   session_id: string
   usage?: Record<string, unknown> | null
+  finish_reason?: string | null
 }
 
 export class ChatApiError extends Error {
@@ -63,6 +64,7 @@ export class HttpChatAdapter implements ChatPort {
       content: payload.content,
       sessionId: payload.session_id,
       usage: payload.usage ?? undefined,
+      finishReason: payload.finish_reason ?? undefined,
     }
   }
 

@@ -21,4 +21,5 @@ export interface ChatResult {
   content: string
   sessionId: string
   usage?: Record<string, unknown>
+  finishReason?: string
 }

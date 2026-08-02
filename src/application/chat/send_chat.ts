@@ -21,7 +21,7 @@ export class SendChat {
       userId: this.identity.getUserId(),
       sessionId: command.sessionId,
       temperature: command.temperature ?? 0.7,
-      maxTokens: command.maxTokens ?? 512,
+      maxTokens: command.maxTokens ?? 1024,
       signal: command.signal,
     })
   }
