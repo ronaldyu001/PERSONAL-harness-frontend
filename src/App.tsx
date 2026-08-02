@@ -8,41 +8,41 @@ import { SearchOverlay } from './components/SearchOverlay'
 import { Toast } from './components/Toast'
 import { MaiaMark } from './components/MaiaMark'
 import type { Prefs } from './components/SettingsPanel'
-import {
-  ARCH_RESPONSE,
-  ARCH_RESPONSE_ALT,
-  FOLLOW_UPS,
-  SEED_CONVERSATIONS,
-  SUGGESTIONS,
-  greetingForHour,
-} from './data/mock'
-import type { AssistantMessage, Attachment, Conversation, Message } from './types'
+import type { SendChat } from './application/chat/send_chat'
+import { SUGGESTIONS, greetingForHour } from './config'
+import type { AssistantMessage, Conversation, Message, UserMessage } from './types'
 
 let seq = 0
 const uid = (prefix: string) => `${prefix}-${Date.now()}-${seq++}`
 
 const springSoft = { type: 'spring', stiffness: 300, damping: 32 } as const
 
-interface StreamToken {
-  cancelled: boolean
+interface PendingChat {
+  controller: AbortController
+  convoId: string
+  msgId: string
 }
 
-export default function App() {
-  const [conversations, setConversations] = useState<Conversation[]>(SEED_CONVERSATIONS)
+interface AppProps {
+  sendChat: SendChat
+}
+
+const isAbortError = (error: unknown) =>
+  error instanceof DOMException && error.name === 'AbortError'
+
+export default function App({ sendChat }: AppProps) {
+  const [conversations, setConversations] = useState<Conversation[]>([])
   const [activeId, setActiveId] = useState<string | null>(null)
   const [convoLoading, setConvoLoading] = useState(false)
   const [sidebarExpanded, setSidebarExpanded] = useState(false)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [tempMode, setTempMode] = useState(false)
-  const [model, setModel] = useState('maia-2.5')
+  const [model, setModel] = useState('qwen')
   const [toast, setToast] = useState<{ id: number; text: string } | null>(null)
   const [prefs, setPrefs] = useState<Prefs>({ reduceMotion: false, showHints: true, textSize: 'md' })
 
-  const streamRef = useRef<{ token: StreamToken; convoId: string; msgId: string } | null>(null)
-  const chunksRef = useRef<Record<string, string[]>>({})
-  const genCount = useRef(0)
-  const followUpIdx = useRef(0)
+  const pendingChatRef = useRef<PendingChat | null>(null)
   const loadTimer = useRef<number | undefined>(undefined)
   const toastTimer = useRef<number | undefined>(undefined)
 
@@ -82,70 +82,77 @@ export default function App() {
     [],
   )
 
-  /* ── Streaming engine: semantic chunks, never per-character ── */
-
-  const cancelCurrentStream = useCallback(
+  const cancelCurrentChat = useCallback(
     (markStopped: boolean) => {
-      const current = streamRef.current
+      const current = pendingChatRef.current
       if (!current) return
-      current.token.cancelled = true
+      current.controller.abort()
       if (markStopped) {
         updateMessage(current.convoId, current.msgId, (m) =>
           m.status === 'thinking' || m.status === 'streaming' ? { ...m, status: 'stopped' } : m,
         )
       }
-      streamRef.current = null
+      pendingChatRef.current = null
     },
     [updateMessage],
   )
 
-  const beginStream = useCallback(
-    (convoId: string, msgId: string, chunks: string[], opts?: { forceSuccess?: boolean }) => {
-      cancelCurrentStream(true)
-      const token: StreamToken = { cancelled: false }
-      streamRef.current = { token, convoId, msgId }
-      chunksRef.current[msgId] = chunks
+  const requestChat = useCallback(
+    async (
+      convoId: string,
+      msgId: string,
+      message: string,
+      requestModel: string,
+      sessionId?: string,
+    ) => {
+      cancelCurrentChat(true)
+      const controller = new AbortController()
+      pendingChatRef.current = { controller, convoId, msgId }
 
-      genCount.current += 1
-      const shouldFail = !opts?.forceSuccess && genCount.current % 4 === 0
-      const failAt = shouldFail ? Math.min(3, chunks.length - 1) : -1
+      try {
+        const result = await sendChat.execute({
+          message,
+          model: requestModel,
+          sessionId,
+          signal: controller.signal,
+        })
 
-      let i = 0
-      const step = () => {
-        if (token.cancelled) return
-        if (i === failAt) {
-          updateMessage(convoId, msgId, (m) => ({ ...m, status: 'error' }))
-          streamRef.current = null
-          return
+        if (pendingChatRef.current?.controller !== controller) return
+
+        setConversations((prev) =>
+          prev.map((conversation) =>
+            conversation.id !== convoId
+              ? conversation
+              : {
+                  ...conversation,
+                  sessionId: result.sessionId,
+                  messages: conversation.messages.map((item) =>
+                    item.id === msgId && item.role === 'assistant'
+                      ? { ...item, md: result.content, status: 'complete' }
+                      : item,
+                  ),
+                },
+          ),
+        )
+      } catch (error) {
+        if (!isAbortError(error)) {
+          updateMessage(convoId, msgId, (item) => ({ ...item, status: 'error' }))
+          showToast(error instanceof Error ? error.message : 'Chat request failed.')
         }
-        if (i >= chunks.length) {
-          updateMessage(convoId, msgId, (m) => ({ ...m, status: 'complete' }))
-          streamRef.current = null
-          return
+      } finally {
+        if (pendingChatRef.current?.controller === controller) {
+          pendingChatRef.current = null
         }
-        const chunk = chunks[i]
-        updateMessage(convoId, msgId, (m) => ({ ...m, md: m.md + chunk, status: 'streaming' }))
-        i += 1
-        window.setTimeout(step, Math.min(140 + chunk.length * 1.05, 460))
       }
-      window.setTimeout(step, 900)
     },
-    [cancelCurrentStream, updateMessage],
+    [cancelCurrentChat, sendChat, showToast, updateMessage],
   )
-
-  const pickChunks = useCallback((text: string): string[] => {
-    const t = text.toLowerCase()
-    if (t.includes('architect') || t.includes('assistant')) return ARCH_RESPONSE
-    const chunks = FOLLOW_UPS[followUpIdx.current % FOLLOW_UPS.length]
-    followUpIdx.current += 1
-    return chunks
-  }, [])
 
   /* ── Actions ── */
 
   const handleSend = useCallback(
-    (text: string, attachments: Attachment[]) => {
-      const userMsg: Message = { id: uid('u'), role: 'user', text, attachments }
+    (text: string) => {
+      const userMsg: Message = { id: uid('u'), role: 'user', text, attachments: [] }
       const assistantMsg: AssistantMessage = {
         id: uid('a'),
         role: 'assistant',
@@ -154,9 +161,9 @@ export default function App() {
         model,
       }
 
-      let convoId = activeId
-      if (!convoId) {
-        convoId = uid('c')
+      const currentConversation = active
+      const convoId = currentConversation?.id ?? uid('c')
+      if (!currentConversation) {
         const title = text.length > 44 ? `${text.slice(0, 44).replace(/\s+\S*$/, '')}…` : text
         const convo: Conversation = {
           id: convoId,
@@ -174,37 +181,52 @@ export default function App() {
           ),
         )
       }
-      beginStream(convoId, assistantMsg.id, pickChunks(text))
+      void requestChat(
+        convoId,
+        assistantMsg.id,
+        text,
+        model,
+        currentConversation?.sessionId,
+      )
     },
-    [activeId, beginStream, model, pickChunks, tempMode],
+    [active, model, requestChat, tempMode],
   )
 
-  const handleStop = useCallback(() => cancelCurrentStream(true), [cancelCurrentStream])
+  const handleStop = useCallback(() => cancelCurrentChat(true), [cancelCurrentChat])
 
   const handleRegenerate = useCallback(
     (assistantId: string) => {
       if (!active) return
-      const prevChunks = chunksRef.current[assistantId]
-      const alt =
-        prevChunks === ARCH_RESPONSE
-          ? ARCH_RESPONSE_ALT
-          : prevChunks === ARCH_RESPONSE_ALT
-            ? ARCH_RESPONSE
-            : FOLLOW_UPS[followUpIdx.current++ % FOLLOW_UPS.length]
-      updateMessage(active.id, assistantId, (m) => ({ ...m, md: '', status: 'thinking' }))
-      beginStream(active.id, assistantId, alt, { forceSuccess: true })
+      const assistantIndex = active.messages.findIndex((item) => item.id === assistantId)
+      const userMessage = active.messages
+        .slice(0, assistantIndex)
+        .reverse()
+        .find((item): item is UserMessage => item.role === 'user')
+      if (!userMessage) return
+
+      const assistant = active.messages[assistantIndex]
+      const requestModel = assistant?.role === 'assistant' ? assistant.model : model
+      updateMessage(active.id, assistantId, (item) => ({
+        ...item,
+        md: '',
+        status: 'thinking',
+      }))
+      void requestChat(
+        active.id,
+        assistantId,
+        userMessage.text,
+        requestModel,
+        active.sessionId,
+      )
     },
-    [active, beginStream, updateMessage],
+    [active, model, requestChat, updateMessage],
   )
 
   const handleRetry = useCallback(
     (assistantId: string) => {
-      if (!active) return
-      const chunks = chunksRef.current[assistantId] ?? FOLLOW_UPS[0]
-      updateMessage(active.id, assistantId, (m) => ({ ...m, md: '', status: 'thinking' }))
-      beginStream(active.id, assistantId, chunks, { forceSuccess: true })
+      handleRegenerate(assistantId)
     },
-    [active, beginStream, updateMessage],
+    [handleRegenerate],
   )
 
   const handleEditUser = useCallback(
@@ -212,7 +234,7 @@ export default function App() {
       if (!active) return
       const idx = active.messages.findIndex((m) => m.id === userId)
       if (idx === -1) return
-      cancelCurrentStream(false)
+      cancelCurrentChat(false)
       const assistantMsg: AssistantMessage = {
         id: uid('a'),
         role: 'assistant',
@@ -226,17 +248,19 @@ export default function App() {
             ? c
             : {
                 ...c,
+                sessionId: undefined,
                 messages: [
                   ...c.messages.slice(0, idx),
                   { ...c.messages[idx], text: newText } as Message,
                   assistantMsg,
                 ],
               },
-        ),
+          ),
       )
-      beginStream(active.id, assistantMsg.id, pickChunks(newText))
+      showToast('Edited messages start a new conversation context.')
+      void requestChat(active.id, assistantMsg.id, newText, model)
     },
-    [active, beginStream, cancelCurrentStream, model, pickChunks],
+    [active, cancelCurrentChat, model, requestChat, showToast],
   )
 
   const openConversation = useCallback(
@@ -252,16 +276,16 @@ export default function App() {
   )
 
   const newChat = useCallback(() => {
-    cancelCurrentStream(true)
+    cancelCurrentChat(true)
     setActiveId(null)
     setTempMode(false)
-  }, [cancelCurrentStream])
+  }, [cancelCurrentChat])
 
   const temporaryChat = useCallback(() => {
-    cancelCurrentStream(true)
+    cancelCurrentChat(true)
     setActiveId(null)
     setTempMode(true)
-  }, [cancelCurrentStream])
+  }, [cancelCurrentChat])
 
   const toggleTemporary = useCallback(() => {
     if (isHome) {
@@ -421,7 +445,7 @@ export default function App() {
                         exit={{ opacity: 0, scale: 0.97, transition: { duration: 0.12 } }}
                         transition={{ type: 'spring', stiffness: 500, damping: 34 }}
                       >
-                        Temporary chat — it won’t be saved
+                        Temporary chat — hidden from history
                       </motion.span>
                     )}
                   </AnimatePresence>
@@ -484,7 +508,7 @@ export default function App() {
                         key={s}
                         type="button"
                         className="suggestion"
-                        onClick={() => handleSend(s, [])}
+                        onClick={() => handleSend(s)}
                         variants={{
                           hidden: { opacity: 0, y: 10, filter: 'blur(4px)' },
                           show: {
@@ -506,7 +530,7 @@ export default function App() {
                       show: { opacity: 1, transition: { duration: 0.4, delay: 0.2 } },
                     }}
                   >
-                    Maia reads files too — drop them anywhere
+                    Conversation context stays connected across turns
                   </motion.p>
                 </motion.div>
               )}

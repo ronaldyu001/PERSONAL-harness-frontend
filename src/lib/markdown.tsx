@@ -5,7 +5,7 @@ import { Check, Copy } from 'lucide-react'
 
 const INLINE_RE = /(`[^`]+`|\*\*[^*]+?\*\*|\*[^*]+?\*)/g
 
-export function renderInline(text: string): ReactNode[] {
+function renderInline(text: string): ReactNode[] {
   return text.split(INLINE_RE).map((part, i) => {
     if (part.startsWith('`') && part.endsWith('`')) {
       return <code key={i}>{part.slice(1, -1)}</code>
@@ -28,7 +28,7 @@ type Block =
   | { type: 'list'; items: string[] }
   | { type: 'code'; lang: string; code: string; closed: boolean }
 
-export function parseBlocks(md: string): Block[] {
+function parseBlocks(md: string): Block[] {
   const lines = md.split('\n')
   const blocks: Block[] = []
   let para: string[] = []
@@ -106,7 +106,7 @@ const TYPE_WORDS = new Set(['string', 'number', 'boolean', 'Promise', 'Schema', 
 const TOKEN_RE =
   /(\/\/[^\n]*|--[^\n]*|'(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"|`(?:[^`\\]|\\.)*`|\b\d+(?:\.\d+)?\b|\b[A-Za-z_$][\w$]*\b|[^\sA-Za-z0-9_$]+|\s+)/g
 
-export function highlight(codeText: string): ReactNode[] {
+function highlight(codeText: string): ReactNode[] {
   const tokens = codeText.match(TOKEN_RE) ?? [codeText]
   return tokens.map((tok, i) => {
     if (tok.startsWith('//') || tok.startsWith('--')) {

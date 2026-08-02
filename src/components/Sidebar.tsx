@@ -12,7 +12,7 @@ import { MaiaMark } from './MaiaMark'
 import { Tooltip } from './Tooltip'
 import { Popover } from './Popover'
 import { SettingsPanel, type Prefs } from './SettingsPanel'
-import { GROUP_LABELS } from '../data/mock'
+import { GROUP_LABELS } from '../config'
 import type { Conversation, HistoryGroup } from '../types'
 
 const spring = { type: 'spring', stiffness: 380, damping: 34 } as const

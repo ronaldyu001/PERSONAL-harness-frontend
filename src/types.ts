@@ -29,6 +29,7 @@ export type HistoryGroup = 'today' | 'yesterday' | 'week'
 
 export interface Conversation {
   id: string
+  sessionId?: string
   title: string
   group: HistoryGroup
   temporary?: boolean

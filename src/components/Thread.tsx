@@ -14,7 +14,7 @@ import {
 import { MaiaMark } from './MaiaMark'
 import { Tooltip } from './Tooltip'
 import { Markdown } from '../lib/markdown'
-import { MODELS, formatBytes } from '../data/mock'
+import { MODELS, formatBytes } from '../config'
 import type { AssistantMessage, Attachment, Message, UserMessage } from '../types'
 
 const KIND_ICONS = {

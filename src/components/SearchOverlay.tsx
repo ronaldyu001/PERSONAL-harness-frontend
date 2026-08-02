@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { MessageSquare, Search } from 'lucide-react'
-import { GROUP_LABELS } from '../data/mock'
+import { GROUP_LABELS } from '../config'
 import type { Conversation } from '../types'
 
 export function SearchOverlay({
@@ -33,19 +33,19 @@ export function SearchOverlay({
 
   useEffect(() => {
     if (open) {
-      setQuery('')
-      setCursor(0)
       requestAnimationFrame(() => inputRef.current?.focus())
     }
   }, [open])
 
-  useEffect(() => {
+  const close = () => {
+    setQuery('')
     setCursor(0)
-  }, [query])
+    onClose()
+  }
 
   const choose = (id: string) => {
     onSelect(id)
-    onClose()
+    close()
   }
 
   return (
@@ -57,7 +57,7 @@ export function SearchOverlay({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0, transition: { duration: 0.13 } }}
           transition={{ duration: 0.18 }}
-          onClick={onClose}
+          onClick={close}
         >
           <motion.div
             className="search-panel"
@@ -77,7 +77,10 @@ export function SearchOverlay({
                 value={query}
                 placeholder="Search conversations"
                 aria-label="Search conversations"
-                onChange={(e) => setQuery(e.target.value)}
+                onChange={(e) => {
+                  setQuery(e.target.value)
+                  setCursor(0)
+                }}
                 onKeyDown={(e) => {
                   if (e.key === 'ArrowDown') {
                     e.preventDefault()
@@ -90,7 +93,7 @@ export function SearchOverlay({
                   if (e.key === 'Enter' && results[cursor]) {
                     choose(results[cursor].id)
                   }
-                  if (e.key === 'Escape') onClose()
+                  if (e.key === 'Escape') close()
                 }}
               />
               <kbd className="search-panel__esc">esc</kbd>
