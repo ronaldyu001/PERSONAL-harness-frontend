@@ -1,6 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, MotionConfig, motion } from 'motion/react'
-import { PanelLeft } from 'lucide-react'
+import {
+  BookOpenText,
+  CalendarClock,
+  ChevronRight,
+  CookingPot,
+  PanelLeft,
+  PenLine,
+} from 'lucide-react'
 import { Sidebar } from './components/Sidebar'
 import { Composer } from './components/Composer'
 import { Thread } from './components/Thread'
@@ -16,6 +23,28 @@ let seq = 0
 const uid = (prefix: string) => `${prefix}-${Date.now()}-${seq++}`
 
 const springSoft = { type: 'spring', stiffness: 300, damping: 32 } as const
+const SUGGESTION_ICONS = [CalendarClock, BookOpenText, PenLine, CookingPot]
+const PREFS_STORAGE_KEY = 'harness.preferences'
+const DEFAULT_PREFS: Prefs = {
+  theme: 'dark',
+  reduceMotion: false,
+  showHints: true,
+  textSize: 'md',
+}
+
+const readPreferences = (): Prefs => {
+  try {
+    const stored = JSON.parse(window.localStorage.getItem(PREFS_STORAGE_KEY) ?? '{}') as Partial<Prefs>
+    return {
+      theme: stored.theme === 'light' || stored.theme === 'dark' ? stored.theme : DEFAULT_PREFS.theme,
+      reduceMotion: typeof stored.reduceMotion === 'boolean' ? stored.reduceMotion : DEFAULT_PREFS.reduceMotion,
+      showHints: typeof stored.showHints === 'boolean' ? stored.showHints : DEFAULT_PREFS.showHints,
+      textSize: stored.textSize === 'sm' || stored.textSize === 'lg' ? stored.textSize : DEFAULT_PREFS.textSize,
+    }
+  } catch {
+    return DEFAULT_PREFS
+  }
+}
 
 interface PendingChat {
   controller: AbortController
@@ -40,7 +69,7 @@ export default function App({ sendChat }: AppProps) {
   const [tempMode, setTempMode] = useState(false)
   const [model, setModel] = useState('qwen')
   const [toast, setToast] = useState<{ id: number; text: string } | null>(null)
-  const [prefs, setPrefs] = useState<Prefs>({ reduceMotion: false, showHints: true, textSize: 'md' })
+  const [prefs, setPrefs] = useState<Prefs>(readPreferences)
 
   const pendingChatRef = useRef<PendingChat | null>(null)
   const loadTimer = useRef<number | undefined>(undefined)
@@ -61,6 +90,24 @@ export default function App({ sendChat }: AppProps) {
     setToast({ id: Date.now(), text })
     toastTimer.current = window.setTimeout(() => setToast(null), 2200)
   }, [])
+
+  const updatePreferences = useCallback((next: Prefs) => {
+    document.documentElement.dataset.theme = next.theme
+    setPrefs(next)
+  }, [])
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = prefs.theme
+    document.documentElement.style.colorScheme = prefs.theme
+    try {
+      window.localStorage.setItem(PREFS_STORAGE_KEY, JSON.stringify(prefs))
+    } catch {
+      // Theme changes still work when storage is unavailable.
+    }
+    document
+      .querySelector('meta[name="theme-color"]')
+      ?.setAttribute('content', prefs.theme === 'light' ? '#e5e2d3' : '#191710')
+  }, [prefs])
 
   /* ── Conversation state helpers ── */
 
@@ -323,6 +370,7 @@ export default function App({ sendChat }: AppProps) {
     <MotionConfig reducedMotion={prefs.reduceMotion ? 'always' : 'user'}>
       <div
         className="app"
+        data-theme={prefs.theme}
         data-reduce-motion={prefs.reduceMotion || undefined}
         data-text-size={prefs.textSize}
       >
@@ -339,7 +387,7 @@ export default function App({ sendChat }: AppProps) {
           onOpenSearch={() => setSearchOpen(true)}
           temporaryActive={temporaryActive}
           prefs={prefs}
-          onPrefsChange={setPrefs}
+          onPrefsChange={updatePreferences}
           onToast={showToast}
         />
 
@@ -375,7 +423,7 @@ export default function App({ sendChat }: AppProps) {
                   onOpenSearch={() => setSearchOpen(true)}
                   temporaryActive={temporaryActive}
                   prefs={prefs}
-                  onPrefsChange={setPrefs}
+                  onPrefsChange={updatePreferences}
                   onToast={showToast}
                   isDrawer
                   onCloseDrawer={() => setDrawerOpen(false)}
@@ -502,26 +550,34 @@ export default function App({ sendChat }: AppProps) {
                     show: { transition: { staggerChildren: 0.045, delayChildren: 0.16 } },
                   }}
                 >
+                  <p className="home-below__label">Quick starts</p>
                   <div className="home-suggestions">
-                    {SUGGESTIONS.map((s) => (
-                      <motion.button
-                        key={s}
-                        type="button"
-                        className="suggestion"
-                        onClick={() => handleSend(s)}
-                        variants={{
-                          hidden: { opacity: 0, y: 10, filter: 'blur(4px)' },
-                          show: {
-                            opacity: 1,
-                            y: 0,
-                            filter: 'blur(0px)',
-                            transition: { type: 'spring', stiffness: 420, damping: 34 },
-                          },
-                        }}
-                      >
-                        {s}
-                      </motion.button>
-                    ))}
+                    {SUGGESTIONS.map((s, index) => {
+                      const SuggestionIcon = SUGGESTION_ICONS[index]
+                      return (
+                        <motion.button
+                          key={s}
+                          type="button"
+                          className="suggestion"
+                          onClick={() => handleSend(s)}
+                          variants={{
+                            hidden: { opacity: 0, y: 10, filter: 'blur(4px)' },
+                            show: {
+                              opacity: 1,
+                              y: 0,
+                              filter: 'blur(0px)',
+                              transition: { type: 'spring', stiffness: 420, damping: 34 },
+                            },
+                          }}
+                        >
+                          <span className="suggestion__icon" aria-hidden="true">
+                            <SuggestionIcon size={16} strokeWidth={1.8} />
+                          </span>
+                          <span className="suggestion__label">{s}</span>
+                          <ChevronRight className="suggestion__chevron" size={14} strokeWidth={1.8} aria-hidden="true" />
+                        </motion.button>
+                      )
+                    })}
                   </div>
                   <motion.p
                     className="home-filehint"

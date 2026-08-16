@@ -1,10 +1,16 @@
 import { Switch } from './Switch'
 
 export interface Prefs {
+  theme: 'dark' | 'light'
   reduceMotion: boolean
   showHints: boolean
   textSize: 'sm' | 'md' | 'lg'
 }
+
+const THEMES: { id: Prefs['theme']; label: string }[] = [
+  { id: 'dark', label: 'Dark' },
+  { id: 'light', label: 'Light' },
+]
 
 const SIZES: { id: Prefs['textSize']; label: string }[] = [
   { id: 'sm', label: 'Snug' },
@@ -20,15 +26,22 @@ export function SettingsPanel({ prefs, onChange }: { prefs: Prefs; onChange: (p:
       <div className="settings__row">
         <div className="settings__label">
           <span>Appearance</span>
-          <span className="settings__hint">Light theme is on the way</span>
+          <span className="settings__hint">Choose your preferred palette</span>
         </div>
         <div className="segmented" role="radiogroup" aria-label="Appearance">
-          <button type="button" className="segmented__opt segmented__opt--on" role="radio" aria-checked="true" data-menu-item>
-            Dark
-          </button>
-          <button type="button" className="segmented__opt" role="radio" aria-checked="false" disabled title="Coming soon">
-            Light
-          </button>
+          {THEMES.map((theme) => (
+            <button
+              key={theme.id}
+              type="button"
+              className={`segmented__opt${prefs.theme === theme.id ? ' segmented__opt--on' : ''}`}
+              role="radio"
+              aria-checked={prefs.theme === theme.id}
+              onClick={() => onChange({ ...prefs, theme: theme.id })}
+              data-menu-item
+            >
+              {theme.label}
+            </button>
+          ))}
         </div>
       </div>
 

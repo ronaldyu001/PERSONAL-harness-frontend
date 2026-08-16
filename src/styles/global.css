@@ -1,65 +1,33 @@
 /* ─────────────────────────────────────────────────────────────
-   Maia — design tokens & base
-   Warm graphite, ivory text, apricot-copper accent.
+   Maia — shared design primitives
+   Theme-specific semantic tokens live in theme-dark/light.css.
    ───────────────────────────────────────────────────────────── */
 
 :root {
-  color-scheme: dark;
+  --palette-khaki: #beb096;
+  --palette-roast: #4c3428;
+  --palette-gingery: #b06c3f;
+  --palette-clay: #997e63;
+  --palette-palm: #635a39;
 
-  /* Layer 0 — application background */
-  --bg-root: #141110;
-  /* Layer 1 — main workspace */
-  --bg-workspace: #1a1715;
-  /* Raised matte surfaces */
-  --surface-1: #201c19;
-  --surface-2: #27221e;
-  --surface-3: #2f2925;
-  /* Translucent surfaces (rail, composer, menus) */
-  --glass: rgba(32, 28, 25, 0.78);
-  --glass-heavy: rgba(39, 34, 30, 0.97);
+  --sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter Variable', 'Segoe UI', sans-serif;
+  --display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter Variable', 'Segoe UI', sans-serif;
+  --mono: 'SFMono-Regular', 'JetBrains Mono Variable', ui-monospace, Menlo, monospace;
 
-  --border-faint: rgba(235, 218, 199, 0.07);
-  --border-soft: rgba(235, 218, 199, 0.12);
-  --border-strong: rgba(235, 218, 199, 0.18);
-  --highlight-inner: inset 0 1px 0 rgba(255, 243, 228, 0.05);
-
-  --text-primary: #ece4d8;
-  --text-secondary: #a89e91;
-  --text-tertiary: #7a7166;
-  --text-faint: #575047;
-
-  --accent: #d99a6e;
-  --accent-strong: #e7ac7d;
-  --accent-deep: #b3764c;
-  --accent-ink: #2c1d11;
-  --accent-tint: rgba(217, 154, 110, 0.11);
-  --accent-tint-strong: rgba(217, 154, 110, 0.18);
-  --ring: rgba(217, 154, 110, 0.55);
-
-  --danger: #cf8570;
-  --danger-tint: rgba(207, 133, 112, 0.1);
-
-  --sans: 'Inter Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --mono: 'JetBrains Mono Variable', ui-monospace, 'SF Mono', Menlo, monospace;
-
-  --r-xs: 8px;
-  --r-sm: 11px;
-  --r-md: 14px;
-  --r-lg: 18px;
-  --r-xl: 24px;
-
-  --shadow-float:
-    0 1px 2px rgba(8, 6, 5, 0.3),
-    0 8px 28px rgba(8, 6, 5, 0.32);
-  --shadow-menu:
-    0 2px 6px rgba(8, 6, 5, 0.35),
-    0 16px 48px rgba(8, 6, 5, 0.45);
+  --r-xs: 9px;
+  --r-sm: 12px;
+  --r-md: 16px;
+  --r-lg: 22px;
+  --r-xl: 28px;
 
   --prose-size: 15.5px;
 
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
-  --dur-fast: 140ms;
-  --dur-med: 190ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --dur-fast: 120ms;
+  --dur-med: 200ms;
+  --dur-slow: 320ms;
+  --dur-theme: 260ms;
 }
 
 [data-text-size='sm'] { --prose-size: 14.5px; }
@@ -88,11 +56,12 @@ body {
   text-rendering: optimizeLegibility;
   font-feature-settings: 'cv11';
   overflow: hidden;
+  transition: background-color var(--dur-theme) var(--ease-standard), color var(--dur-theme) var(--ease-standard);
 }
 
 ::selection {
-  background: rgba(217, 154, 110, 0.3);
-  color: #f7efe4;
+  background: var(--selection-bg);
+  color: var(--selection-text);
 }
 
 button {
@@ -136,7 +105,7 @@ a {
 /* Scrollbars */
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(235, 218, 199, 0.14) transparent;
+  scrollbar-color: var(--scrollbar) transparent;
 }
 
 *::-webkit-scrollbar {
@@ -149,14 +118,14 @@ a {
 }
 
 *::-webkit-scrollbar-thumb {
-  background: rgba(235, 218, 199, 0.12);
+  background: var(--scrollbar);
   border-radius: 99px;
   border: 3px solid transparent;
   background-clip: content-box;
 }
 
 *::-webkit-scrollbar-thumb:hover {
-  background: rgba(235, 218, 199, 0.22);
+  background: var(--scrollbar-hover);
   background-clip: content-box;
   border: 3px solid transparent;
 }

@@ -1,0 +1,115 @@
+/* Dark theme — French Roast foundations with clearly separated palette accents. */
+
+:root[data-theme='dark'],
+.app[data-theme='dark'] {
+  color-scheme: dark;
+
+  --bg-root: #191710;
+  --bg-workspace: #241a16;
+  --surface-1: #292719;
+  --surface-2: #3a2c23;
+  --surface-3: #4c3428;
+  --glass: rgba(45, 43, 27, 0.76);
+  --glass-heavy: rgba(53, 38, 31, 0.96);
+  --sidebar-glass: rgba(39, 32, 27, 0.88);
+  --composer-glass: rgba(51, 42, 36, 0.9);
+  --composer-border: rgba(190, 176, 150, 0.18);
+
+  --surface-hover: rgba(190, 176, 150, 0.08);
+  --surface-pressed: rgba(190, 176, 150, 0.13);
+  --surface-selected: rgba(99, 90, 57, 0.34);
+  --surface-selected-strong: rgba(99, 90, 57, 0.46);
+  --surface-inset: rgba(20, 14, 12, 0.48);
+  --segment-selected: rgba(153, 126, 99, 0.3);
+  --message-user-bg: #9f603a;
+  --message-user-border: rgba(211, 142, 92, 0.38);
+  --message-user-text: #fff8ef;
+
+  --border-faint: rgba(190, 176, 150, 0.09);
+  --border-soft: rgba(190, 176, 150, 0.15);
+  --border-strong: rgba(190, 176, 150, 0.23);
+  --highlight-inner: inset 0 1px 0 rgba(244, 238, 226, 0.055);
+
+  --text-primary: #f1eadf;
+  --text-strong: #faf6ef;
+  --text-secondary: #c5b79d;
+  --text-tertiary: #a58b70;
+  --text-faint: #9c8065;
+
+  --accent: #c27a4a;
+  --accent-strong: #d38e5c;
+  --accent-deep: #b06c3f;
+  --accent-ink: #21150f;
+  --accent-tint: rgba(176, 108, 63, 0.13);
+  --accent-tint-strong: rgba(176, 108, 63, 0.22);
+  --accent-border: rgba(194, 122, 74, 0.42);
+  --accent-gradient: linear-gradient(180deg, #c98555, #a85f36);
+  --ring: rgba(194, 122, 74, 0.62);
+  --switch-knob: #f5eee2;
+  --control-on: #777044;
+
+  --palm: #aaa175;
+  --palm-strong: #c0b986;
+  --palm-tint: rgba(99, 90, 57, 0.4);
+  --palm-border: rgba(170, 161, 117, 0.48);
+  --clay: #c0a184;
+  --clay-tint: rgba(153, 126, 99, 0.32);
+  --clay-border: rgba(192, 161, 132, 0.44);
+  --khaki: #d2c5aa;
+  --khaki-tint: rgba(190, 176, 150, 0.22);
+  --khaki-border: rgba(210, 197, 170, 0.4);
+
+  --suggestion-surface: rgba(58, 47, 40, 0.72);
+  --suggestion-surface-hover: rgba(68, 54, 46, 0.94);
+  --suggestion-border: rgba(190, 176, 150, 0.13);
+
+  --success: #aaa175;
+  --danger: #d28a68;
+  --danger-strong: #e0a081;
+  --danger-soft: #bd7859;
+  --danger-tint: rgba(176, 108, 63, 0.13);
+  --danger-border: rgba(210, 138, 104, 0.3);
+
+  --selection-bg: rgba(176, 108, 63, 0.34);
+  --selection-text: #fff9f0;
+  --scrollbar: rgba(190, 176, 150, 0.16);
+  --scrollbar-hover: rgba(190, 176, 150, 0.28);
+
+  --ambient-one: rgba(176, 108, 63, 0.16);
+  --ambient-two: rgba(99, 90, 57, 0.18);
+  --noise-opacity: 0.035;
+  --header-solid: rgba(36, 26, 22, 0.94);
+  --header-fade: rgba(36, 26, 22, 0.76);
+  --scrim: rgba(27, 20, 17, 0.62);
+
+  --shadow-float:
+    0 1px 2px rgba(18, 11, 8, 0.34),
+    0 14px 38px rgba(18, 11, 8, 0.3);
+  --shadow-menu:
+    0 3px 8px rgba(18, 11, 8, 0.34),
+    0 24px 64px rgba(18, 11, 8, 0.48);
+  --shadow-workspace: 0 16px 48px rgba(18, 11, 8, 0.2);
+  --shadow-control: 0 1px 3px rgba(18, 11, 8, 0.38);
+  --shadow-focus: 0 0 0 4px rgba(176, 108, 63, 0.1), 0 22px 58px rgba(18, 11, 8, 0.38);
+
+  --mark-light: #d8cdb8;
+  --mark-mid: #b06c3f;
+  --mark-deep: #635a39;
+  --mark-core: #f5eee2;
+  --mark-glow: rgba(176, 108, 63, 0.34);
+
+  --code-bg: #18110e;
+  --code-bar: rgba(190, 176, 150, 0.045);
+  --code-inline-bg: rgba(190, 176, 150, 0.09);
+  --code-text: #ded5c5;
+  --code-muted: #a88e74;
+  --code-accent: #d88e5e;
+  --code-string: #aaa175;
+  --code-comment: #75624f;
+  --code-number: #c7ab82;
+  --code-type: #d2bda0;
+  --code-punct: #997e63;
+
+  --skeleton-low: rgba(190, 176, 150, 0.055);
+  --skeleton-high: rgba(190, 176, 150, 0.11);
+}

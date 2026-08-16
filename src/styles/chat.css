@@ -16,9 +16,9 @@
 }
 
 .thread__col {
-  max-width: 768px;
+  max-width: 740px;
   margin: 0 auto;
-  padding: 74px 24px 20px;
+  padding: 68px 24px 20px;
 }
 
 .thread__tail {
@@ -31,19 +31,23 @@
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  margin: 8px 0 26px;
+  margin: 10px 0 30px;
 }
 
 .msg-user__card {
   max-width: 85%;
-  background: var(--surface-2);
-  border: 1px solid var(--border-faint);
-  box-shadow: var(--highlight-inner);
-  border-radius: 16px;
-  padding: 11px 16px;
+  background: var(--message-user-bg);
+  border: 1px solid var(--message-user-border);
+  box-shadow: var(--highlight-inner), var(--shadow-control);
+  border-radius: 18px 18px 6px 18px;
+  padding: 10px 15px;
   font-size: var(--prose-size);
   line-height: 1.6;
-  color: var(--text-primary);
+  color: var(--message-user-text);
+  transition:
+    background-color var(--dur-theme) var(--ease-standard),
+    border-color var(--dur-theme) var(--ease-standard),
+    color var(--dur-theme) var(--ease-standard);
 }
 
 .msg-user__card p {
@@ -54,7 +58,7 @@
 .msg-user__card--editing {
   width: 100%;
   max-width: 100%;
-  border-color: rgba(217, 154, 110, 0.35);
+  border-color: var(--accent-border);
 }
 
 .msg-user__files {
@@ -72,7 +76,7 @@
   outline: none;
   font-size: var(--prose-size);
   line-height: 1.6;
-  color: var(--text-primary);
+  color: inherit;
   padding: 0;
   caret-color: var(--accent);
 }
@@ -87,7 +91,7 @@
 /* ── Assistant message ── */
 
 .msg-assistant {
-  margin: 8px 0 30px;
+  margin: 10px 0 36px;
 }
 
 .msg-assistant__head {
@@ -99,7 +103,7 @@
 
 .msg-assistant__name {
   font-size: 13px;
-  font-weight: 620;
+  font-weight: 650;
   letter-spacing: -0.005em;
   color: var(--text-secondary);
 }
@@ -110,7 +114,7 @@
   background: linear-gradient(
     90deg,
     var(--text-tertiary) 35%,
-    #dcccb6 50%,
+    var(--text-strong) 50%,
     var(--text-tertiary) 65%
   );
   background-size: 220% 100%;
@@ -165,8 +169,8 @@
   gap: 11px;
   margin-top: 14px;
   padding: 11px 13px;
-  border-radius: 13px;
-  border: 1px solid rgba(207, 133, 112, 0.26);
+  border-radius: var(--r-md);
+  border: 1px solid var(--danger-border);
   background: var(--danger-tint);
   color: var(--danger);
   font-size: 13px;
@@ -185,12 +189,12 @@
 
 .msg-error__meta > span:first-child {
   font-weight: 550;
-  color: #e0a48e;
+  color: var(--danger-strong);
 }
 
 .msg-error__hint {
   font-size: 11.5px;
-  color: rgba(207, 133, 112, 0.72);
+  color: var(--danger-soft);
 }
 
 .retry-btn {
@@ -201,15 +205,15 @@
   gap: 6px;
   font-size: 12.5px;
   font-weight: 550;
-  color: #e2a48f;
-  border: 1px solid rgba(207, 133, 112, 0.34);
+  color: var(--danger-strong);
+  border: 1px solid var(--danger-border);
   border-radius: 9px;
   padding: 5.5px 11px;
   transition: background var(--dur-fast) ease, transform var(--dur-fast) var(--ease-out);
 }
 
 .retry-btn:hover {
-  background: rgba(207, 133, 112, 0.12);
+  background: var(--danger-tint);
 }
 
 .retry-btn:active {
@@ -237,9 +241,9 @@
   border-radius: 8px;
   background: linear-gradient(
     100deg,
-    rgba(235, 218, 199, 0.05) 30%,
-    rgba(235, 218, 199, 0.095) 46%,
-    rgba(235, 218, 199, 0.05) 62%
+    var(--skeleton-low) 30%,
+    var(--skeleton-high) 46%,
+    var(--skeleton-low) 62%
   );
   background-size: 240% 100%;
   animation: shimmer-sweep 1.5s linear infinite;
@@ -261,7 +265,7 @@
 
 .md {
   font-size: var(--prose-size);
-  line-height: 1.72;
+  line-height: 1.7;
   color: var(--text-primary);
   overflow-wrap: break-word;
 }
@@ -280,9 +284,10 @@
 
 .md h2,
 .md h3 {
-  font-weight: 620;
-  letter-spacing: -0.014em;
-  color: #f0e8dc;
+  font-family: var(--display);
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  color: var(--text-strong);
   margin: 1.7em 0 0.55em;
 }
 
@@ -309,8 +314,8 @@
 }
 
 .md strong {
-  font-weight: 640;
-  color: #f4ecdf;
+  font-weight: 650;
+  color: var(--text-strong);
 }
 
 .md em {
@@ -320,11 +325,11 @@
 .md code {
   font-family: var(--mono);
   font-size: 0.85em;
-  background: rgba(235, 218, 199, 0.08);
-  border: 1px solid rgba(235, 218, 199, 0.05);
+  background: var(--code-inline-bg);
+  border: 1px solid var(--border-faint);
   padding: 0.12em 0.4em;
   border-radius: 6px;
-  color: #e8c9a4;
+  color: var(--accent-strong);
 }
 
 /* Streaming reveal: blocks and bullets rise in as they mount */
@@ -337,9 +342,9 @@
 
 .md-code {
   margin: 1.1em 0;
-  border-radius: 13px;
+  border-radius: var(--r-md);
   border: 1px solid var(--border-faint);
-  background: #16130f;
+  background: var(--code-bg);
   overflow: hidden;
   box-shadow: var(--highlight-inner);
 }
@@ -349,7 +354,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 7px 9px 7px 14px;
-  background: rgba(235, 218, 199, 0.035);
+  background: var(--code-bar);
   border-bottom: 1px solid var(--border-faint);
 }
 
@@ -357,7 +362,7 @@
   font-family: var(--mono);
   font-size: 11px;
   letter-spacing: 0.06em;
-  color: var(--text-tertiary);
+  color: var(--code-muted);
 }
 
 .md-code__copy {
@@ -366,15 +371,15 @@
   gap: 5px;
   font-size: 11.5px;
   font-weight: 500;
-  color: var(--text-tertiary);
+  color: var(--code-muted);
   padding: 4px 8px;
   border-radius: 7px;
   transition: color var(--dur-fast) ease, background var(--dur-fast) ease;
 }
 
 .md-code__copy:hover {
-  color: var(--text-primary);
-  background: rgba(235, 218, 199, 0.06);
+  color: var(--code-text);
+  background: var(--code-bar);
 }
 
 .md-code pre {
@@ -391,15 +396,15 @@
   border: none;
   padding: 0;
   font-size: inherit;
-  color: #d8cfc2;
+  color: var(--code-text);
 }
 
-.tok-keyword { color: #dfa878; }
-.tok-string  { color: #a3b98f; }
-.tok-comment { color: #6e6558; font-style: italic; }
-.tok-number  { color: #dbb98a; }
-.tok-type    { color: #e3cba6; }
-.tok-punct   { color: #877d71; }
+.tok-keyword { color: var(--code-accent); }
+.tok-string  { color: var(--code-string); }
+.tok-comment { color: var(--code-comment); font-style: italic; }
+.tok-number  { color: var(--code-number); }
+.tok-type    { color: var(--code-type); }
+.tok-punct   { color: var(--code-punct); }
 
 @media (max-width: 640px) {
   .thread__col {

@@ -89,24 +89,24 @@ export function Sidebar(props: SidebarProps) {
 
             <div className="sidebar__rail-group">
               <Tooltip label="New chat" side="right">
-                <button type="button" className="icon-btn" onClick={onNewChat} aria-label="New chat">
+                <button type="button" className="icon-btn icon-btn--new" onClick={onNewChat} aria-label="New chat">
                   <SquarePen size={18} strokeWidth={1.8} />
                 </button>
               </Tooltip>
               <Tooltip label="Search" shortcut="⌘K" side="right">
-                <button type="button" className="icon-btn" onClick={onOpenSearch} aria-label="Search conversations">
+                <button type="button" className="icon-btn icon-btn--search" onClick={onOpenSearch} aria-label="Search conversations">
                   <Search size={18} strokeWidth={1.8} />
                 </button>
               </Tooltip>
               <Tooltip label="History" side="right">
-                <button type="button" className="icon-btn" onClick={() => onToggle(true)} aria-label="Conversation history">
+                <button type="button" className="icon-btn icon-btn--history" onClick={() => onToggle(true)} aria-label="Conversation history">
                   <History size={18} strokeWidth={1.8} />
                 </button>
               </Tooltip>
               <Tooltip label="Temporary chat" side="right">
                 <button
                   type="button"
-                  className={`icon-btn${temporaryActive ? ' icon-btn--active' : ''}`}
+                  className={`icon-btn icon-btn--temp${temporaryActive ? ' icon-btn--active' : ''}`}
                   onClick={onTemporaryChat}
                   aria-label="Start temporary chat"
                   aria-pressed={temporaryActive}
@@ -174,18 +174,18 @@ export function Sidebar(props: SidebarProps) {
             </div>
 
             <div className="sidebar__actions">
-              <button type="button" className="side-row" onClick={() => { onNewChat(); onCloseDrawer?.() }}>
+              <button type="button" className="side-row side-row--new" onClick={() => { onNewChat(); onCloseDrawer?.() }}>
                 <SquarePen size={16} strokeWidth={1.8} />
                 <span>New chat</span>
               </button>
-              <button type="button" className="side-row" onClick={() => { onOpenSearch(); onCloseDrawer?.() }}>
+              <button type="button" className="side-row side-row--search" onClick={() => { onOpenSearch(); onCloseDrawer?.() }}>
                 <Search size={16} strokeWidth={1.8} />
                 <span>Search</span>
                 {prefs.showHints && <kbd className="side-row__kbd">⌘K</kbd>}
               </button>
               <button
                 type="button"
-                className={`side-row${temporaryActive ? ' side-row--active' : ''}`}
+                className={`side-row side-row--temp${temporaryActive ? ' side-row--active' : ''}`}
                 onClick={() => { onTemporaryChat(); onCloseDrawer?.() }}
               >
                 <MessageSquareDashed size={16} strokeWidth={1.8} />
@@ -194,6 +194,10 @@ export function Sidebar(props: SidebarProps) {
             </div>
 
             <div className="sidebar__history" role="list" aria-label="Conversation history">
+              <div className="sidebar__section-title">Recents</div>
+              {!conversations.length && (
+                <p className="sidebar__empty">Your conversations will appear here.</p>
+              )}
               {groups.map((group) => {
                 const items = conversations.filter((c) => c.group === group)
                 if (!items.length) return null
@@ -218,18 +222,6 @@ export function Sidebar(props: SidebarProps) {
             </div>
 
             <div className="sidebar__foot">
-              <Tooltip label="Preferences" side="top">
-                <button
-                  type="button"
-                  ref={expanded || isDrawer ? settingsBtnRef : undefined}
-                  className={`icon-btn${settingsOpen ? ' icon-btn--active' : ''}`}
-                  onClick={() => setSettingsOpen((v) => !v)}
-                  aria-label="Preferences"
-                  aria-expanded={settingsOpen}
-                >
-                  <Settings2 size={17} strokeWidth={1.8} />
-                </button>
-              </Tooltip>
               <button
                 type="button"
                 ref={profileBtnRef}
@@ -243,6 +235,18 @@ export function Sidebar(props: SidebarProps) {
                   <span className="sidebar__profile-mail">ronaldyu001@gmail.com</span>
                 </span>
               </button>
+              <Tooltip label="Preferences" side="top">
+                <button
+                  type="button"
+                  ref={expanded || isDrawer ? settingsBtnRef : undefined}
+                  className={`icon-btn${settingsOpen ? ' icon-btn--active' : ''}`}
+                  onClick={() => setSettingsOpen((v) => !v)}
+                  aria-label="Preferences"
+                  aria-expanded={settingsOpen}
+                >
+                  <Settings2 size={17} strokeWidth={1.8} />
+                </button>
+              </Tooltip>
             </div>
           </motion.div>
         )}

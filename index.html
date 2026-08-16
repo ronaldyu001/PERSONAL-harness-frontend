@@ -4,14 +4,27 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#141110" />
-    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#191710" />
+    <meta name="color-scheme" content="dark light" />
     <title>Maia</title>
     <style>
-      html {
-        background: #141110;
-      }
+      html[data-theme='dark'] { background: #191710; color-scheme: dark; }
+      html[data-theme='light'] { background: #e5e2d3; color-scheme: light; }
     </style>
+    <script>
+      (() => {
+        let theme = 'dark'
+        try {
+          const stored = JSON.parse(localStorage.getItem('harness.preferences') || '{}')
+          if (stored.theme === 'light' || stored.theme === 'dark') theme = stored.theme
+        } catch {}
+        document.documentElement.dataset.theme = theme
+        document.querySelector('meta[name="theme-color"]')?.setAttribute(
+          'content',
+          theme === 'light' ? '#e5e2d3' : '#191710',
+        )
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

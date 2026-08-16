@@ -23,9 +23,9 @@ export function MaiaMark({
       <svg viewBox="0 0 32 32" width={size} height={size}>
         <defs>
           <radialGradient id={id} cx="50%" cy="36%" r="75%">
-            <stop offset="0%" stopColor="#F6C89E" />
-            <stop offset="55%" stopColor="#DE9B6C" />
-            <stop offset="100%" stopColor="#A96540" />
+            <stop offset="0%" stopColor="var(--mark-light)" />
+            <stop offset="55%" stopColor="var(--mark-mid)" />
+            <stop offset="100%" stopColor="var(--mark-deep)" />
           </radialGradient>
         </defs>
         <g className="maia-mark__petals" style={{ transformOrigin: '16px 16px' }}>
@@ -34,7 +34,7 @@ export function MaiaMark({
           <circle cx="16" cy="22.4" r="7" fill={`url(#${id})`} opacity="0.62" />
           <circle cx="9.6" cy="16" r="7" fill={`url(#${id})`} opacity="0.62" />
         </g>
-        <circle className="maia-mark__core" cx="16" cy="16" r="2.6" fill="#FFEAD5" style={{ transformOrigin: '16px 16px' }} />
+        <circle className="maia-mark__core" cx="16" cy="16" r="2.6" fill="var(--mark-core)" style={{ transformOrigin: '16px 16px' }} />
       </svg>
     </span>
   )
