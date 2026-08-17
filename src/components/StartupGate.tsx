@@ -5,6 +5,7 @@ import { StartupScreen } from './StartupScreen'
 
 interface StartupGateProps {
   healthUrl: string
+  orchestratorStartUrl?: string
   orchestratorStatusUrl?: string
   orchestratorCancelUrl?: string
   orchestratorRetryUrl?: string
@@ -13,6 +14,7 @@ interface StartupGateProps {
 
 export function StartupGate({
   healthUrl,
+  orchestratorStartUrl,
   orchestratorStatusUrl,
   orchestratorCancelUrl,
   orchestratorRetryUrl,
@@ -21,6 +23,7 @@ export function StartupGate({
   const { cancel, errorCode, phase, retry, statusMessage, step } =
     useBackendReadiness({
       healthUrl,
+      orchestratorStartUrl,
       orchestratorStatusUrl,
       orchestratorCancelUrl,
       orchestratorRetryUrl,

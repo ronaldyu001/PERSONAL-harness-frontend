@@ -1,0 +1,4 @@
+services:
+  backend:
+    build:
+      context: ../PERSONAL-harness-backend

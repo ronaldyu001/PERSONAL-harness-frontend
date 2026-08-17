@@ -13,6 +13,9 @@ export default defineConfig(({ mode }) => {
     envDir: deploymentEnvDir,
     plugins: [react()],
     server: {
+      watch: {
+        ignored: ['**/src-tauri/**'],
+      },
       proxy: {
         '/api': {
           target: env.VITE_API_PROXY_TARGET || 'http://127.0.0.1:8000',

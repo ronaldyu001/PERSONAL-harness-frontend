@@ -24,6 +24,7 @@ const healthBaseUrl = import.meta.env.DEV
   ? (import.meta.env.VITE_API_PROXY_TARGET || 'http://127.0.0.1:8000')
   : apiBaseUrl
 const healthUrl = `${healthBaseUrl.replace(/\/$/, '')}/api/health`
+const orchestratorStartUrl = import.meta.env.DEV ? '/orchestrator/start' : undefined
 const orchestratorStatusUrl = import.meta.env.DEV ? '/orchestrator/status' : undefined
 const orchestratorCancelUrl = import.meta.env.DEV ? '/orchestrator/cancel' : undefined
 const orchestratorRetryUrl = import.meta.env.DEV ? '/orchestrator/retry' : undefined
@@ -35,6 +36,7 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <StartupGate
       healthUrl={healthUrl}
+      orchestratorStartUrl={orchestratorStartUrl}
       orchestratorStatusUrl={orchestratorStatusUrl}
       orchestratorCancelUrl={orchestratorCancelUrl}
       orchestratorRetryUrl={orchestratorRetryUrl}

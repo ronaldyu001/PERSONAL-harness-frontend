@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 
 export type BackendStartupPhase = 'checking' | 'delayed' | 'ready' | 'error'
 export type StartupStep =
+  | 'waiting-ui'
   | 'checking-docker'
   | 'starting-docker'
   | 'waiting-docker'
@@ -16,6 +17,7 @@ interface OrchestratorPayload {
 
 interface BackendReadinessOptions {
   healthUrl: string
+  orchestratorStartUrl?: string
   orchestratorStatusUrl?: string
   orchestratorCancelUrl?: string
   orchestratorRetryUrl?: string
@@ -43,13 +45,14 @@ const isOrchestratorPayload = (payload: unknown): payload is OrchestratorPayload
 
 export function useBackendReadiness({
   healthUrl,
+  orchestratorStartUrl,
   orchestratorStatusUrl,
   orchestratorCancelUrl,
   orchestratorRetryUrl,
 }: BackendReadinessOptions) {
   const [phase, setPhase] = useState<BackendStartupPhase>('checking')
   const [step, setStep] = useState<StartupStep>(
-    orchestratorStatusUrl ? 'checking-docker' : 'waiting-backend',
+    orchestratorStatusUrl ? 'waiting-ui' : 'waiting-backend',
   )
   const [statusMessage, setStatusMessage] = useState<string>()
   const [errorCode, setErrorCode] = useState<string>()
@@ -161,14 +164,21 @@ export function useBackendReadiness({
       scheduleNextCheck(checkReadiness)
     }
 
-    void checkReadiness()
+    const start = async () => {
+      if (orchestratorStartUrl) {
+        await fetch(orchestratorStartUrl, { method: 'POST' }).catch(() => undefined)
+      }
+      await checkReadiness()
+    }
+
+    void start()
 
     return () => {
       stopped = true
       requestController?.abort()
       window.clearTimeout(pollTimer)
     }
-  }, [attempt, healthUrl, orchestratorStatusUrl])
+  }, [attempt, healthUrl, orchestratorStartUrl, orchestratorStatusUrl])
 
   return { cancel, errorCode, phase, retry, statusMessage, step }
 }

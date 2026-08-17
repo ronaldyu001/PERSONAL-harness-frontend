@@ -11,6 +11,7 @@ const deploymentDir = resolve(
   'PERSONAL-harness-deployment',
 )
 const composeFile = join(deploymentDir, 'docker-compose.yml')
+const composeDevFile = join(frontendDir, 'scripts', 'docker-compose.dev.yml')
 const dockerCommand = process.platform === 'win32' ? 'docker.exe' : 'docker'
 const viteCli = join(frontendDir, 'node_modules', 'vite', 'bin', 'vite.js')
 const composePrefix = [
@@ -19,6 +20,8 @@ const composePrefix = [
   deploymentDir,
   '--file',
   composeFile,
+  '--file',
+  composeDevFile,
 ]
 const dockerStartTimeoutMs = 3 * 60 * 1_000
 const dockerPollIntervalMs = 2_000
@@ -26,9 +29,10 @@ const orchestratorHost = '127.0.0.1'
 const orchestratorPort = 1421
 
 let orchestratorStatus = {
-  step: 'checking-docker',
-  message: 'Checking Docker Desktop',
+  step: 'waiting-ui',
+  message: 'Preparing local startup',
 }
+let orchestrationQueued = false
 
 const updateStatus = (step, message, errorCode) => {
   orchestratorStatus = { step, message, ...(errorCode ? { errorCode } : {}) }
@@ -52,11 +56,17 @@ const statusServer = createServer((request, response) => {
     return
   }
 
-  if (request.method === 'POST' && request.url === '/orchestrator/retry') {
-    updateStatus('checking-docker', 'Checking Docker Desktop')
+  if (request.method === 'POST' && request.url === '/orchestrator/start') {
+    const started = requestOrchestration()
     response.writeHead(202, { 'Content-Type': 'application/json' })
-    response.end(JSON.stringify({ status: 'retrying' }))
-    setTimeout(() => void orchestrateStack(), 50)
+    response.end(JSON.stringify({ status: started ? 'starting' : 'already-started' }))
+    return
+  }
+
+  if (request.method === 'POST' && request.url === '/orchestrator/retry') {
+    const started = requestOrchestration()
+    response.writeHead(202, { 'Content-Type': 'application/json' })
+    response.end(JSON.stringify({ status: started ? 'retrying' : 'already-started' }))
     return
   }
 
@@ -82,6 +92,11 @@ class OrchestrationError extends Error {
 
 if (!existsSync(composeFile)) {
   console.error(`Docker Compose file not found: ${composeFile}`)
+  process.exit(1)
+}
+
+if (!existsSync(composeDevFile)) {
+  console.error(`Docker Compose dev override not found: ${composeDevFile}`)
   process.exit(1)
 }
 
@@ -209,6 +224,24 @@ let shuttingDown = false
 let composeAttempted = false
 let orchestrationRunning = false
 
+function requestOrchestration() {
+  if (
+    orchestrationQueued ||
+    orchestrationRunning ||
+    orchestratorStatus.step === 'waiting-backend'
+  ) {
+    return false
+  }
+
+  orchestrationQueued = true
+  updateStatus('checking-docker', 'Checking Docker Desktop')
+  setTimeout(() => {
+    orchestrationQueued = false
+    void orchestrateStack()
+  }, 50)
+  return true
+}
+
 async function stopStack(exitCode) {
   if (shuttingDown) return
   shuttingDown = true
@@ -288,7 +321,6 @@ try {
     void stopStack(code ?? 1)
   })
 
-  void orchestrateStack()
 } catch (error) {
   console.error(error instanceof Error ? error.message : error)
   await stopStack(1)
