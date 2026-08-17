@@ -11,6 +11,19 @@ npm ci
 npm run dev
 ```
 
+To run the Tauri app and have it manage the sibling deployment repository's
+Docker Compose stack, run:
+
+```bash
+npm run tauri dev
+```
+
+The dev hook starts Vite immediately, then builds and starts the stack in the
+background. Maia shows a startup screen until the backend health check passes
+and runs `docker compose down` when the dev process exits. Named volumes are
+preserved. `npm run stack:up` and `npm run stack:down` are available for manual
+stack control.
+
 Vite proxies `/api` to the backend, so browser requests stay same-origin during
 development. Override the proxy target when necessary:
 

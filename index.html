@@ -17,6 +17,9 @@
         try {
           const stored = JSON.parse(localStorage.getItem('harness.preferences') || '{}')
           if (stored.theme === 'light' || stored.theme === 'dark') theme = stored.theme
+          if (stored.reduceMotion === true) {
+            document.documentElement.dataset.reduceMotion = 'true'
+          }
         } catch {}
         document.documentElement.dataset.theme = theme
         document.querySelector('meta[name="theme-color"]')?.setAttribute(

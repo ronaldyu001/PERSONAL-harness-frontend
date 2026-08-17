@@ -5,9 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:tauri": "node scripts/tauri-dev.mjs",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "stack:up": "docker compose --project-directory ../PERSONAL-harness-deployment --file ../PERSONAL-harness-deployment/docker-compose.yml up --detach --build",
+    "stack:down": "docker compose --project-directory ../PERSONAL-harness-deployment --file ../PERSONAL-harness-deployment/docker-compose.yml down --remove-orphans",
     "tauri": "tauri"
   },
   "dependencies": {

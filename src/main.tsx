@@ -10,17 +10,28 @@ import './styles/home.css'
 import './styles/chat.css'
 import './styles/composer.css'
 import './styles/overlays.css'
+import './styles/startup.css'
 import App from './App.tsx'
+import { StartupGate } from './components/StartupGate'
 import { SendChat } from './application/chat/send_chat'
 import { HttpChatAdapter } from './infrastructure/chat/http_chat_adapter'
 import { LocalStorageUserIdentityAdapter } from './infrastructure/identity/local_storage_user_identity_adapter'
 
-const chatAdapter = new HttpChatAdapter(import.meta.env.VITE_API_BASE_URL)
+const apiBaseUrl = import.meta.env.DEV
+  ? ''
+  : (import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000')
+const healthBaseUrl = import.meta.env.DEV
+  ? (import.meta.env.VITE_API_PROXY_TARGET || 'http://127.0.0.1:8000')
+  : apiBaseUrl
+const healthUrl = `${healthBaseUrl.replace(/\/$/, '')}/api/health`
+const chatAdapter = new HttpChatAdapter(apiBaseUrl)
 const identityAdapter = new LocalStorageUserIdentityAdapter()
 const sendChat = new SendChat(chatAdapter, identityAdapter)
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App sendChat={sendChat} />
+    <StartupGate healthUrl={healthUrl}>
+      <App sendChat={sendChat} />
+    </StartupGate>
   </StrictMode>,
 )

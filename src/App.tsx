@@ -98,6 +98,11 @@ export default function App({ sendChat }: AppProps) {
 
   useEffect(() => {
     document.documentElement.dataset.theme = prefs.theme
+    if (prefs.reduceMotion) {
+      document.documentElement.dataset.reduceMotion = 'true'
+    } else {
+      delete document.documentElement.dataset.reduceMotion
+    }
     document.documentElement.style.colorScheme = prefs.theme
     try {
       window.localStorage.setItem(PREFS_STORAGE_KEY, JSON.stringify(prefs))
