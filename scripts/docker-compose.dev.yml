@@ -2,8 +2,5 @@ services:
   backend:
     build:
       context: ../PERSONAL-harness-backend
-    environment:
-      AGENT_CONTEXT_LOGGING: ${AGENT_CONTEXT_LOGGING:-full}
-      AGENT_CONTEXT_LOG_DIR: /app/.logs
     volumes:
       - ../PERSONAL-harness-backend/.logs:/app/.logs
