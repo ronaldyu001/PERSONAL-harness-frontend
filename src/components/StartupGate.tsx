@@ -5,11 +5,26 @@ import { StartupScreen } from './StartupScreen'
 
 interface StartupGateProps {
   healthUrl: string
+  orchestratorStatusUrl?: string
+  orchestratorCancelUrl?: string
+  orchestratorRetryUrl?: string
   children: ReactNode
 }
 
-export function StartupGate({ healthUrl, children }: StartupGateProps) {
-  const { phase, retry } = useBackendReadiness(healthUrl)
+export function StartupGate({
+  healthUrl,
+  orchestratorStatusUrl,
+  orchestratorCancelUrl,
+  orchestratorRetryUrl,
+  children,
+}: StartupGateProps) {
+  const { cancel, errorCode, phase, retry, statusMessage, step } =
+    useBackendReadiness({
+      healthUrl,
+      orchestratorStatusUrl,
+      orchestratorCancelUrl,
+      orchestratorRetryUrl,
+    })
   const systemReducedMotion = useReducedMotion()
   const savedReducedMotion = document.documentElement.dataset.reduceMotion === 'true'
   const reduceMotion = Boolean(systemReducedMotion || savedReducedMotion)
@@ -30,7 +45,15 @@ export function StartupGate({ healthUrl, children }: StartupGateProps) {
           {children}
         </motion.div>
       ) : (
-        <StartupScreen key="startup" phase={phase} onRetry={retry} />
+        <StartupScreen
+          key="startup"
+          phase={phase}
+          step={step}
+          statusMessage={statusMessage}
+          errorCode={errorCode}
+          onRetry={() => void retry()}
+          onCancel={() => void cancel()}
+        />
       )}
     </AnimatePresence>
   )

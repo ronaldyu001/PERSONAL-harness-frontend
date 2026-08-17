@@ -1,6 +1,25 @@
 import { useCallback, useEffect, useState } from 'react'
 
 export type BackendStartupPhase = 'checking' | 'delayed' | 'ready' | 'error'
+export type StartupStep =
+  | 'checking-docker'
+  | 'starting-docker'
+  | 'waiting-docker'
+  | 'starting-stack'
+  | 'waiting-backend'
+
+interface OrchestratorPayload {
+  step: StartupStep | 'error'
+  message: string
+  errorCode?: string
+}
+
+interface BackendReadinessOptions {
+  healthUrl: string
+  orchestratorStatusUrl?: string
+  orchestratorCancelUrl?: string
+  orchestratorRetryUrl?: string
+}
 
 const POLL_INTERVAL_MS = 1_000
 const REQUEST_TIMEOUT_MS = 3_000
@@ -14,14 +33,45 @@ const isHealthyPayload = (payload: unknown): payload is { status: 'ok' } =>
   'status' in payload &&
   payload.status === 'ok'
 
-export function useBackendReadiness(healthUrl: string) {
+const isOrchestratorPayload = (payload: unknown): payload is OrchestratorPayload =>
+  typeof payload === 'object' &&
+  payload !== null &&
+  'step' in payload &&
+  typeof payload.step === 'string' &&
+  'message' in payload &&
+  typeof payload.message === 'string'
+
+export function useBackendReadiness({
+  healthUrl,
+  orchestratorStatusUrl,
+  orchestratorCancelUrl,
+  orchestratorRetryUrl,
+}: BackendReadinessOptions) {
   const [phase, setPhase] = useState<BackendStartupPhase>('checking')
+  const [step, setStep] = useState<StartupStep>(
+    orchestratorStatusUrl ? 'checking-docker' : 'waiting-backend',
+  )
+  const [statusMessage, setStatusMessage] = useState<string>()
+  const [errorCode, setErrorCode] = useState<string>()
   const [attempt, setAttempt] = useState(0)
 
-  const retry = useCallback(() => {
+  const retry = useCallback(async () => {
     setPhase('checking')
+    setStatusMessage(undefined)
+    setErrorCode(undefined)
+    if (orchestratorRetryUrl) {
+      await fetch(orchestratorRetryUrl, { method: 'POST' }).catch(() => undefined)
+    }
     setAttempt((current) => current + 1)
-  }, [])
+  }, [orchestratorRetryUrl])
+
+  const cancel = useCallback(async () => {
+    if (orchestratorCancelUrl) {
+      await fetch(orchestratorCancelUrl, { method: 'POST' }).catch(() => undefined)
+      return
+    }
+    window.close()
+  }, [orchestratorCancelUrl])
 
   useEffect(() => {
     let stopped = false
@@ -29,7 +79,7 @@ export function useBackendReadiness(healthUrl: string) {
     let requestController: AbortController | undefined
     const startedAt = Date.now()
 
-    const checkHealth = async () => {
+    const requestJson = async (url: string) => {
       requestController = new AbortController()
       const requestTimer = window.setTimeout(
         () => requestController?.abort(),
@@ -37,12 +87,50 @@ export function useBackendReadiness(healthUrl: string) {
       )
 
       try {
-        const response = await fetch(healthUrl, {
+        const response = await fetch(url, {
           cache: 'no-store',
           signal: requestController.signal,
         })
         const payload: unknown = await response.json().catch(() => undefined)
+        return { payload, response }
+      } finally {
+        window.clearTimeout(requestTimer)
+      }
+    }
 
+    const scheduleNextCheck = (check: () => Promise<void>) => {
+      pollTimer = window.setTimeout(check, POLL_INTERVAL_MS)
+    }
+
+    const checkReadiness = async () => {
+      try {
+        if (orchestratorStatusUrl) {
+          const { payload, response } = await requestJson(orchestratorStatusUrl)
+          if (response.ok && isOrchestratorPayload(payload)) {
+            if (payload.step === 'error') {
+              if (!stopped) {
+                setPhase('error')
+                setStatusMessage(payload.message)
+                setErrorCode(payload.errorCode ?? 'orchestration-failed')
+              }
+              return
+            }
+
+            if (!stopped) {
+              setStep(payload.step)
+              setStatusMessage(payload.message)
+            }
+            if (payload.step !== 'waiting-backend') {
+              if (!stopped) scheduleNextCheck(checkReadiness)
+              return
+            }
+          } else {
+            if (!stopped) scheduleNextCheck(checkReadiness)
+            return
+          }
+        }
+
+        const { payload, response } = await requestJson(healthUrl)
         if (!stopped && response.ok && isHealthyPayload(payload)) {
           const remainingDisplayTime = Math.max(
             0,
@@ -54,9 +142,7 @@ export function useBackendReadiness(healthUrl: string) {
           return
         }
       } catch {
-        // Connection failures are expected while the local stack is starting.
-      } finally {
-        window.clearTimeout(requestTimer)
+        // Connection failures are expected while local services are starting.
       }
 
       if (stopped) return
@@ -64,23 +150,25 @@ export function useBackendReadiness(healthUrl: string) {
       const elapsed = Date.now() - startedAt
       if (elapsed >= FAIL_AFTER_MS) {
         setPhase('error')
+        setErrorCode('backend-timeout')
+        setStatusMessage('Maia’s local API did not become ready in time.')
         return
       }
       if (elapsed >= DELAYED_AFTER_MS) {
         setPhase('delayed')
       }
 
-      pollTimer = window.setTimeout(checkHealth, POLL_INTERVAL_MS)
+      scheduleNextCheck(checkReadiness)
     }
 
-    void checkHealth()
+    void checkReadiness()
 
     return () => {
       stopped = true
       requestController?.abort()
       window.clearTimeout(pollTimer)
     }
-  }, [attempt, healthUrl])
+  }, [attempt, healthUrl, orchestratorStatusUrl])
 
-  return { phase, retry }
+  return { cancel, errorCode, phase, retry, statusMessage, step }
 }

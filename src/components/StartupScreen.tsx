@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { MaiaMark } from './MaiaMark'
-import type { BackendStartupPhase } from '../hooks/useBackendReadiness'
+import type {
+  BackendStartupPhase,
+  StartupStep,
+} from '../hooks/useBackendReadiness'
 
 const STARTING_MESSAGES = [
   'Preparing your workspace',
@@ -17,10 +20,29 @@ const DELAYED_MESSAGES = [
 
 interface StartupScreenProps {
   phase: Exclude<BackendStartupPhase, 'ready'>
+  step: StartupStep
+  statusMessage?: string
+  errorCode?: string
   onRetry: () => void
+  onCancel: () => void
 }
 
-export function StartupScreen({ phase, onRetry }: StartupScreenProps) {
+const stepIndex = (step: StartupStep) => {
+  if (step === 'starting-stack') return 1
+  if (step === 'waiting-backend') return 2
+  return 0
+}
+
+const STARTUP_STEPS = ['Docker', 'Services', 'Maia']
+
+export function StartupScreen({
+  phase,
+  step,
+  statusMessage: reportedStatus,
+  errorCode,
+  onRetry,
+  onCancel,
+}: StartupScreenProps) {
   const systemReducedMotion = useReducedMotion()
   const savedReducedMotion = document.documentElement.dataset.reduceMotion === 'true'
   const reduceMotion = Boolean(systemReducedMotion || savedReducedMotion)
@@ -28,18 +50,20 @@ export function StartupScreen({ phase, onRetry }: StartupScreenProps) {
   const [messageIndex, setMessageIndex] = useState(0)
 
   useEffect(() => {
-    if (phase === 'error' || reduceMotion) return
+    if (phase === 'error' || reduceMotion || reportedStatus) return
 
     const timer = window.setInterval(() => {
       setMessageIndex((current) => (current + 1) % messages.length)
     }, 2_600)
 
     return () => window.clearInterval(timer)
-  }, [messages, phase, reduceMotion])
+  }, [messages, phase, reduceMotion, reportedStatus])
 
-  const statusMessage = phase === 'error'
+  const statusMessage = reportedStatus ?? (phase === 'error'
     ? 'Maia could not connect to the local service.'
-    : messages[messageIndex]
+    : messages[messageIndex])
+  const activeStep = stepIndex(step)
+  const dockerNotInstalled = errorCode === 'docker-not-installed'
 
   return (
     <motion.section
@@ -83,6 +107,22 @@ export function StartupScreen({ phase, onRetry }: StartupScreenProps) {
           <p>Local intelligence, thoughtfully prepared.</p>
         </motion.div>
 
+        <ol className="startup-screen__steps" aria-label="Startup progress">
+          {STARTUP_STEPS.map((label, index) => {
+            const state = index < activeStep
+              ? 'complete'
+              : index === activeStep
+                ? (phase === 'error' ? 'error' : 'active')
+                : 'pending'
+            return (
+              <li key={label} className={`startup-screen__step startup-screen__step--${state}`}>
+                <span aria-hidden="true" />
+                {label}
+              </li>
+            )
+          })}
+        </ol>
+
         <div className="startup-screen__status" role="status" aria-live="polite">
           <AnimatePresence mode="wait" initial={false}>
             <motion.p
@@ -98,9 +138,20 @@ export function StartupScreen({ phase, onRetry }: StartupScreenProps) {
         </div>
 
         {phase === 'error' ? (
-          <button className="startup-screen__retry" type="button" onClick={onRetry}>
-            Retry connection
-          </button>
+          <div className="startup-screen__actions">
+            {!dockerNotInstalled && (
+              <button className="startup-screen__retry" type="button" onClick={onRetry}>
+                Retry
+              </button>
+            )}
+            <button
+              className="startup-screen__retry startup-screen__retry--secondary"
+              type="button"
+              onClick={onCancel}
+            >
+              {dockerNotInstalled ? 'Cancel startup' : 'Close Maia'}
+            </button>
+          </div>
         ) : (
           <div className="startup-screen__progress" aria-hidden="true">
             <span />

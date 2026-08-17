@@ -24,13 +24,21 @@ const healthBaseUrl = import.meta.env.DEV
   ? (import.meta.env.VITE_API_PROXY_TARGET || 'http://127.0.0.1:8000')
   : apiBaseUrl
 const healthUrl = `${healthBaseUrl.replace(/\/$/, '')}/api/health`
+const orchestratorStatusUrl = import.meta.env.DEV ? '/orchestrator/status' : undefined
+const orchestratorCancelUrl = import.meta.env.DEV ? '/orchestrator/cancel' : undefined
+const orchestratorRetryUrl = import.meta.env.DEV ? '/orchestrator/retry' : undefined
 const chatAdapter = new HttpChatAdapter(apiBaseUrl)
 const identityAdapter = new LocalStorageUserIdentityAdapter()
 const sendChat = new SendChat(chatAdapter, identityAdapter)
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <StartupGate healthUrl={healthUrl}>
+    <StartupGate
+      healthUrl={healthUrl}
+      orchestratorStatusUrl={orchestratorStatusUrl}
+      orchestratorCancelUrl={orchestratorCancelUrl}
+      orchestratorRetryUrl={orchestratorRetryUrl}
+    >
       <App sendChat={sendChat} />
     </StartupGate>
   </StrictMode>,

@@ -18,11 +18,14 @@ Docker Compose stack, run:
 npm run tauri dev
 ```
 
-The dev hook starts Vite immediately, then builds and starts the stack in the
-background. Maia shows a startup screen until the backend health check passes
-and runs `docker compose down` when the dev process exits. Named volumes are
-preserved. `npm run stack:up` and `npm run stack:down` are available for manual
-stack control.
+The dev hook starts Vite immediately, starts Docker Desktop when its engine is
+not already available, then builds and starts the stack in the background. Maia
+shows a startup screen until the backend health check passes and runs
+`docker compose down` when the dev process exits. Named volumes are preserved.
+`npm run stack:up` and `npm run stack:down` are available for manual stack
+control. The startup screen reports Docker, service, and API readiness. If
+Docker Desktop is not installed, startup stops before Compose and offers a
+cancel action.
 
 Vite proxies `/api` to the backend, so browser requests stay same-origin during
 development. Override the proxy target when necessary:
