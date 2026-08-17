@@ -11,10 +11,12 @@ const deploymentDir = resolve(
   'PERSONAL-harness-deployment',
 )
 const composeFile = join(deploymentDir, 'docker-compose.yml')
+const composeGpuFile = join(deploymentDir, 'docker-compose.gpu.yml')
 const composeDevFile = join(frontendDir, 'scripts', 'docker-compose.dev.yml')
 const dockerCommand = process.platform === 'win32' ? 'docker.exe' : 'docker'
+const nvidiaSmiCommand = process.platform === 'win32' ? 'nvidia-smi.exe' : 'nvidia-smi'
 const viteCli = join(frontendDir, 'node_modules', 'vite', 'bin', 'vite.js')
-const composePrefix = [
+const composeBasePrefix = [
   'compose',
   '--project-directory',
   deploymentDir,
@@ -23,6 +25,8 @@ const composePrefix = [
   '--file',
   composeDevFile,
 ]
+let composePrefix = composeBasePrefix
+const gpuMode = (process.env.HARNESS_GPU ?? 'auto').trim().toLowerCase()
 const dockerStartTimeoutMs = 3 * 60 * 1_000
 const dockerPollIntervalMs = 2_000
 const orchestratorHost = '127.0.0.1'
@@ -100,6 +104,11 @@ if (!existsSync(composeDevFile)) {
   process.exit(1)
 }
 
+if (!['auto', 'off', 'on'].includes(gpuMode)) {
+  console.error('HARNESS_GPU must be one of: auto, off, on.')
+  process.exit(1)
+}
+
 if (!existsSync(viteCli)) {
   console.error('Vite is not installed. Run npm ci before starting Tauri.')
   process.exit(1)
@@ -160,6 +169,50 @@ const dockerIsReady = () => succeeds(
   ['info', '--format', '{{.ServerVersion}}'],
   deploymentDir,
 )
+
+async function configureGpuAcceleration() {
+  updateStatus('checking-gpu', 'Checking GPU acceleration')
+
+  if (gpuMode === 'off') {
+    composePrefix = composeBasePrefix
+    updateStatus('checking-gpu', 'Using CPU inference')
+    return false
+  }
+
+  const nvidiaGpuAvailable = await succeeds(
+    nvidiaSmiCommand,
+    ['--list-gpus'],
+    deploymentDir,
+  )
+
+  if (!nvidiaGpuAvailable) {
+    if (gpuMode === 'on') {
+      throw new OrchestrationError(
+        'gpu-not-available',
+        'GPU mode was requested, but no NVIDIA GPU is available.',
+      )
+    }
+
+    composePrefix = composeBasePrefix
+    updateStatus('checking-gpu', 'No NVIDIA GPU found; using CPU inference')
+    return false
+  }
+
+  if (!existsSync(composeGpuFile)) {
+    throw new OrchestrationError(
+      'gpu-config-missing',
+      `Docker Compose GPU override not found: ${composeGpuFile}`,
+    )
+  }
+
+  composePrefix = [
+    ...composeBasePrefix,
+    '--file',
+    composeGpuFile,
+  ]
+  updateStatus('checking-gpu', 'NVIDIA GPU found; enabling acceleration')
+  return true
+}
 
 async function ensureDockerReady() {
   updateStatus('checking-docker', 'Checking Docker Desktop')
@@ -273,13 +326,29 @@ async function orchestrateStack() {
 
   try {
     await ensureDockerReady()
+    const gpuEnabled = await configureGpuAcceleration()
     updateStatus('starting-stack', 'Starting Maia’s local services')
     composeAttempted = true
-    await run(
-      dockerCommand,
-      [...composePrefix, 'up', '--detach', '--build'],
-      deploymentDir,
-    )
+    try {
+      await run(
+        dockerCommand,
+        [...composePrefix, 'up', '--detach', '--build'],
+        deploymentDir,
+      )
+    } catch (error) {
+      if (!gpuEnabled || gpuMode === 'on') throw error
+
+      composePrefix = composeBasePrefix
+      updateStatus(
+        'starting-stack',
+        'GPU containers unavailable; retrying with CPU inference',
+      )
+      await run(
+        dockerCommand,
+        [...composePrefix, 'up', '--detach', '--build'],
+        deploymentDir,
+      )
+    }
     updateStatus('waiting-backend', 'Waiting for Maia’s local API')
   } catch (error) {
     const errorCode = error instanceof OrchestrationError

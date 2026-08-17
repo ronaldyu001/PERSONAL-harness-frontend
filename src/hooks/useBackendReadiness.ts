@@ -6,6 +6,7 @@ export type StartupStep =
   | 'checking-docker'
   | 'starting-docker'
   | 'waiting-docker'
+  | 'checking-gpu'
   | 'starting-stack'
   | 'waiting-backend'
 
