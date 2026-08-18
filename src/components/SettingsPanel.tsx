@@ -4,7 +4,7 @@ export interface Prefs {
   theme: 'dark' | 'light'
   reduceMotion: boolean
   showHints: boolean
-  textSize: 'sm' | 'md' | 'lg'
+  style: 'snug' | 'default' | 'roomy'
 }
 
 const THEMES: { id: Prefs['theme']; label: string }[] = [
@@ -12,10 +12,10 @@ const THEMES: { id: Prefs['theme']; label: string }[] = [
   { id: 'light', label: 'Light' },
 ]
 
-const SIZES: { id: Prefs['textSize']; label: string }[] = [
-  { id: 'sm', label: 'Snug' },
-  { id: 'md', label: 'Default' },
-  { id: 'lg', label: 'Roomy' },
+const STYLES: { id: Prefs['style']; label: string }[] = [
+  { id: 'snug', label: 'Snug' },
+  { id: 'default', label: 'Default' },
+  { id: 'roomy', label: 'Roomy' },
 ]
 
 export function SettingsPanel({ prefs, onChange }: { prefs: Prefs; onChange: (p: Prefs) => void }) {
@@ -47,21 +47,21 @@ export function SettingsPanel({ prefs, onChange }: { prefs: Prefs; onChange: (p:
 
       <div className="settings__row">
         <div className="settings__label">
-          <span>Text size</span>
-          <span className="settings__hint">Applies to conversations</span>
+          <span>Style</span>
+          <span className="settings__hint">Adjusts scale, spacing, and density</span>
         </div>
-        <div className="segmented" role="radiogroup" aria-label="Text size">
-          {SIZES.map((s) => (
+        <div className="segmented" role="radiogroup" aria-label="Interface style">
+          {STYLES.map((style) => (
             <button
-              key={s.id}
+              key={style.id}
               type="button"
               role="radio"
-              aria-checked={prefs.textSize === s.id}
-              className={`segmented__opt${prefs.textSize === s.id ? ' segmented__opt--on' : ''}`}
-              onClick={() => onChange({ ...prefs, textSize: s.id })}
+              aria-checked={prefs.style === style.id}
+              className={`segmented__opt${prefs.style === style.id ? ' segmented__opt--on' : ''}`}
+              onClick={() => onChange({ ...prefs, style: style.id })}
               data-menu-item
             >
-              {s.label}
+              {style.label}
             </button>
           ))}
         </div>

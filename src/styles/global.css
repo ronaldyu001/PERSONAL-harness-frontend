@@ -20,7 +20,66 @@
   --r-lg: 22px;
   --r-xl: 28px;
 
+  /* Interface style — Default */
   --prose-size: 15.5px;
+  --prose-line-height: 1.62;
+  --md-block-gap: 10px;
+  --thread-width: 720px;
+  --thread-pad-top: 72px;
+  --thread-pad-x: 28px;
+  --thread-mobile-pad-x: 18px;
+  --user-message-width: 78%;
+  --user-message-mobile-width: 90%;
+  --user-message-space: 32px;
+  --user-bubble-radius: 20px 20px 7px 20px;
+  --user-bubble-padding: 9px 14px 10px;
+  --assistant-message-space: 44px;
+  --assistant-head-space: 8px;
+  --heading-space-before: 0.8em;
+  --heading-space-after: 0;
+  --heading-padding-bottom: 0;
+  --list-block-space: 0.5em;
+  --list-row-gap: 6px;
+  --list-marker-column: 24px;
+  --list-item-gap: 7px;
+  --list-item-padding: 0;
+  --list-item-radius: 0;
+  --list-item-background: transparent;
+  --nested-list-indent: 8px;
+  --quote-padding: 2px 0 2px 16px;
+  --quote-border-width: 2px;
+  --quote-radius: 0;
+  --quote-background: transparent;
+  --divider-space: 1.4em;
+  --structured-radius: 12px;
+  --table-cell-padding: 10px 12px;
+  --code-block-padding: 14px 16px;
+  --code-bar-padding: 7px 9px 7px 14px;
+  --code-line-height: 1.65;
+  --inline-code-padding: 0.12em 0.4em;
+  --inline-code-radius: 6px;
+  --composer-slot-width: 700px;
+  --composer-bottom-space: 18px;
+  --composer-padding: 11px 13px 9px;
+  --composer-radius: 24px;
+  --composer-input-size: 15.5px;
+  --composer-line-height: 24px;
+  --composer-row-space: 7px;
+  --composer-control-size: 32px;
+  --icon-control-sm: 32px;
+  --icon-control-xs: 27px;
+  --model-chip-padding: 6.5px 10px;
+  --navigation-row-padding: 7px;
+  --conversation-row-padding: 7px;
+  --menu-row-padding: 8px;
+  --settings-row-padding: 9px;
+  --segment-option-padding: 5px 12px;
+  --suggestion-padding: 9px 11px;
+  --suggestion-radius: 14px;
+  --suggestion-icon-size: 30px;
+  --suggestion-grid-gap: 8px;
+  --home-stack-space: 24px;
+  --workspace-header-height: 52px;
 
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
@@ -30,8 +89,99 @@
   --dur-theme: 260ms;
 }
 
-[data-text-size='sm'] { --prose-size: 14.5px; }
-[data-text-size='lg'] { --prose-size: 16.5px; }
+[data-style='snug'] {
+  --prose-line-height: 1.48;
+  --md-block-gap: 3px;
+  --thread-pad-top: 64px;
+  --user-message-space: 24px;
+  --user-bubble-radius: 17px 17px 6px 17px;
+  --user-bubble-padding: 7px 12px 8px;
+  --assistant-message-space: 32px;
+  --assistant-head-space: 6px;
+  --heading-space-before: 0.35em;
+  --heading-space-after: 0;
+  --heading-padding-bottom: 0;
+  --list-block-space: 0.25em;
+  --list-row-gap: 2px;
+  --list-marker-column: 18px;
+  --list-item-gap: 3px;
+  --list-item-padding: 0;
+  --nested-list-indent: 2px;
+  --quote-padding: 0 0 0 8px;
+  --divider-space: 0.5em;
+  --table-cell-padding: 8px 10px;
+  --code-block-padding: 12px 14px;
+  --code-bar-padding: 5px 7px 5px 10px;
+  --code-line-height: 1.5;
+  --inline-code-padding: 0.06em 0.28em;
+  --composer-bottom-space: 12px;
+  --composer-padding: 9px 11px 8px;
+  --composer-radius: 20px;
+  --composer-line-height: 22px;
+  --composer-row-space: 5px;
+  --composer-control-size: 30px;
+  --icon-control-sm: 30px;
+  --icon-control-xs: 25px;
+  --model-chip-padding: 5.5px 9px;
+  --navigation-row-padding: 6px;
+  --conversation-row-padding: 6px;
+  --menu-row-padding: 7px;
+  --settings-row-padding: 7px;
+  --segment-option-padding: 4px 10px;
+  --suggestion-padding: 7px 9px;
+  --suggestion-radius: 12px;
+  --suggestion-icon-size: 27px;
+  --suggestion-grid-gap: 6px;
+  --home-stack-space: 18px;
+  --workspace-header-height: 48px;
+}
+
+[data-style='roomy'] {
+  --prose-line-height: 1.78;
+  --md-block-gap: 20px;
+  --thread-pad-top: 80px;
+  --user-message-space: 40px;
+  --user-bubble-radius: 23px 23px 8px 23px;
+  --user-bubble-padding: 11px 16px 12px;
+  --assistant-message-space: 56px;
+  --assistant-head-space: 10px;
+  --heading-space-before: 1.4em;
+  --heading-space-after: 0;
+  --heading-padding-bottom: 0.45em;
+  --list-block-space: 0.9em;
+  --list-row-gap: 12px;
+  --list-marker-column: 30px;
+  --list-item-gap: 10px;
+  --list-item-padding: 6px 8px;
+  --nested-list-indent: 18px;
+  --quote-padding: 14px 18px;
+  --divider-space: 2em;
+  --table-cell-padding: 12px 14px;
+  --code-block-padding: 16px 18px;
+  --code-bar-padding: 9px 12px 9px 16px;
+  --code-line-height: 1.8;
+  --inline-code-padding: 0.18em 0.5em;
+  --composer-bottom-space: 24px;
+  --composer-padding: 14px 16px 12px;
+  --composer-radius: 28px;
+  --composer-line-height: 26px;
+  --composer-row-space: 9px;
+  --composer-control-size: 36px;
+  --icon-control-sm: 36px;
+  --icon-control-xs: 30px;
+  --model-chip-padding: 8px 12px;
+  --navigation-row-padding: 9px;
+  --conversation-row-padding: 9px;
+  --menu-row-padding: 10px;
+  --settings-row-padding: 11px;
+  --segment-option-padding: 6px 14px;
+  --suggestion-padding: 12px 14px;
+  --suggestion-radius: 17px;
+  --suggestion-icon-size: 34px;
+  --suggestion-grid-gap: 10px;
+  --home-stack-space: 32px;
+  --workspace-header-height: 58px;
+}
 
 *,
 *::before,

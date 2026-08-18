@@ -29,17 +29,24 @@ const DEFAULT_PREFS: Prefs = {
   theme: 'dark',
   reduceMotion: false,
   showHints: true,
-  textSize: 'md',
+  style: 'default',
 }
 
 const readPreferences = (): Prefs => {
   try {
-    const stored = JSON.parse(window.localStorage.getItem(PREFS_STORAGE_KEY) ?? '{}') as Partial<Prefs>
+    const stored = JSON.parse(window.localStorage.getItem(PREFS_STORAGE_KEY) ?? '{}') as Partial<Prefs> & {
+      textSize?: 'sm' | 'md' | 'lg'
+    }
+    const migratedStyle =
+      stored.textSize === 'sm' ? 'snug' : stored.textSize === 'lg' ? 'roomy' : 'default'
     return {
       theme: stored.theme === 'light' || stored.theme === 'dark' ? stored.theme : DEFAULT_PREFS.theme,
       reduceMotion: typeof stored.reduceMotion === 'boolean' ? stored.reduceMotion : DEFAULT_PREFS.reduceMotion,
       showHints: typeof stored.showHints === 'boolean' ? stored.showHints : DEFAULT_PREFS.showHints,
-      textSize: stored.textSize === 'sm' || stored.textSize === 'lg' ? stored.textSize : DEFAULT_PREFS.textSize,
+      style:
+        stored.style === 'snug' || stored.style === 'roomy' || stored.style === 'default'
+          ? stored.style
+          : migratedStyle,
     }
   } catch {
     return DEFAULT_PREFS
@@ -67,7 +74,7 @@ export default function App({ sendChat }: AppProps) {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [tempMode, setTempMode] = useState(false)
-  const [model, setModel] = useState('qwen')
+  const [model, setModel] = useState('llama')
   const [toast, setToast] = useState<{ id: number; text: string } | null>(null)
   const [prefs, setPrefs] = useState<Prefs>(readPreferences)
 
@@ -377,7 +384,7 @@ export default function App({ sendChat }: AppProps) {
         className="app"
         data-theme={prefs.theme}
         data-reduce-motion={prefs.reduceMotion || undefined}
-        data-text-size={prefs.textSize}
+        data-style={prefs.style}
       >
         <div className="app__ambient" aria-hidden="true" />
 
@@ -538,6 +545,7 @@ export default function App({ sendChat }: AppProps) {
                 temporary={temporaryActive}
                 onToggleTemporary={toggleTemporary}
                 showHints={prefs.showHints}
+                interfaceStyle={prefs.style}
                 autoFocus
               />
             </motion.div>

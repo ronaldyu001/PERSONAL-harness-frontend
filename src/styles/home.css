@@ -40,7 +40,7 @@
   align-items: center;
   gap: 10px;
   width: min(660px, calc(100% - 40px));
-  margin-top: 24px;
+  margin-top: var(--home-stack-space);
 }
 
 .home-below__label {
@@ -55,7 +55,7 @@
 .home-suggestions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  gap: var(--suggestion-grid-gap);
   width: 100%;
 }
 
@@ -64,8 +64,8 @@
   align-items: center;
   gap: 10px;
   min-width: 0;
-  padding: 9px 11px;
-  border-radius: 14px;
+  padding: var(--suggestion-padding);
+  border-radius: var(--suggestion-radius);
   border: 1px solid var(--suggestion-border);
   background: var(--suggestion-surface);
   box-shadow: var(--highlight-inner);
@@ -89,8 +89,8 @@
 }
 
 .suggestion__icon {
-  width: 30px;
-  height: 30px;
+  width: var(--suggestion-icon-size);
+  height: var(--suggestion-icon-size);
   flex: none;
   display: grid;
   place-items: center;
@@ -154,6 +154,6 @@
   }
 
   .suggestion {
-    padding: 9px 10px;
+    padding: var(--suggestion-padding);
   }
 }

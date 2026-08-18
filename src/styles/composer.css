@@ -6,15 +6,13 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  padding: 12px 14px 10px;
-  border-radius: 22px;
+  padding: var(--composer-padding);
+  border-radius: var(--composer-radius);
   background: var(--composer-glass);
   backdrop-filter: blur(42px) saturate(1.14);
   -webkit-backdrop-filter: blur(42px) saturate(1.14);
   border: 1px solid var(--composer-border);
-  box-shadow:
-    var(--highlight-inner),
-    var(--shadow-float);
+  box-shadow: var(--highlight-inner), 0 8px 30px color-mix(in srgb, var(--bg-root) 20%, transparent);
   transition:
     border-color 220ms ease,
     box-shadow 260ms ease,
@@ -25,10 +23,7 @@
 
 .composer:focus-within {
   border-color: var(--accent-border);
-  box-shadow:
-    var(--highlight-inner),
-    0 0 0 3px var(--accent-tint),
-    var(--shadow-float);
+  box-shadow: var(--highlight-inner), 0 10px 34px color-mix(in srgb, var(--bg-root) 24%, transparent);
 }
 
 .composer--temp {
@@ -48,7 +43,7 @@
 .composer__input {
   position: relative;
   overflow: hidden;
-  min-height: 24px;
+  min-height: var(--composer-line-height);
 }
 
 .composer__input textarea {
@@ -60,8 +55,8 @@
   border: none;
   outline: none;
   padding: 0;
-  font-size: 15.5px;
-  line-height: 24px;
+  font-size: var(--composer-input-size);
+  line-height: var(--composer-line-height);
   color: var(--text-primary);
   caret-color: var(--accent);
   overflow-y: auto;
@@ -79,9 +74,9 @@
   visibility: hidden;
   white-space: pre-wrap;
   word-break: break-word;
-  font-size: 15.5px;
-  line-height: 24px;
-  min-height: 24px;
+  font-size: var(--composer-input-size);
+  line-height: var(--composer-line-height);
+  min-height: var(--composer-line-height);
   pointer-events: none;
 }
 
@@ -91,7 +86,7 @@
   display: flex;
   align-items: center;
   gap: 5px;
-  margin-top: 7px;
+  margin-top: var(--composer-row-space);
 }
 
 .composer__spacer {
@@ -118,8 +113,8 @@
   font-size: 12.5px;
   font-weight: 550;
   color: var(--text-secondary);
-  padding: 6.5px 10px;
-  border-radius: 10px;
+  padding: var(--model-chip-padding);
+  border-radius: 999px;
   transition: background var(--dur-fast) ease, color var(--dur-fast) ease;
 }
 
@@ -138,8 +133,8 @@
 /* ── Send / stop ── */
 
 .send-btn {
-  width: 34px;
-  height: 34px;
+  width: var(--composer-control-size);
+  height: var(--composer-control-size);
   border-radius: 999px;
   display: grid;
   place-items: center;

@@ -46,7 +46,7 @@
   gap: 10px;
   width: 100%;
   text-align: left;
-  padding: 8px 10px;
+  padding: var(--menu-row-padding) 10px;
   border-radius: 11px;
   font-size: 13.5px;
   color: var(--text-primary);
@@ -160,7 +160,7 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 9px 8px;
+  padding: var(--settings-row-padding) 8px;
   border-top: 1px solid var(--border-faint);
 }
 
@@ -208,7 +208,7 @@
   font-weight: 500;
   color: var(--text-secondary);
   min-width: 62px;
-  padding: 5px 12px;
+  padding: var(--segment-option-padding);
   border-radius: 8px;
   transition: background var(--dur-fast) ease, color var(--dur-fast) ease;
 }

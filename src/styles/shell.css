@@ -58,7 +58,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  height: 52px;
+  height: var(--workspace-header-height);
   padding: 0 18px;
   pointer-events: none;
   background: var(--header-solid);
@@ -129,12 +129,12 @@
 
 .composer-slot {
   flex: none;
-  width: min(700px, calc(100% - 56px));
+  width: min(var(--composer-slot-width), calc(100% - 56px));
   z-index: 15;
 }
 
 .canvas--chat .composer-slot {
-  margin-bottom: 18px;
+  margin-bottom: var(--composer-bottom-space);
 }
 
 /* ── Buttons ── */
@@ -211,14 +211,14 @@
 }
 
 .icon-btn--sm {
-  width: 32px;
-  height: 32px;
+  width: var(--icon-control-sm);
+  height: var(--icon-control-sm);
   border-radius: 10px;
 }
 
 .icon-btn--xs {
-  width: 27px;
-  height: 27px;
+  width: var(--icon-control-xs);
+  height: var(--icon-control-xs);
   border-radius: 8px;
 }
 
@@ -411,7 +411,7 @@ kbd {
   align-items: center;
   gap: 10px;
   width: 100%;
-  padding: 7px 9px;
+  padding: var(--navigation-row-padding) 9px;
   border-radius: 8px;
   font-size: 13.5px;
   font-weight: 520;
@@ -508,7 +508,7 @@ kbd {
   display: block;
   width: 100%;
   text-align: left;
-  padding: 7px 10px;
+  padding: var(--conversation-row-padding) 10px;
   border-radius: 8px;
   color: var(--text-secondary);
   transition: background var(--dur-fast) ease, color var(--dur-fast) ease;

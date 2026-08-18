@@ -27,6 +27,7 @@ export interface ComposerProps {
   temporary: boolean
   onToggleTemporary: () => void
   showHints: boolean
+  interfaceStyle: 'snug' | 'default' | 'roomy'
   autoFocus?: boolean
 }
 
@@ -39,6 +40,7 @@ export function Composer({
   temporary,
   onToggleTemporary,
   showHints,
+  interfaceStyle,
   autoFocus,
 }: ComposerProps) {
   const [text, setText] = useState('')
@@ -56,8 +58,9 @@ export function Composer({
   useLayoutEffect(() => {
     const replica = replicaRef.current
     if (!replica) return
-    setInputHeight(Math.min(Math.max(replica.scrollHeight, 24), 220))
-  }, [text])
+    const lineHeight = Number.parseFloat(window.getComputedStyle(replica).lineHeight) || 24
+    setInputHeight(Math.min(Math.max(replica.scrollHeight, lineHeight), 220))
+  }, [text, interfaceStyle])
 
   useEffect(() => {
     if (autoFocus) textareaRef.current?.focus()
