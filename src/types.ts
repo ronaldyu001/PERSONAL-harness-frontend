@@ -21,6 +21,10 @@ export interface AssistantMessage {
   md: string
   status: MessageStatus
   model: string
+  /** Epoch ms the request left the composer; source for the elapsed readout. */
+  startedAt?: number
+  /** What actually failed, so the turn itself carries the diagnosis. */
+  error?: string
 }
 
 export type Message = UserMessage | AssistantMessage

@@ -1,495 +1,376 @@
 /* ─────────────────────────────────────────────────────────────
-   Conversation: thread, messages, markdown prose, skeletons
+   Thread — the reading field.
+   The assistant turn has no container at all; its prose sits directly
+   on the page tone. The user turn is a raised, seamed field.
    ───────────────────────────────────────────────────────────── */
 
 .thread {
-  height: 100%;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
-  overscroll-behavior: contain;
+  overflow-x: hidden;
+  /* Reserve the scrollbar on both edges so the centred reading column does not
+     shift by half a scrollbar and fall off the composer's axis. */
+  scrollbar-gutter: stable both-edges;
+  /* The one exemption from the ambient-wash ban: a legibility device that
+     stops text colliding with the region edge as it scrolls under it. */
   mask-image: linear-gradient(
     to bottom,
-    transparent 10px,
-    black 92px,
-    black calc(100% - 14px),
+    transparent 0,
+    black 14px,
+    black calc(100% - 10px),
     transparent 100%
   );
 }
 
 .thread__col {
+  width: 100%;
   max-width: var(--thread-width);
   margin: 0 auto;
-  padding: var(--thread-pad-top) var(--thread-pad-x) 20px;
+  padding: var(--thread-pad-top) var(--thread-pad-x) 0;
 }
 
 .thread__tail {
-  height: 10px;
+  height: 20px;
 }
 
-/* ── User message ── */
+/* ── Turns ──────────────────────────────────────────────────── */
 
-.msg-user {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  margin: 12px 0 var(--user-message-space);
+.turn {
+  max-width: 68ch;
 }
 
-.msg-user__card {
-  max-width: var(--user-message-width);
+.turn--user {
+  margin-bottom: var(--user-message-space);
+}
+
+.turn--assistant {
+  margin-bottom: var(--assistant-message-space);
+}
+
+/* User turn: raised the way a pressed key sits proud of a panel face. */
+.turn__field {
   background: var(--message-user-bg);
-  border: 0;
-  box-shadow: 0 1px 1px color-mix(in srgb, var(--bg-root) 16%, transparent);
-  border-radius: var(--user-bubble-radius);
+  border: var(--seam) solid var(--message-user-border);
+  border-radius: var(--r-xs);
   padding: var(--user-bubble-padding);
-  font-size: var(--prose-size);
-  line-height: 1.6;
-  color: var(--message-user-text);
-  transition:
-    background-color var(--dur-theme) var(--ease-standard),
-    border-color var(--dur-theme) var(--ease-standard),
-    color var(--dur-theme) var(--ease-standard);
+  width: var(--user-message-width);
 }
 
-.msg-user__card p {
+.turn__field p {
   margin: 0;
+  font-size: var(--prose-size);
+  line-height: var(--prose-line-height);
+  color: var(--message-user-text);
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
-.msg-user__card--editing {
-  width: 100%;
-  max-width: 100%;
-  box-shadow: 0 0 0 3px var(--accent-tint);
+.turn__field--editing {
+  border-color: var(--border-strong);
 }
 
-.msg-user__files {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 10px;
-}
-
-.msg-user__edit textarea {
+.turn__edit textarea {
   width: 100%;
   resize: none;
-  background: none;
+  background: transparent;
   border: none;
   outline: none;
   font-size: var(--prose-size);
-  line-height: 1.6;
-  color: inherit;
-  padding: 0;
-  caret-color: var(--accent);
+  line-height: var(--prose-line-height);
+  color: var(--text-primary);
 }
 
-.msg-user__edit-row {
+.turn__edit-row {
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
-  margin-top: 10px;
+  gap: 6px;
+  margin-top: 8px;
 }
 
-/* ── Assistant message ── */
-
-.msg-assistant {
-  margin: 12px 0 var(--assistant-message-space);
-}
-
-.msg-assistant__head {
+/* Assistant turn head: the label is the turn's accessible name. */
+.turn__head {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   margin-bottom: var(--assistant-head-space);
 }
 
-.msg-assistant__name {
-  font-size: 12.5px;
-  font-weight: 600;
-  letter-spacing: 0;
+.turn__who {
+  font-size: var(--t-label);
+  font-weight: var(--w-label);
   color: var(--text-secondary);
 }
 
-.msg-assistant__thinking {
-  font-size: 12.5px;
-  font-weight: 450;
-  background: linear-gradient(
-    90deg,
-    var(--text-tertiary) 35%,
-    var(--text-strong) 50%,
-    var(--text-tertiary) 65%
-  );
-  background-size: 220% 100%;
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  animation: shimmer-sweep 1.8s linear infinite;
+/* ── Elapsed readout: real values, never fake progress ──────── */
+
+.turn__readout {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 6px;
 }
 
-/* ── Response actions ── */
+.turn__readout-line {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: var(--t-meta);
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
 
-.msg-actions {
+.turn__readout-seg::before,
+.turn__clock::before {
+  content: '·';
+  margin-right: 7px;
+  color: var(--border-strong);
+}
+
+.turn__clock {
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.turn__readout-note {
+  font-size: var(--t-meta);
+  color: var(--text-tertiary);
+  line-height: 1.45;
+}
+
+/* ── Turn actions: present for keyboard and touch, not hover-only ── */
+
+.turn__actions {
   display: flex;
   align-items: center;
   gap: 2px;
   margin-top: 10px;
-  opacity: 0;
-  transform: none;
-  transition: opacity var(--dur-med) ease, transform var(--dur-med) var(--ease-out);
 }
 
-.msg-assistant:hover .msg-actions,
-.msg-assistant:focus-within .msg-actions,
-.msg-user:hover .msg-actions,
-.msg-user:focus-within .msg-actions {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.msg-actions--user {
-  margin-top: 6px;
-}
-
-.msg-actions__model {
-  font-size: 11.5px;
-  color: var(--text-faint);
-  margin-left: 8px;
-}
-
-.msg-actions .icon-btn {
-  border-radius: 999px;
-}
-
-@media (pointer: coarse) {
-  .msg-actions {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-/* ── Error & stopped states ── */
-
-.msg-error {
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  margin-top: 14px;
-  padding: 11px 13px;
-  border-radius: var(--r-md);
-  border: 1px solid var(--danger-border);
-  background: var(--danger-tint);
-  color: var(--danger);
-  font-size: 13px;
-}
-
-.msg-error svg {
-  flex: none;
-}
-
-.msg-error__meta {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  min-width: 0;
-}
-
-.msg-error__meta > span:first-child {
-  font-weight: 550;
-  color: var(--danger-strong);
-}
-
-.msg-error__hint {
-  font-size: 11.5px;
-  color: var(--danger-soft);
-}
-
-.retry-btn {
-  margin-left: auto;
-  flex: none;
-  display: flex;
+.turn__action {
+  display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 12.5px;
-  font-weight: 550;
+  padding: 4px 8px;
+  border-radius: var(--r-sm);
+  font-size: var(--t-label);
+  font-weight: var(--w-label);
+  color: var(--text-tertiary);
+  transition:
+    background-color var(--dur-fast) var(--ease-standard),
+    color var(--dur-fast) var(--ease-standard);
+}
+
+.turn__action:hover,
+.turn__action:focus-visible {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+.turn__model {
+  margin-left: auto;
+  font-size: var(--t-meta);
+  color: var(--text-tertiary);
+}
+
+/* ── Error: danger on text and icon only. No tint, no container. ── */
+
+.turn__error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  color: var(--danger);
+}
+
+.turn__error-text {
+  font-size: var(--t-body);
+}
+
+.turn__action--retry {
+  color: var(--danger);
+}
+
+.turn__action--retry:hover,
+.turn__action--retry:focus-visible {
+  background: var(--surface-hover);
   color: var(--danger-strong);
-  border: 1px solid var(--danger-border);
-  border-radius: 9px;
-  padding: 5.5px 11px;
-  transition: background var(--dur-fast) ease, transform var(--dur-fast) var(--ease-out);
 }
 
-.retry-btn:hover {
-  background: var(--danger-tint);
+/* Stopped is not an apology, and never italic. */
+.turn__note {
+  margin: 2px 0 0;
+  font-size: var(--t-meta);
+  color: var(--text-tertiary);
 }
 
-.retry-btn:active {
-  transform: scale(0.96);
-}
-
-.msg-stopped {
-  margin-top: 10px;
-  font-size: 12px;
-  font-style: italic;
-  color: var(--text-faint);
-}
-
-/* ── Skeleton ── */
+/* ── Skeleton ───────────────────────────────────────────────── */
 
 .thread-skeleton {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding-top: 6px;
+  gap: 12px;
+}
+
+.thread-skeleton__user {
+  height: 44px;
+  width: 100%;
+  max-width: 68ch;
+  border-radius: var(--r-xs);
+  background: var(--skeleton-low);
+}
+
+.thread-skeleton__row {
+  height: 11px;
+  border-radius: var(--r-xs);
+  background: var(--skeleton-low);
 }
 
 .thread-skeleton__user,
 .thread-skeleton__row {
-  border-radius: 8px;
-  background: linear-gradient(
-    100deg,
-    var(--skeleton-low) 30%,
-    var(--skeleton-high) 46%,
-    var(--skeleton-low) 62%
-  );
-  background-size: 240% 100%;
-  animation: shimmer-sweep 1.5s linear infinite;
+  animation: soft-pulse 1.6s ease-in-out infinite;
 }
 
-.thread-skeleton__user {
-  align-self: flex-end;
-  width: 46%;
-  height: 46px;
-  border-radius: 15px;
-  margin-bottom: 18px;
-}
-
-.thread-skeleton__row {
-  height: 15px;
-}
-
-/* ── Markdown prose ── */
+/* ── Markdown inside the panel world ────────────────────────── */
 
 .md {
-  display: flex;
-  flex-direction: column;
-  gap: var(--md-block-gap);
   font-size: var(--prose-size);
   line-height: var(--prose-line-height);
   color: var(--text-primary);
-  overflow-wrap: break-word;
+  overflow-wrap: anywhere;
 }
 
-.md > :first-child {
-  margin-top: 0;
-}
-
-.md > :last-child {
-  margin-bottom: 0;
+.md > * + * {
+  margin-top: var(--md-block-gap);
 }
 
 .md p {
   margin: 0;
 }
 
+.md h1,
 .md h2,
-.md h3 {
-  font-family: var(--display);
-  font-weight: 600;
-  letter-spacing: -0.015em;
-  color: var(--text-strong);
+.md h3,
+.md h4 {
   margin: var(--heading-space-before) 0 var(--heading-space-after);
   padding-bottom: var(--heading-padding-bottom);
+  font-weight: var(--w-title);
+  line-height: 1.3;
+  color: var(--text-strong);
+}
+
+.md h1 {
+  font-size: var(--t-display);
 }
 
 .md h2 {
-  font-size: 1.13em;
+  font-size: var(--t-title);
 }
 
-.md h3 {
-  font-size: 1.02em;
-}
-
-.md-list {
-  list-style: none;
-  display: grid;
-  gap: var(--list-row-gap);
-  margin: 0;
-  padding: 0;
-}
-
-.md-list__item {
-  display: grid;
-  grid-template-columns: var(--list-marker-column) minmax(0, 1fr);
-  align-items: start;
-  gap: var(--list-item-gap);
-  padding: var(--list-item-padding);
-  border-radius: var(--list-item-radius);
-  background: var(--list-item-background);
-}
-
-.md-list__marker,
-.md-list__check {
-  display: grid;
-  place-items: center;
-  width: 18px;
-  height: 18px;
-  margin-top: 0.2em;
-  border-radius: 999px;
-  color: var(--text-secondary);
-  background: transparent;
-  border: 0;
-  font-family: var(--sans);
-  font-size: 12px;
-  font-weight: 500;
-  line-height: 1;
-}
-
-.md-list--unordered > .md-list__item > .md-list__marker {
-  width: 5px;
-  height: 5px;
-  margin: 0.68em 7px 0;
-  border: 0;
-  border-radius: 99px;
-  background: var(--text-tertiary);
-  box-shadow: none;
-}
-
-.md-list__check {
-  color: var(--accent-ink);
-  background: transparent;
-  border: 1.5px solid var(--border-strong);
-}
-
-.md-list__check--done {
-  border-color: var(--accent);
-  background: var(--accent);
-}
-
-.md-list__content {
-  min-width: 0;
-}
-
-.md-list .md-list {
-  gap: var(--list-row-gap);
-  margin: var(--list-block-space) 0 0;
-  padding: 0 0 0 var(--nested-list-indent);
-  border: 0;
-  background: transparent;
+.md h3,
+.md h4 {
+  font-size: var(--t-body);
 }
 
 .md strong {
-  font-weight: 650;
+  font-weight: 600;
   color: var(--text-strong);
 }
 
+/* Italic marks quoted or de-emphasised prose only. */
 .md em {
   font-style: italic;
 }
 
-.md del {
-  color: var(--text-tertiary);
-  text-decoration-color: var(--accent-border);
-}
-
 .md a {
-  color: var(--accent-strong);
-  text-decoration: underline;
-  text-decoration-color: var(--accent-border);
-  text-decoration-thickness: 1px;
-  text-underline-offset: 3px;
-  transition: color var(--dur-fast) ease, text-decoration-color var(--dur-fast) ease;
-}
-
-.md a:hover {
   color: var(--accent);
-  text-decoration-color: currentColor;
-}
-
-.md code {
-  font-family: var(--mono);
-  font-size: 0.85em;
-  background: var(--code-inline-bg);
-  border: 1px solid var(--border-faint);
-  padding: var(--inline-code-padding);
-  border-radius: var(--inline-code-radius);
-  color: var(--accent-strong);
-}
-
-.md-quote {
-  margin: 0;
-  padding: var(--quote-padding);
-  border: 0;
-  border-left: var(--quote-border-width) solid var(--border-strong);
-  border-radius: var(--quote-radius);
-  background: var(--quote-background);
-  color: var(--text-secondary);
-}
-
-.md-quote p {
-  margin: 0;
 }
 
 .md hr {
-  height: 1px;
+  border: none;
+  border-top: var(--seam) solid var(--border-soft);
   margin: var(--divider-space) 0;
-  border: 0;
-  background: var(--border-faint);
 }
 
-.md-table-wrap {
-  max-width: 100%;
+.md-list {
+  margin: var(--list-block-space) 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--list-row-gap);
+}
+
+.md-list li {
+  display: flex;
+  gap: var(--list-item-gap);
+  padding: var(--list-item-padding);
+}
+
+.md-list__marker {
+  flex: 0 0 auto;
+  min-width: var(--list-marker-column);
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+.md-list__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.md-list .md-list {
+  margin-left: var(--nested-list-indent);
+}
+
+/* Blockquote is a 2px left seam. No tint, no background. */
+.md-quote {
   margin: 0;
+  padding: var(--quote-padding);
+  border-left: var(--quote-border-width) solid var(--border-strong);
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+/* Tables: hairline rules, tabular figures, no zebra, no filled header. */
+.md-table-wrap {
   overflow-x: auto;
-  border: 1px solid var(--border-faint);
-  border-radius: var(--structured-radius);
-  background: transparent;
+  border: var(--seam) solid var(--border-soft);
+  border-radius: var(--r-sm);
 }
 
 .md-table {
   width: 100%;
-  min-width: 360px;
   border-collapse: collapse;
-  font-size: 0.91em;
+  font-size: var(--t-label);
+  font-variant-numeric: tabular-nums;
 }
 
 .md-table th,
 .md-table td {
   padding: var(--table-cell-padding);
-  border-right: 1px solid var(--border-faint);
-  border-bottom: 1px solid var(--border-faint);
-  vertical-align: top;
-}
-
-.md-table th:last-child,
-.md-table td:last-child {
-  border-right: 0;
-}
-
-.md-table tbody tr:last-child td {
-  border-bottom: 0;
+  text-align: left;
+  border-bottom: var(--seam) solid var(--border-faint);
 }
 
 .md-table th {
+  font-weight: 600;
   color: var(--text-strong);
-  background: var(--surface-hover);
-  font-size: 0.9em;
-  font-weight: 650;
-  letter-spacing: 0.01em;
+  border-bottom-color: var(--border-soft);
 }
 
-/* Streaming reveal: blocks and bullets rise in as they mount */
-.md--streaming > *,
-.md--streaming li {
-  animation: rise-in 320ms var(--ease-out) both;
+.md-table tr:last-child td {
+  border-bottom: none;
 }
 
-/* ── Code blocks ── */
-
+/* Code is a recessed display window — the one dark field in the light theme. */
 .md-code {
+  /* figure carries a UA margin of 1em 40px; the reading field sets its own. */
   margin: 0;
   border-radius: var(--structured-radius);
-  border: 1px solid var(--border-faint);
-  background: var(--code-bg);
   overflow: hidden;
-  box-shadow: none;
+  background: var(--code-bg);
+  border: var(--seam) solid var(--border-soft);
 }
 
 .md-code__bar {
@@ -498,76 +379,87 @@
   justify-content: space-between;
   padding: var(--code-bar-padding);
   background: var(--code-bar);
-  border-bottom: 1px solid var(--border-faint);
+  border-bottom: var(--seam) solid rgba(255, 255, 255, 0.06);
 }
 
 .md-code__lang {
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.06em;
+  font-size: var(--t-meta);
   color: var(--code-muted);
 }
 
 .md-code__copy {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-size: 11.5px;
-  font-weight: 500;
+  padding: 3px 7px;
+  border-radius: var(--r-xs);
+  font-size: var(--t-meta);
   color: var(--code-muted);
-  padding: 4px 8px;
-  border-radius: 7px;
-  transition: color var(--dur-fast) ease, background var(--dur-fast) ease;
+  transition: color var(--dur-fast) var(--ease-standard);
 }
 
 .md-code__copy:hover {
   color: var(--code-text);
-  background: var(--code-bar);
 }
 
 .md-code pre {
   margin: 0;
   padding: var(--code-block-padding);
   overflow-x: auto;
+}
+
+.md-code code,
+.md code {
   font-family: var(--mono);
-  font-size: 12.8px;
+  font-size: 0.895em;
   line-height: var(--code-line-height);
 }
 
-.md-code pre code {
-  background: none;
-  border: none;
-  padding: 0;
-  font-size: inherit;
+.md-code code {
   color: var(--code-text);
 }
 
-.tok-keyword { color: var(--code-accent); }
-.tok-string  { color: var(--code-string); }
-.tok-comment { color: var(--code-comment); font-style: italic; }
-.tok-number  { color: var(--code-number); }
-.tok-type    { color: var(--code-type); }
-.tok-punct   { color: var(--code-punct); }
+/* Inline code is not a costume: it marks code, nothing else. */
+.md :not(pre) > code {
+  background: var(--code-inline-bg);
+  padding: var(--inline-code-padding);
+  border-radius: var(--inline-code-radius);
+  color: var(--text-primary);
+}
 
-@media (max-width: 640px) {
+.tok-keyword {
+  color: var(--code-accent);
+}
+
+.tok-string {
+  color: var(--code-string);
+}
+
+.tok-comment {
+  color: var(--code-comment);
+}
+
+.tok-number {
+  color: var(--code-number);
+}
+
+.tok-type {
+  color: var(--code-type);
+}
+
+.tok-punct {
+  color: var(--code-punct);
+}
+
+/* ── Responsive ─────────────────────────────────────────────── */
+
+@media (max-width: 720px) {
   .thread__col {
-    padding: 66px var(--thread-mobile-pad-x) 14px;
+    padding-left: var(--thread-mobile-pad-x);
+    padding-right: var(--thread-mobile-pad-x);
   }
 
-  .msg-user__card {
-    max-width: var(--user-message-mobile-width);
-  }
-
-  .md-list {
-    margin-inline: 0;
-    padding: 0;
-  }
-
-  .msg-error {
-    flex-wrap: wrap;
-  }
-
-  .retry-btn {
-    margin-left: 26px;
+  .turn__field {
+    width: var(--user-message-mobile-width);
   }
 }

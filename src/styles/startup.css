@@ -1,164 +1,125 @@
-.startup-ready {
-  height: 100%;
-}
+/* ─────────────────────────────────────────────────────────────
+   Startup — the one ceremony the brief pinned.
+   Same moment, rebuilt in the panel's material language: a fixed
+   three-stage track with a real position, because startup genuinely
+   has one. No ambient washes, no halo glow.
+   ───────────────────────────────────────────────────────────── */
 
 .startup-screen {
   position: fixed;
   inset: 0;
-  z-index: 200;
-  display: grid;
-  place-items: center;
-  overflow: hidden;
-  isolation: isolate;
-  color: var(--text-primary);
-  background:
-    radial-gradient(circle at 50% 43%, var(--accent-tint) 0, transparent 32%),
-    var(--bg-root);
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  background: var(--bg-root);
+  padding: 32px;
 }
 
-.startup-screen::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: -2;
-  pointer-events: none;
-  background:
-    radial-gradient(circle at 20% 18%, var(--ambient-two), transparent 30%),
-    radial-gradient(circle at 82% 84%, var(--ambient-one), transparent 32%);
-  opacity: 0.62;
-}
-
+/* The ambient layer is retained as an element but paints nothing:
+   this world has no washes. */
 .startup-screen__ambient {
-  position: absolute;
-  left: 50%;
-  top: 46%;
-  z-index: -1;
-  width: min(64vw, 520px);
-  aspect-ratio: 1;
-  border-radius: 50%;
-  background: var(--mark-glow);
-  filter: blur(96px);
-  opacity: 0.2;
-  transform: translate(-50%, -50%);
-  animation: startup-ambient 5.8s ease-in-out infinite;
+  display: none;
 }
 
 .startup-screen__content {
   display: flex;
-  width: min(88vw, 420px);
   flex-direction: column;
   align-items: center;
-  padding: 32px;
-  text-align: center;
+  width: min(340px, 100%);
+  background: var(--bg-workspace);
+  border: var(--seam) solid var(--border-soft);
+  border-radius: var(--r-md);
+  padding: 28px 24px 24px;
 }
 
 .startup-screen__mark {
   position: relative;
   display: grid;
-  width: 88px;
-  height: 88px;
   place-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .startup-screen__halo {
-  position: absolute;
-  inset: 8px;
-  border: 1px solid var(--border-soft);
-  border-radius: 50%;
-  background: var(--glass);
-  box-shadow: var(--highlight-inner), 0 18px 52px var(--mark-glow);
-  backdrop-filter: blur(20px) saturate(1.08);
-  animation: startup-halo 2.8s ease-in-out infinite;
+  display: none;
 }
 
-.startup-screen__mark .maia-mark {
-  position: relative;
-  z-index: 1;
-  filter: drop-shadow(0 8px 18px var(--mark-glow));
+.startup-screen__identity {
+  text-align: center;
+  margin-bottom: 22px;
 }
 
 .startup-screen__identity h1 {
-  margin: 0;
+  margin: 0 0 4px;
+  font-size: var(--t-display);
+  font-weight: var(--w-display);
+  letter-spacing: -0.01em;
   color: var(--text-strong);
-  font-family: var(--display);
-  font-size: 25px;
-  font-weight: 650;
-  letter-spacing: -0.035em;
-  line-height: 1.15;
 }
 
-.startup-screen__identity > p {
-  margin: 7px 0 0;
-  color: var(--text-tertiary);
-  font-size: 13px;
-  font-weight: 450;
-  letter-spacing: -0.005em;
+.startup-screen__identity p {
+  margin: 0;
+  font-size: var(--t-label);
+  color: var(--text-secondary);
 }
+
+/* ── The fixed track: Docker, Services, Maia ────────────────── */
 
 .startup-screen__steps {
-  position: relative;
-  display: grid;
-  width: 216px;
-  grid-template-columns: repeat(3, 1fr);
-  margin: 26px 0 0;
-  padding: 0;
   list-style: none;
-}
-
-.startup-screen__steps::before {
-  content: '';
-  position: absolute;
-  top: 3px;
-  left: 36px;
-  right: 36px;
-  height: 1px;
-  background: var(--border-soft);
+  display: flex;
+  width: 100%;
+  margin: 0 0 18px;
+  padding: 0;
+  border: var(--seam) solid var(--border-soft);
+  border-radius: var(--r-sm);
+  overflow: hidden;
 }
 
 .startup-screen__step {
-  position: relative;
-  z-index: 1;
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 7px;
-  color: var(--text-faint);
-  font-size: 9.5px;
-  font-weight: 570;
-  letter-spacing: 0.025em;
-  transition: color var(--dur-med) var(--ease-standard);
+  padding: 9px 4px 8px;
+  font-size: var(--legend-size);
+  font-weight: var(--legend-weight);
+  letter-spacing: var(--legend-tracking);
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  border-right: var(--seam) solid var(--border-faint);
 }
 
+.startup-screen__step:last-child {
+  border-right: none;
+}
+
+/* The lamp: the only lit thing on this screen. */
 .startup-screen__step span {
-  width: 7px;
-  height: 7px;
-  border: 1px solid var(--border-strong);
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  background: var(--bg-root);
-  transition:
-    background var(--dur-med) var(--ease-standard),
-    border-color var(--dur-med) var(--ease-standard),
-    box-shadow var(--dur-med) var(--ease-standard),
-    transform var(--dur-med) var(--ease-out);
+  background: var(--border-strong);
 }
 
-.startup-screen__step--complete,
-.startup-screen__step--active {
+.startup-screen__step--complete {
   color: var(--text-secondary);
 }
 
 .startup-screen__step--complete span {
-  border-color: var(--accent);
-  background: var(--accent);
+  background: var(--success);
+}
+
+.startup-screen__step--active {
+  color: var(--text-primary);
 }
 
 .startup-screen__step--active span {
-  border-color: var(--accent-strong);
-  background: var(--accent-strong);
-  box-shadow: 0 0 0 5px var(--accent-tint-strong);
-  transform: scale(1.08);
-  animation: startup-step 1.8s ease-in-out infinite;
+  background: var(--accent-fill);
+  animation: soft-pulse 1.5s ease-in-out infinite;
 }
 
 .startup-screen__step--error {
@@ -166,126 +127,76 @@
 }
 
 .startup-screen__step--error span {
-  border-color: var(--danger);
   background: var(--danger);
-  box-shadow: 0 0 0 5px var(--danger-tint);
 }
 
+/* ── Status ─────────────────────────────────────────────────── */
+
 .startup-screen__status {
-  display: grid;
-  min-height: 42px;
-  place-items: end center;
-  margin-top: 15px;
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  text-align: center;
 }
 
 .startup-screen__status p {
   margin: 0;
+  font-size: var(--t-label);
+  line-height: 1.45;
   color: var(--text-secondary);
-  font-size: 12px;
-  font-weight: 500;
-  letter-spacing: 0.005em;
 }
 
+/* The three-stage track above carries position, because startup genuinely has
+   one. Nothing here sweeps: an indeterminate bar is the thing this world bans. */
 .startup-screen__progress {
-  position: relative;
-  width: 136px;
-  height: 2px;
-  margin-top: 13px;
-  overflow: hidden;
-  border-radius: 999px;
+  width: 100%;
+  height: var(--seam);
   background: var(--border-faint);
+  margin-top: 4px;
 }
 
 .startup-screen__progress span {
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: 44%;
-  border-radius: inherit;
-  background: linear-gradient(90deg, transparent, var(--accent-strong), transparent);
-  animation: startup-progress 1.7s var(--ease-out) infinite;
-}
-
-.startup-screen__retry {
-  border: 1px solid var(--border-soft);
-  border-radius: 999px;
-  padding: 8px 15px;
-  color: var(--text-primary);
-  background: var(--glass);
-  box-shadow: var(--highlight-inner), var(--shadow-control);
-  font-size: 12px;
-  font-weight: 560;
-  transition:
-    color var(--dur-fast) ease,
-    background var(--dur-fast) ease,
-    border-color var(--dur-fast) ease,
-    transform var(--dur-fast) ease;
+  display: none;
 }
 
 .startup-screen__actions {
   display: flex;
-  align-items: center;
   gap: 8px;
-  margin-top: 13px;
+  margin-top: 6px;
 }
 
-.startup-screen__retry--secondary {
-  color: var(--text-secondary);
-  background: transparent;
-  box-shadow: none;
+.startup-screen__retry {
+  padding: 6px 12px;
+  border-radius: var(--r-sm);
+  font-size: var(--t-label);
+  font-weight: var(--w-label);
+  background: var(--accent-fill);
+  color: var(--accent-on-fill);
+  transition: opacity var(--dur-fast) var(--ease-standard);
 }
 
 .startup-screen__retry:hover {
-  border-color: var(--border-strong);
-  background: var(--surface-hover);
+  opacity: 0.88;
 }
 
-.startup-screen__retry:active {
-  transform: scale(0.98);
+.startup-screen__retry--secondary {
+  background: transparent;
+  color: var(--text-secondary);
+  border: var(--seam) solid var(--border-soft);
+}
+
+.startup-screen__retry--secondary:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+  opacity: 1;
 }
 
 .startup-screen__footnote {
-  position: absolute;
-  bottom: max(22px, env(safe-area-inset-bottom));
-  left: 50%;
-  margin: 0;
-  color: var(--text-faint);
-  font-size: 10.5px;
-  font-weight: 520;
-  letter-spacing: 0.035em;
-  opacity: 0.76;
-  transform: translateX(-50%);
-  white-space: nowrap;
+  margin: 20px 0 0;
+  font-size: var(--t-meta);
+  color: var(--text-tertiary);
 }
 
-@keyframes startup-progress {
-  from { transform: translateX(-110%); }
-  to { transform: translateX(330%); }
-}
-
-@keyframes startup-halo {
-  0%,
-  100% { transform: scale(0.985); opacity: 0.82; }
-  50% { transform: scale(1.025); opacity: 1; }
-}
-
-@keyframes startup-ambient {
-  0%,
-  100% { transform: translate(-50%, -50%) scale(0.96); opacity: 0.16; }
-  50% { transform: translate(-50%, -50%) scale(1.06); opacity: 0.24; }
-}
-
-@keyframes startup-step {
-  0%,
-  100% { box-shadow: 0 0 0 4px var(--accent-tint); }
-  50% { box-shadow: 0 0 0 6px var(--accent-tint-strong); }
-}
-
-@media (max-width: 600px) {
-  .startup-screen__content {
-    padding: 24px;
-  }
-
-  .startup-screen__footnote {
-    bottom: max(18px, env(safe-area-inset-bottom));
-  }
+.startup-ready {
+  height: 100%;
 }

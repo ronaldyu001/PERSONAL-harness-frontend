@@ -6,14 +6,7 @@ import {
   type KeyboardEvent,
 } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import {
-  ArrowUp,
-  Check,
-  ChevronDown,
-  MessageSquareDashed,
-  Paperclip,
-  Square,
-} from 'lucide-react'
+import { ArrowUp, Check, ChevronDown, MessageSquareDashed, Square } from 'lucide-react'
 import { MODELS } from '../config'
 import { Popover } from './Popover'
 import { Tooltip } from './Tooltip'
@@ -29,6 +22,9 @@ export interface ComposerProps {
   showHints: boolean
   interfaceStyle: 'snug' | 'default' | 'roomy'
   autoFocus?: boolean
+  /** Raised while the composer holds a sendable draft, so the shell can
+      arbitrate which single element is allowed to carry the signal. */
+  onArmedChange?: (armed: boolean) => void
 }
 
 export function Composer({
@@ -42,10 +38,10 @@ export function Composer({
   showHints,
   interfaceStyle,
   autoFocus,
+  onArmedChange,
 }: ComposerProps) {
   const [text, setText] = useState('')
   const [modelOpen, setModelOpen] = useState(false)
-  const [pressed, setPressed] = useState(false)
   const [inputHeight, setInputHeight] = useState(24)
 
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -53,6 +49,10 @@ export function Composer({
   const modelButtonRef = useRef<HTMLButtonElement>(null)
 
   const canSend = text.trim().length > 0 && !streaming
+
+  useEffect(() => {
+    onArmedChange?.(canSend)
+  }, [canSend, onArmedChange])
   const currentModel = MODELS.find((item) => item.id === model) ?? MODELS[0]
 
   useLayoutEffect(() => {
@@ -77,21 +77,19 @@ export function Composer({
       event.preventDefault()
       submit()
     }
+    /* Esc is the keyboard path out of the state users most want to escape. */
+    if (event.key === 'Escape' && streaming) {
+      event.preventDefault()
+      onStop()
+    }
   }
 
   return (
-    <motion.div
-      className={`composer${temporary ? ' composer--temp' : ''}`}
-      animate={{ scale: pressed ? 0.992 : 1 }}
-      transition={{ type: 'spring', stiffness: 800, damping: 40 }}
-      onPointerDown={() => setPressed(true)}
-      onPointerUp={() => setPressed(false)}
-      onPointerLeave={() => setPressed(false)}
-      onClick={() => textareaRef.current?.focus()}
-    >
+    <div className={`composer${temporary ? ' composer--temp' : ''}`}>
       <motion.div
         className="composer__input"
         animate={{ height: inputHeight }}
+        initial={false}
         transition={{ type: 'spring', stiffness: 620, damping: 42 }}
       >
         <textarea
@@ -105,23 +103,11 @@ export function Composer({
         />
         <div ref={replicaRef} className="composer__replica" aria-hidden="true">
           {text || ' '}
-          {'​'}
+          {'\u200b'}
         </div>
       </motion.div>
 
       <div className="composer__row">
-        <Tooltip label="Attachments are not supported yet" side="top">
-          <button
-            type="button"
-            className="icon-btn icon-btn--sm"
-            aria-label="Attachments are not supported yet"
-            disabled
-            onClick={(event) => event.stopPropagation()}
-          >
-            <Paperclip size={16} strokeWidth={1.8} />
-          </button>
-        </Tooltip>
-
         <div className="composer__model-slot">
           <button
             type="button"
@@ -130,19 +116,12 @@ export function Composer({
             className={`model-chip${modelOpen ? ' model-chip--open' : ''}`}
             aria-haspopup="menu"
             aria-expanded={modelOpen}
-            onClick={(event) => {
-              event.stopPropagation()
-              setModelOpen((open) => !open)
-            }}
+            onClick={() => setModelOpen((open) => !open)}
           >
             <span>{currentModel.name}</span>
-            <motion.span
-              className="model-chip__chev"
-              animate={{ rotate: modelOpen ? 180 : 0 }}
-              transition={{ duration: 0.18 }}
-            >
+            <span className="model-chip__chev" aria-hidden="true">
               <ChevronDown size={13} strokeWidth={2} />
-            </motion.span>
+            </span>
           </button>
           <Popover
             open={modelOpen}
@@ -170,18 +149,12 @@ export function Composer({
                   <span className="model-menu__meta">
                     <span className="model-menu__name">
                       {item.name}
-                      {item.badge && (
-                        <span className="model-menu__badge">{item.badge}</span>
-                      )}
+                      {item.badge && <span className="model-menu__badge">{item.badge}</span>}
                     </span>
                     <span className="model-menu__caption">{item.caption}</span>
                   </span>
                   {item.id === model && (
-                    <Check
-                      size={15}
-                      strokeWidth={2.2}
-                      className="model-menu__check"
-                    />
+                    <Check size={15} strokeWidth={2.2} className="model-menu__check" />
                   )}
                 </button>
               ))}
@@ -190,11 +163,7 @@ export function Composer({
         </div>
 
         <Tooltip
-          label={
-            temporary
-              ? 'Temporary chat on — hidden from history'
-              : 'Temporary chat'
-          }
+          label={temporary ? 'Temporary chat on — hidden from history' : 'Temporary chat'}
           side="top"
         >
           <button
@@ -202,10 +171,7 @@ export function Composer({
             className={`icon-btn icon-btn--sm${temporary ? ' icon-btn--accent' : ''}`}
             aria-label="Toggle temporary chat"
             aria-pressed={temporary}
-            onClick={(event) => {
-              event.stopPropagation()
-              onToggleTemporary()
-            }}
+            onClick={onToggleTemporary}
           >
             <MessageSquareDashed size={16} strokeWidth={1.8} />
           </button>
@@ -214,7 +180,7 @@ export function Composer({
         <div className="composer__spacer" />
 
         <AnimatePresence>
-          {showHints && canSend && (
+          {showHints && (canSend || streaming) && (
             <motion.span
               className="composer__hint"
               initial={{ opacity: 0 }}
@@ -222,45 +188,42 @@ export function Composer({
               exit={{ opacity: 0 }}
               transition={{ duration: 0.15 }}
             >
-              <kbd>⏎</kbd> to send
+              {streaming ? (
+                <>
+                  <kbd>Esc</kbd> to stop
+                </>
+              ) : (
+                <>
+                  <kbd>&#9166;</kbd> to send
+                </>
+              )}
             </motion.span>
           )}
         </AnimatePresence>
 
         {streaming ? (
-          <Tooltip label="Stop generating" side="top">
-            <motion.button
+          <Tooltip label="Stop generating" shortcut="Esc" side="top">
+            <button
               type="button"
               className="send-btn send-btn--stop"
               aria-label="Stop generating"
-              onClick={(event) => {
-                event.stopPropagation()
-                onStop()
-              }}
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              whileTap={{ scale: 0.92 }}
+              onClick={onStop}
             >
-              <Square size={11} strokeWidth={0} fill="currentColor" />
-            </motion.button>
+              <Square size={10} strokeWidth={0} fill="currentColor" />
+            </button>
           </Tooltip>
         ) : (
-          <motion.button
+          <button
             type="button"
             className="send-btn"
             aria-label="Send message"
             disabled={!canSend}
-            onClick={(event) => {
-              event.stopPropagation()
-              submit()
-            }}
-            whileTap={canSend ? { scale: 0.9 } : undefined}
-            animate={{ scale: 1 }}
+            onClick={submit}
           >
             <ArrowUp size={16} strokeWidth={2.4} />
-          </motion.button>
+          </button>
         )}
       </div>
-    </motion.div>
+    </div>
   )
 }

@@ -1,41 +1,55 @@
 /* ─────────────────────────────────────────────────────────────
-   Maia — shared design primitives
+   Maia — panel primitives.
+   One grotesque family, tight geometry, 1px seams, no blur.
    Theme-specific semantic tokens live in theme-dark/light.css.
    ───────────────────────────────────────────────────────────── */
 
 :root {
-  --palette-khaki: #beb096;
-  --palette-roast: #4c3428;
-  --palette-gingery: #b06c3f;
-  --palette-clay: #997e63;
-  --palette-palm: #635a39;
+  --sans: 'Archivo Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --display: var(--sans);
+  --mono: 'JetBrains Mono Variable', ui-monospace, 'SFMono-Regular', Menlo, monospace;
 
-  --sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter Variable', 'Segoe UI', sans-serif;
-  --display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter Variable', 'Segoe UI', sans-serif;
-  --mono: 'SFMono-Regular', 'JetBrains Mono Variable', ui-monospace, Menlo, monospace;
+  /* Panel geometry — molded plastic, not web bubbles. */
+  --r-xs: 2px;
+  --r-sm: 3px;
+  --r-md: 4px;
+  --r-lg: 5px;
+  --r-xl: 6px;
+  --seam: 1px;
 
-  --r-xs: 9px;
-  --r-sm: 12px;
-  --r-md: 16px;
-  --r-lg: 22px;
-  --r-xl: 28px;
+  /* Type scale — six steps, ~1.15 ratio. Weight promotes before size does. */
+  --t-display: 21px;
+  --t-title: 17px;
+  --t-body: 15px;
+  --t-label: 13px;
+  --t-meta: 12px;
+  --w-display: 500;
+  --w-title: 500;
+  --w-body: 400;
+  --w-label: 500;
+  --w-meta: 400;
+
+  /* Silkscreen legends — the engraved labels on a panel face. */
+  --legend-size: 11px;
+  --legend-tracking: 0.09em;
+  --legend-weight: 620;
 
   /* Interface style — Default */
-  --prose-size: 15.5px;
+  --prose-size: 15px;
   --prose-line-height: 1.62;
   --md-block-gap: 10px;
-  --thread-width: 720px;
-  --thread-pad-top: 72px;
+  --thread-width: 700px;
+  --thread-pad-top: 40px;
   --thread-pad-x: 28px;
   --thread-mobile-pad-x: 18px;
-  --user-message-width: 78%;
-  --user-message-mobile-width: 90%;
-  --user-message-space: 32px;
-  --user-bubble-radius: 20px 20px 7px 20px;
-  --user-bubble-padding: 9px 14px 10px;
-  --assistant-message-space: 44px;
-  --assistant-head-space: 8px;
-  --heading-space-before: 0.8em;
+  --user-message-width: 100%;
+  --user-message-mobile-width: 100%;
+  --user-message-space: 30px;
+  --user-bubble-radius: var(--r-md);
+  --user-bubble-padding: 10px 14px;
+  --assistant-message-space: 42px;
+  --assistant-head-space: 10px;
+  --heading-space-before: 0.9em;
   --heading-space-after: 0;
   --heading-padding-bottom: 0;
   --list-block-space: 0.5em;
@@ -46,141 +60,141 @@
   --list-item-radius: 0;
   --list-item-background: transparent;
   --nested-list-indent: 8px;
-  --quote-padding: 2px 0 2px 16px;
+  --quote-padding: 2px 0 2px 14px;
   --quote-border-width: 2px;
   --quote-radius: 0;
   --quote-background: transparent;
   --divider-space: 1.4em;
-  --structured-radius: 12px;
-  --table-cell-padding: 10px 12px;
+  --structured-radius: var(--r-md);
+  --table-cell-padding: 9px 12px;
   --code-block-padding: 14px 16px;
   --code-bar-padding: 7px 9px 7px 14px;
-  --code-line-height: 1.65;
-  --inline-code-padding: 0.12em 0.4em;
-  --inline-code-radius: 6px;
+  --code-line-height: 1.62;
+  --inline-code-padding: 0.1em 0.36em;
+  --inline-code-radius: var(--r-xs);
   --composer-slot-width: 700px;
   --composer-bottom-space: 18px;
-  --composer-padding: 11px 13px 9px;
-  --composer-radius: 24px;
-  --composer-input-size: 15.5px;
-  --composer-line-height: 24px;
+  --composer-padding: 10px 11px 9px;
+  --composer-radius: var(--r-md);
+  --composer-input-size: 15px;
+  --composer-line-height: 23px;
   --composer-row-space: 7px;
-  --composer-control-size: 32px;
-  --icon-control-sm: 32px;
-  --icon-control-xs: 27px;
-  --model-chip-padding: 6.5px 10px;
+  --composer-control-size: 30px;
+  --icon-control-sm: 30px;
+  --icon-control-xs: 26px;
+  --model-chip-padding: 6px 9px;
   --navigation-row-padding: 7px;
   --conversation-row-padding: 7px;
   --menu-row-padding: 8px;
   --settings-row-padding: 9px;
   --segment-option-padding: 5px 12px;
   --suggestion-padding: 9px 11px;
-  --suggestion-radius: 14px;
-  --suggestion-icon-size: 30px;
-  --suggestion-grid-gap: 8px;
+  --suggestion-radius: var(--r-sm);
+  --suggestion-icon-size: 26px;
+  --suggestion-grid-gap: 1px;
   --home-stack-space: 24px;
-  --workspace-header-height: 52px;
+  --workspace-header-height: 46px;
+
+  /* Dashboard panel field */
+  --panel-gap: 0px;
+  --panel-pad: 16px;
+  --dash-pad: 20px;
 
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
   --dur-fast: 120ms;
-  --dur-med: 200ms;
-  --dur-slow: 320ms;
-  --dur-theme: 260ms;
+  --dur-med: 190ms;
+  --dur-slow: 260ms;
+  --dur-theme: 200ms;
 }
 
 [data-style='snug'] {
-  --prose-line-height: 1.48;
-  --md-block-gap: 3px;
-  --thread-pad-top: 64px;
-  --user-message-space: 24px;
-  --user-bubble-radius: 17px 17px 6px 17px;
-  --user-bubble-padding: 7px 12px 8px;
+  --prose-size: 14px;
+  --prose-line-height: 1.5;
+  --md-block-gap: 6px;
+  --thread-pad-top: 32px;
+  --user-message-space: 22px;
+  --user-bubble-padding: 8px 12px;
   --assistant-message-space: 32px;
-  --assistant-head-space: 6px;
-  --heading-space-before: 0.35em;
-  --heading-space-after: 0;
-  --heading-padding-bottom: 0;
-  --list-block-space: 0.25em;
-  --list-row-gap: 2px;
-  --list-marker-column: 18px;
-  --list-item-gap: 3px;
-  --list-item-padding: 0;
-  --nested-list-indent: 2px;
-  --quote-padding: 0 0 0 8px;
-  --divider-space: 0.5em;
-  --table-cell-padding: 8px 10px;
-  --code-block-padding: 12px 14px;
-  --code-bar-padding: 5px 7px 5px 10px;
+  --assistant-head-space: 8px;
+  --heading-space-before: 0.55em;
+  --list-block-space: 0.3em;
+  --list-row-gap: 3px;
+  --list-marker-column: 20px;
+  --list-item-gap: 4px;
+  --nested-list-indent: 6px;
+  --quote-padding: 1px 0 1px 11px;
+  --divider-space: 1em;
+  --table-cell-padding: 7px 10px;
+  --code-block-padding: 11px 13px;
+  --code-bar-padding: 5px 7px 5px 11px;
   --code-line-height: 1.5;
-  --inline-code-padding: 0.06em 0.28em;
   --composer-bottom-space: 12px;
-  --composer-padding: 9px 11px 8px;
-  --composer-radius: 20px;
-  --composer-line-height: 22px;
+  --composer-padding: 8px 9px 7px;
+  --composer-input-size: 14px;
+  --composer-line-height: 21px;
   --composer-row-space: 5px;
-  --composer-control-size: 30px;
-  --icon-control-sm: 30px;
-  --icon-control-xs: 25px;
-  --model-chip-padding: 5.5px 9px;
-  --navigation-row-padding: 6px;
-  --conversation-row-padding: 6px;
-  --menu-row-padding: 7px;
+  --composer-control-size: 28px;
+  --icon-control-sm: 28px;
+  --icon-control-xs: 24px;
+  --model-chip-padding: 5px 8px;
+  --navigation-row-padding: 5px;
+  --conversation-row-padding: 5px;
+  --menu-row-padding: 6px;
   --settings-row-padding: 7px;
   --segment-option-padding: 4px 10px;
   --suggestion-padding: 7px 9px;
-  --suggestion-radius: 12px;
-  --suggestion-icon-size: 27px;
-  --suggestion-grid-gap: 6px;
+  --suggestion-icon-size: 24px;
   --home-stack-space: 18px;
-  --workspace-header-height: 48px;
+  --workspace-header-height: 42px;
+  --panel-gap: 0px;
+  --panel-pad: 12px;
+  --dash-pad: 14px;
 }
 
 [data-style='roomy'] {
-  --prose-line-height: 1.78;
-  --md-block-gap: 20px;
-  --thread-pad-top: 80px;
+  --prose-size: 16px;
+  --prose-line-height: 1.76;
+  --md-block-gap: 16px;
+  --thread-pad-top: 52px;
   --user-message-space: 40px;
-  --user-bubble-radius: 23px 23px 8px 23px;
-  --user-bubble-padding: 11px 16px 12px;
-  --assistant-message-space: 56px;
-  --assistant-head-space: 10px;
-  --heading-space-before: 1.4em;
-  --heading-space-after: 0;
-  --heading-padding-bottom: 0.45em;
-  --list-block-space: 0.9em;
-  --list-row-gap: 12px;
-  --list-marker-column: 30px;
-  --list-item-gap: 10px;
-  --list-item-padding: 6px 8px;
-  --nested-list-indent: 18px;
-  --quote-padding: 14px 18px;
-  --divider-space: 2em;
+  --user-bubble-padding: 13px 16px;
+  --assistant-message-space: 54px;
+  --assistant-head-space: 13px;
+  --heading-space-before: 1.3em;
+  --heading-padding-bottom: 0.35em;
+  --list-block-space: 0.8em;
+  --list-row-gap: 10px;
+  --list-marker-column: 28px;
+  --list-item-gap: 9px;
+  --nested-list-indent: 14px;
+  --quote-padding: 4px 0 4px 18px;
+  --divider-space: 1.9em;
   --table-cell-padding: 12px 14px;
-  --code-block-padding: 16px 18px;
-  --code-bar-padding: 9px 12px 9px 16px;
-  --code-line-height: 1.8;
-  --inline-code-padding: 0.18em 0.5em;
+  --code-block-padding: 17px 19px;
+  --code-bar-padding: 9px 12px 9px 17px;
+  --code-line-height: 1.76;
   --composer-bottom-space: 24px;
-  --composer-padding: 14px 16px 12px;
-  --composer-radius: 28px;
+  --composer-padding: 13px 14px 12px;
+  --composer-input-size: 16px;
   --composer-line-height: 26px;
   --composer-row-space: 9px;
-  --composer-control-size: 36px;
-  --icon-control-sm: 36px;
-  --icon-control-xs: 30px;
-  --model-chip-padding: 8px 12px;
+  --composer-control-size: 34px;
+  --icon-control-sm: 34px;
+  --icon-control-xs: 29px;
+  --model-chip-padding: 8px 11px;
   --navigation-row-padding: 9px;
   --conversation-row-padding: 9px;
   --menu-row-padding: 10px;
   --settings-row-padding: 11px;
-  --segment-option-padding: 6px 14px;
+  --segment-option-padding: 7px 14px;
   --suggestion-padding: 12px 14px;
-  --suggestion-radius: 17px;
-  --suggestion-icon-size: 34px;
-  --suggestion-grid-gap: 10px;
+  --suggestion-icon-size: 30px;
   --home-stack-space: 32px;
-  --workspace-header-height: 58px;
+  --workspace-header-height: 52px;
+  --panel-gap: 0px;
+  --panel-pad: 20px;
+  --dash-pad: 26px;
 }
 
 *,
@@ -204,14 +218,22 @@ body {
   background: var(--bg-root);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  font-feature-settings: 'cv11';
+  font-variant-numeric: tabular-nums;
   overflow: hidden;
-  transition: background-color var(--dur-theme) var(--ease-standard), color var(--dur-theme) var(--ease-standard);
+  transition:
+    background-color var(--dur-theme) var(--ease-standard),
+    color var(--dur-theme) var(--ease-standard);
 }
 
 ::selection {
   background: var(--selection-bg);
   color: var(--selection-text);
+}
+
+/* The caret belongs to the design too. */
+textarea,
+input {
+  caret-color: var(--accent);
 }
 
 button {
@@ -236,20 +258,36 @@ input {
 
 a {
   color: var(--accent);
-  text-decoration: none;
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+  text-decoration-thickness: 1px;
 }
 
-/* Integrated focus rings — only for keyboard focus */
+/* Silkscreen legend — the engraved label on a panel face. */
+.legend {
+  font-size: var(--legend-size);
+  font-weight: var(--legend-weight);
+  letter-spacing: var(--legend-tracking);
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+/* Focus ring — a hard panel outline, never a soft glow. */
 :focus {
   outline: none;
 }
 
 :focus-visible {
-  outline: none;
-  box-shadow:
-    0 0 0 1.5px var(--bg-root),
-    0 0 0 3.5px var(--ring);
+  outline: 2px solid var(--ring-active, var(--ring));
+  outline-offset: 1px;
   border-radius: var(--r-xs);
+}
+
+/* DIRECTION.md §3 precedence: in-flight beats focused beats selected.
+   While a turn is in flight the signal is claimed, so focus demotes to the
+   neutral ring rather than disappearing. */
+.app[data-busy='true'] {
+  --ring-active: var(--focus-neutral);
 }
 
 /* Scrollbars */
@@ -269,7 +307,7 @@ a {
 
 *::-webkit-scrollbar-thumb {
   background: var(--scrollbar);
-  border-radius: 99px;
+  border-radius: 0;
   border: 3px solid transparent;
   background-clip: content-box;
 }
@@ -284,32 +322,21 @@ a {
 @keyframes rise-in {
   from {
     opacity: 0;
-    transform: translateY(5px);
-    filter: blur(3px);
+    transform: translateY(4px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
-    filter: blur(0);
   }
 }
 
 @keyframes soft-pulse {
   0%,
   100% {
-    opacity: 0.45;
+    opacity: 0.4;
   }
   50% {
     opacity: 1;
-  }
-}
-
-@keyframes shimmer-sweep {
-  from {
-    background-position: 180% 0;
-  }
-  to {
-    background-position: -80% 0;
   }
 }
 
@@ -328,7 +355,7 @@ a {
     transform: scale(1);
   }
   50% {
-    transform: scale(1.06);
+    transform: scale(1.05);
   }
 }
 

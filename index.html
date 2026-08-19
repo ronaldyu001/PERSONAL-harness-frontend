@@ -4,12 +4,12 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#191710" />
+    <meta name="theme-color" content="#262624" />
     <meta name="color-scheme" content="dark light" />
     <title>Maia</title>
     <style>
-      html[data-theme='dark'] { background: #191710; color-scheme: dark; }
-      html[data-theme='light'] { background: #e5e2d3; color-scheme: light; }
+      html[data-theme='dark'] { background: #262624; color-scheme: dark; }
+      html[data-theme='light'] { background: #cfccc3; color-scheme: light; }
     </style>
     <script>
       (() => {
@@ -24,12 +24,41 @@
         document.documentElement.dataset.theme = theme
         document.querySelector('meta[name="theme-color"]')?.setAttribute(
           'content',
-          theme === 'light' ? '#e5e2d3' : '#191710',
+          theme === 'light' ? '#cfccc3' : '#262624',
         )
       })()
     </script>
   </head>
   <body>
+    <!--
+      DIRECTION CONTRACT — Maia (seed 4bbaadd2)
+
+      THESIS: Maia is a domestic instrument, not a chat website. One panel face
+      carries a large display window and smaller readouts. It refuses the
+      card-grid dashboard and the floating-bubble thread.
+
+      OWN-WORLD: Braun domestic instruments (SK4, T3, ET66). Pale ABS #CFCCC3 /
+      charcoal ABS #262624 as two real objects, not an inversion. Archivo
+      Variable throughout, six-step scale, weight promotes before size. Flat
+      tones, 1px seams, radii 2-5px. No blur, no gradients, no ambient washes.
+      One signal orange, rationed to the single lit thing on screen.
+
+      STORY: The owner lands on a face where conversation is the working
+      instrument and the unwired inputs sit honestly at rest, then opens the
+      conversation without ever losing their place.
+
+      FIRST VIEWPORT: Pinned control column at the left edge. The chat region
+      absorbs all remaining width, its legend and composer live. Two dormant
+      regions stack at the right, drawn precisely and reading nothing. Regions
+      abut; no gutters anywhere.
+
+      FORM: The Panel, candidate 1 of the grounded list, chosen over the roll's
+      assignment (Service Manual, index 5).
+
+      FINISH: unreviewed and undocumented is unfinished; this build ends with
+      the finish review, the verdict, DESIGN.md, and every shipping raster
+      carrying its provenance.
+    -->
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

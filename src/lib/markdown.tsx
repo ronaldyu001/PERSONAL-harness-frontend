@@ -341,7 +341,7 @@ function ListBlock({ list }: { list: MarkdownList }) {
     <li key={index} className={`md-list__item${item.checked !== null ? ' md-list__item--task' : ''}`}>
       {item.checked === null ? (
         <span className="md-list__marker" aria-hidden="true">
-          {list.ordered ? `${list.start + index}.` : ''}
+          {list.ordered ? `${list.start + index}.` : '•'}
         </span>
       ) : (
         <span

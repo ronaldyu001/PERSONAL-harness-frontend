@@ -87,9 +87,9 @@ export function Popover({
           aria-labelledby={labelledBy}
           className={`popover popover--${placement}`}
           style={{ width, transformOrigin: origin }}
-          initial={{ opacity: 0, scale: 0.94, y: placement.startsWith('top') ? 6 : -6, filter: 'blur(3px)' }}
-          animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
-          exit={{ opacity: 0, scale: 0.96, y: placement.startsWith('top') ? 4 : -4, filter: 'blur(2px)', transition: { duration: 0.12 } }}
+          initial={{ opacity: 0, scale: 0.98, y: placement.startsWith('top') ? 4 : -4 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.98, y: placement.startsWith('top') ? 3 : -3, transition: { duration: 0.12 } }}
           transition={{ type: 'spring', stiffness: 560, damping: 38 }}
         >
           {children}
