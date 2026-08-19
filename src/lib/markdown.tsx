@@ -323,7 +323,7 @@ function CodeBlock({ lang, code }: { lang: string; code: string }) {
       <figcaption className="md-code__bar">
         <span className="md-code__lang">{lang || 'code'}</span>
         <button type="button" className="md-code__copy" onClick={copy} aria-label="Copy code">
-          {copied ? <Check size={13} strokeWidth={2.2} /> : <Copy size={13} strokeWidth={1.8} />}
+          {copied ? <Check size={13} strokeWidth={1.8} /> : <Copy size={13} strokeWidth={1.8} />}
           <span>{copied ? 'Copied' : 'Copy'}</span>
         </button>
       </figcaption>
@@ -348,7 +348,7 @@ function ListBlock({ list }: { list: MarkdownList }) {
           className={`md-list__check${item.checked ? ' md-list__check--done' : ''}`}
           aria-hidden="true"
         >
-          {item.checked && <Check size={12} strokeWidth={2.4} />}
+          {item.checked && <Check size={12} strokeWidth={1.8} />}
         </span>
       )}
       <div className="md-list__content">

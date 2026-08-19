@@ -165,7 +165,7 @@ function UserBlock({
               setEditing(true)
             }}
           >
-            <PenLine size={13} strokeWidth={1.9} aria-hidden="true" />
+            <PenLine size={13} strokeWidth={1.8} aria-hidden="true" />
             Edit
           </button>
         </div>
@@ -216,7 +216,7 @@ function AssistantBlock({
 
       {msg.status === 'error' && (
         <div className="turn__error" role="alert">
-          <CircleAlert size={15} strokeWidth={1.9} aria-hidden="true" />
+          <CircleAlert size={15} strokeWidth={1.8} aria-hidden="true" />
           <span className="turn__error-text">
             {msg.error ?? 'Maia could not complete this response.'}
           </span>
@@ -225,7 +225,7 @@ function AssistantBlock({
             className="turn__action turn__action--retry"
             onClick={() => onRetry(msg.id)}
           >
-            <RefreshCw size={13} strokeWidth={1.9} aria-hidden="true" />
+            <RefreshCw size={13} strokeWidth={1.8} aria-hidden="true" />
             Retry
           </button>
         </div>
@@ -237,14 +237,14 @@ function AssistantBlock({
         <div className="turn__actions">
           <button type="button" className="turn__action" onClick={copy}>
             {copied ? (
-              <Check size={13} strokeWidth={2} aria-hidden="true" />
+              <Check size={13} strokeWidth={1.8} aria-hidden="true" />
             ) : (
-              <Copy size={13} strokeWidth={1.9} aria-hidden="true" />
+              <Copy size={13} strokeWidth={1.8} aria-hidden="true" />
             )}
             {copied ? 'Copied' : 'Copy'}
           </button>
           <button type="button" className="turn__action" onClick={() => onRegenerate(msg.id)}>
-            <RefreshCw size={13} strokeWidth={1.9} aria-hidden="true" />
+            <RefreshCw size={13} strokeWidth={1.8} aria-hidden="true" />
             Regenerate
           </button>
           <span className="turn__model">{modelName}</span>
@@ -270,8 +270,13 @@ function ThinkingReadout({ msg }: { msg: AssistantMessage }) {
     <div className="turn__readout" role="status" aria-live="polite">
       <span className="turn__readout-line">
         <span>{modelName}</span>
-        {path && <span className="turn__readout-seg">{path.toUpperCase()}</span>}
-        <span className="turn__clock">{formatElapsed(seconds)}</span>
+        <span className="turn__readout-sep" aria-hidden="true">
+          &#183;
+        </span>
+        <span className="turn__readout-tail">
+          {path && <span>{path.toUpperCase()}</span>}
+          <span className="turn__clock">{formatElapsed(seconds)}</span>
+        </span>
       </span>
       {seconds >= REASSURE_AFTER_S && (
         <span className="turn__readout-note">

@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { ChevronRight, Maximize2 } from 'lucide-react'
+import { ChevronRight, Maximize2, SquarePen } from 'lucide-react'
 import { Thread } from './Thread'
 import { Composer, type ComposerProps } from './Composer'
+import { Tooltip } from './Tooltip'
 import { PANELS, PANEL_BODIES } from './panel-registry'
 import { SUGGESTIONS } from '../config'
 import type { Conversation, Message } from '../types'
@@ -10,9 +11,11 @@ import type { Conversation, Message } from '../types'
 export interface DeckProps {
   expanded: boolean
   active: Conversation | null
+  temporaryActive: boolean
   conversations: Conversation[]
   convoLoading: boolean
   onOpenConversation: (id: string) => void
+  onNewChat: () => void
   onExpand: () => void
   onCollapse: () => void
   onSend: (text: string) => void
@@ -59,22 +62,36 @@ export function Deck(props: DeckProps) {
             {chatPanel.legend}
           </h2>
           {expanded && active && <span className="region__title">{active.title}</span>}
-          {active?.temporary && <span className="region__flag">Temporary</span>}
+          {(props.temporaryActive || active?.temporary) && (
+            <span className="region__flag">Temporary</span>
+          )}
           <div className="region__head-end">
+            <Tooltip label="New chat" side="bottom">
+              <button
+                type="button"
+                className="icon-btn icon-btn--xs"
+                onClick={props.onNewChat}
+                aria-label="New chat"
+                disabled={!active && !props.temporaryActive}
+              >
+                <SquarePen size={14} strokeWidth={1.8} aria-hidden="true" />
+              </button>
+            </Tooltip>
             {expanded ? (
               <button type="button" className="ghost-btn" onClick={props.onCollapse}>
                 Dashboard
               </button>
             ) : (
-              <button
-                type="button"
-                className="ghost-btn ghost-btn--icon"
-                onClick={props.onExpand}
-                aria-label="Open the conversation surface"
-              >
-                <Maximize2 size={14} strokeWidth={1.9} aria-hidden="true" />
-                Open
-              </button>
+              <Tooltip label="Expand" side="bottom">
+                <button
+                  type="button"
+                  className="icon-btn icon-btn--xs"
+                  onClick={props.onExpand}
+                  aria-label="Expand the conversation"
+                >
+                  <Maximize2 size={14} strokeWidth={1.8} aria-hidden="true" />
+                </button>
+              </Tooltip>
             )}
           </div>
         </header>
@@ -144,7 +161,7 @@ export function Deck(props: DeckProps) {
                 aria-disabled="true"
               >
                 <header className="region__head">
-                  <panel.icon size={14} strokeWidth={1.9} aria-hidden="true" />
+                  <panel.icon size={14} strokeWidth={1.8} aria-hidden="true" />
                   <h2 id={legendId} className="legend region__legend">
                     {panel.legend}
                   </h2>
@@ -185,7 +202,7 @@ function Recents({
           <li key={conversation.id}>
             <button type="button" className="recents__row" onClick={() => onOpen(conversation.id)}>
               <span className="recents__title">{conversation.title}</span>
-              <ChevronRight size={13} strokeWidth={1.9} aria-hidden="true" />
+              <ChevronRight size={13} strokeWidth={1.8} aria-hidden="true" />
             </button>
           </li>
         ))}
@@ -203,7 +220,7 @@ function ChatEmptyState({ onSend }: { onSend: (text: string) => void }) {
           <li key={suggestion}>
             <button type="button" className="chat-empty__row" onClick={() => onSend(suggestion)}>
               <span>{suggestion}</span>
-              <ChevronRight size={13} strokeWidth={1.9} aria-hidden="true" />
+              <ChevronRight size={13} strokeWidth={1.8} aria-hidden="true" />
             </button>
           </li>
         ))}

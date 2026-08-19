@@ -60,10 +60,12 @@
   min-width: 0;
 }
 
+/* Subtle, and dashed to match the composer's temporary border so the two read
+   as the same mode rather than two unrelated signals. */
 .region__flag {
   font-size: var(--t-meta);
-  color: var(--text-tertiary);
-  border: var(--seam) solid var(--border-soft);
+  color: var(--text-secondary);
+  border: var(--seam) dashed var(--border-strong);
   border-radius: var(--r-xs);
   padding: 1px 6px;
   white-space: nowrap;
@@ -174,30 +176,41 @@
   padding-top: 0;
 }
 
-/* The reading sits at rest: the row is drawn, the value is absent. */
-.rest-row {
+/* Ruled but empty: an entry ledger with nothing written in it. Uniform rules,
+   because varied widths read as a skeleton loader mid-fetch. */
+.readout__ledger {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 4px;
+}
+
+.readout__rule {
   display: block;
   height: var(--seam);
   background: var(--border-soft);
 }
 
-.readout__dial {
+/* A graduated scale with no needle: the instrument reads nothing, and the
+   absence is legible because the scale itself is drawn. */
+.readout__scale {
   display: flex;
-  align-items: baseline;
-  gap: 1px;
-  color: var(--text-secondary);
+  align-items: flex-end;
+  justify-content: space-between;
+  height: 28px;
+  padding-top: 4px;
 }
 
-.readout__value {
-  font-size: 30px;
-  font-weight: 400;
-  line-height: 1;
-  letter-spacing: -0.02em;
+.readout__tick {
+  display: block;
+  width: var(--seam);
+  height: 7px;
+  background: var(--border-soft);
 }
 
-.readout__unit {
-  font-size: 17px;
-  line-height: 1;
+.readout__tick--major {
+  height: 15px;
+  background: var(--border-strong);
 }
 
 /* ── Recents, on the dashboard ──────────────────────────────── */

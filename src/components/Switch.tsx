@@ -1,5 +1,3 @@
-import { motion } from 'motion/react'
-
 export function Switch({
   checked,
   onChange,
@@ -18,11 +16,7 @@ export function Switch({
       className={`switch${checked ? ' switch--on' : ''}`}
       onClick={() => onChange(!checked)}
     >
-      <motion.span
-        className="switch__knob"
-        layout
-        transition={{ type: 'spring', stiffness: 700, damping: 38 }}
-      />
+      <span className="switch__knob" />
     </button>
   )
 }

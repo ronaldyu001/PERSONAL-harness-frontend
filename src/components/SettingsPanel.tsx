@@ -91,7 +91,7 @@ export function SettingsPanel({ prefs, onChange }: { prefs: Prefs; onChange: (p:
         />
       </div>
 
-      <div className="settings__foot">Maia Preview 0.1 — prototype data only</div>
+      <div className="settings__foot">Maia Preview 0.1</div>
     </div>
   )
 }

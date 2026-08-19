@@ -1,6 +1,6 @@
 /**
  * Maia's identity mark: four overlapping petals around a warm center.
- * Reads as a soft bloom / aperture — no robots, sparkles, or bubbles.
+ * Reads as a soft bloom / aperture, no robots, sparkles, or bubbles.
  *
  * Rendered in flat tones. The incumbent drew the petals with a radial
  * gradient; this world has none, so the depth comes from overlap and

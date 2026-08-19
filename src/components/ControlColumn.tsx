@@ -7,7 +7,6 @@ import {
   PanelLeft,
   Search,
   Settings2,
-  SquarePen,
 } from 'lucide-react'
 import { MaiaMark } from './MaiaMark'
 import { Tooltip } from './Tooltip'
@@ -25,8 +24,8 @@ export interface ControlColumnProps {
   activeId: string | null
   chatOpen: boolean
   onSelect: (id: string) => void
-  onNewChat: () => void
   onOpenChat: () => void
+  onGoDashboard: () => void
   onTemporaryChat: () => void
   onOpenSearch: () => void
   temporaryActive: boolean
@@ -54,15 +53,17 @@ export function ControlColumn(props: ControlColumnProps) {
       transition={reduceMotion ? { duration: 0 } : { type: 'spring', stiffness: 360, damping: 36 }}
     >
       <div className="column__head">
-        <button
-          type="button"
-          className="column__mark"
-          onClick={props.onNewChat}
-          aria-label="Maia — new conversation"
-        >
-          <MaiaMark size={20} />
-          {expanded && <span className="column__wordmark">Maia</span>}
-        </button>
+        <Tooltip label="Dashboard" side="right">
+          <button
+            type="button"
+            className="column__mark"
+            onClick={props.onGoDashboard}
+            aria-label="Maia, go to the dashboard"
+          >
+            <MaiaMark size={20} />
+            {expanded && <span className="column__wordmark">Maia</span>}
+          </button>
+        </Tooltip>
         <Tooltip label={expanded ? 'Collapse' : 'Expand'} shortcut="Ctrl+B" side="right">
           <button
             type="button"
@@ -81,12 +82,6 @@ export function ControlColumn(props: ControlColumnProps) {
       </div>
 
       <div className="column__actions">
-        <ColumnRow
-          expanded={expanded}
-          label="New chat"
-          icon={<SquarePen size={16} strokeWidth={1.8} />}
-          onClick={props.onNewChat}
-        />
         <ColumnRow
           expanded={expanded}
           label="Conversation"

@@ -14,7 +14,7 @@ export function Toast({ toast }: { toast: { id: number; text: string } | null })
             exit={{ opacity: 0, y: 8, scale: 0.97, transition: { duration: 0.15 } }}
             transition={{ type: 'spring', stiffness: 520, damping: 34 }}
           >
-            <Check size={14} strokeWidth={2.2} />
+            <Check size={14} strokeWidth={1.8} />
             <span>{toast.text}</span>
           </motion.div>
         )}

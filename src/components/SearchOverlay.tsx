@@ -37,6 +37,8 @@ export function SearchOverlay({
     }
   }, [open])
 
+
+
   const close = () => {
     setQuery('')
     setCursor(0)
@@ -58,6 +60,13 @@ export function SearchOverlay({
           exit={{ opacity: 0, transition: { duration: 0.13 } }}
           transition={{ duration: 0.18 }}
           onClick={close}
+          /* Escape works from the input, a result row, or the panel itself. */
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              e.stopPropagation()
+              close()
+            }
+          }}
         >
           <motion.div
             className="search-panel"
@@ -71,7 +80,7 @@ export function SearchOverlay({
             onClick={(e) => e.stopPropagation()}
           >
             <div className="search-panel__field">
-              <Search size={17} strokeWidth={1.9} />
+              <Search size={17} strokeWidth={1.8} />
               <input
                 ref={inputRef}
                 value={query}
@@ -93,7 +102,6 @@ export function SearchOverlay({
                   if (e.key === 'Enter' && results[cursor]) {
                     choose(results[cursor].id)
                   }
-                  if (e.key === 'Escape') close()
                 }}
               />
               <kbd className="search-panel__esc">esc</kbd>
@@ -116,7 +124,7 @@ export function SearchOverlay({
                     onMouseEnter={() => setCursor(i)}
                     onClick={() => choose(c.id)}
                   >
-                    <MessageSquare size={15} strokeWidth={1.7} />
+                    <MessageSquare size={15} strokeWidth={1.8} />
                     <span className="search-result__title">{c.title}</span>
                     <span className="search-result__group">{GROUP_LABELS[c.group]}</span>
                   </button>

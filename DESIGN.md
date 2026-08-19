@@ -20,9 +20,22 @@ Light and dark are **two real objects**, not one inverted: pale ABS and
 charcoal ABS. Neither is derived from the other, and both are first-class.
 
 **Materials.** Flat tones only. No blur, no `backdrop-filter`, no gradients, no
-ambient washes. Depth is a 1px seam (`--seam`). Radii are 2–5px
-(`--r-xs`…`--r-xl`). There is exactly one exemption from the gradient ban, in
-§7.
+ambient washes. Radii are 2–5px (`--r-xs`…`--r-xl`). There is exactly one
+exemption from the gradient ban, in §7.
+
+**Depth is a three-part vocabulary**, not just a seam:
+
+| Device | Token | Means | Applied to |
+|---|---|---|---|
+| Seam | `--seam` 1px + `--border-*` | two regions meet | region edges, rules, the control column |
+| Molded edge | `--highlight-inner` | this part sits proud of the face | user turn, composer, armed send key, switch knob, lifted panels |
+| Recess | `--recess` | this part is pressed into the face | struck segment, unarmed send key, code block, switch track |
+| Engraving | `--engrave` | this label is silkscreened into the panel | `.legend` only |
+
+Molded plastic catches light on its top edge and pressed parts sit in shadow;
+both are inset, so neither counts as an elevation declaration. **Elevation is
+declared once**: a real drop shadow, never a drop shadow plus a border. Verified
+zero border-plus-drop-shadow pairs across the stylesheets.
 
 **The face is continuous.** Regions abut. `--panel-gap` is `0px` at every
 density. Grouping is done by seam, surface tone, and alignment — never by a
@@ -48,6 +61,7 @@ Semantic tokens are declared per theme in `theme-light.css` / `theme-dark.css`.
 | Signal (fill) | `--accent-fill` | `#b4470a` | `#ee7524` |
 | Ink on signal fill | `--accent-on-fill` | `#fff7f0` | `#1a1a18` |
 | Neutral focus ring | `--focus-neutral` | `#22221e` | `#e6e4dc` |
+| Drop shadow | `--shadow-float` / `--shadow-menu` | `rgba(46,41,30,…)` | `rgba(10,9,6,…)` |
 | Success | `--success` | `#3f6b36` | `#7ba86a` |
 | Danger | `--danger` | `#a33218` | `#e2765a` |
 
@@ -220,9 +234,12 @@ standing line, not a toast.
 ## 6. Dormant regions
 
 Tasks and weather are **instruments with no signal on that input**. The region,
-its legend, and its readout structure are drawn precisely; the reading sits at
-rest (`.rest-row` hairlines, an em-dash dial). A short line names what it waits
-on.
+its legend, and its readout structure are drawn precisely; the reading is simply
+absent. Tasks renders a **ruled ledger** (`.readout__rule`, uniform widths) and
+weather a **graduated scale with no needle** (`.readout__tick`, every fourth
+major). Varied row widths were deliberately removed: they read as a skeleton
+loader mid-fetch rather than an input with nothing connected. A short line names
+what each waits on.
 
 There is **no fabricated data anywhere** — which is why nothing needs
 disclaiming. Neither region makes a network call, so the local-and-private
@@ -288,6 +305,10 @@ clock counting is information.
   sends. Turn actions are always rendered.
 - Browser surfaces are themed: selection, caret (`--accent`), scrollbars,
   focus ring.
+- One icon family (lucide-react) at a single `strokeWidth` of `1.8`; the sole
+  exception is the filled stop square, which is a fill rather than a stroke.
+- Layer scale is tokenised: `--z-overlay` 50, `--z-popover` 55, `--z-toast` 60,
+  `--z-tooltip` 70, `--z-startup` 80. Nothing declares a raw z-index.
 
 ---
 
@@ -318,11 +339,18 @@ Recorded so the next contributor does not read them as defects to "fix".
 2. **The expanded chat head shows the engraved legend and the conversation
    title together**, which reads slightly redundant. Accepted so the primary
    region is not the only one on the face without a legend.
-3. **`.switch` keeps a 10px pill radius** — the only radius outside the 2–5px
-   law — because it is a small control. Its on-state is neutral
-   (`--control-on`, `--switch-knob-on`), so it never competes for the signal.
-4. **The inference-path segment** (`· CPU ·`) could not be exercised in the
-   build environment; it renders only when the orchestrator reports a probe.
+3. **`.switch` is a panel switch, not a pill** — a rectangular recessed track
+   with a molded rectangular knob at `--r-xs`. The 10px pill radius, previously
+   the only radius outside the 2–5px law, is gone. Its on-state stays neutral
+   (`--control-on`, `--switch-knob-on`) so it never competes for the signal.
+4. **The inference-path segment** (`CPU`) could not be exercised in the build
+   environment; it renders only when the orchestrator reports a probe. The
+   readout carries one separator: `Llama 3.1 · CPU 0:14`.
+6. **Three components animate `width`/`height`** (`ControlColumn`, the deck
+   stack, the composer input) rather than `transform`. For the first two this is
+   load-bearing: the re-registration works because the stack's width collapses
+   and the chat region absorbs it, which a transform cannot do without changing
+   the mechanic. Accepted as a design trade, not an oversight.
 5. **`design-system/maia/MASTER.md`** is still on disk and specifies a
    violet/pink system that contradicts this one. PRODUCT.md records it as
    non-binding research.

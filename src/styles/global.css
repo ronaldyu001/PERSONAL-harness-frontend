@@ -100,6 +100,14 @@
   --panel-pad: 16px;
   --dash-pad: 20px;
 
+  /* Layer scale. These five are the only stacking contexts in the app;
+     anything new declares itself here rather than inventing a number. */
+  --z-overlay: 50;
+  --z-popover: 55;
+  --z-toast: 60;
+  --z-tooltip: 70;
+  --z-startup: 80;
+
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
   --dur-fast: 120ms;
@@ -265,6 +273,7 @@ a {
 
 /* Silkscreen legend — the engraved label on a panel face. */
 .legend {
+  text-shadow: var(--engrave);
   font-size: var(--legend-size);
   font-weight: var(--legend-weight);
   letter-spacing: var(--legend-tracking);
