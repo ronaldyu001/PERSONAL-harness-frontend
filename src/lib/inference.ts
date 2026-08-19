@@ -6,7 +6,7 @@ export type InferencePath = 'gpu' | 'cpu'
  * The inference path, when it is genuinely known.
  *
  * The startup orchestrator reports it while probing for a GPU. It is undefined
- * in production builds, where no orchestrator runs — in which case the thinking
+ * in production builds, where no orchestrator runs, in which case the thinking
  * readout simply omits the segment rather than guessing.
  */
 export const InferenceContext = createContext<InferencePath | undefined>(undefined)

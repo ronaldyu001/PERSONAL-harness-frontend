@@ -53,6 +53,7 @@
   background: var(--message-user-bg);
   border: var(--seam) solid var(--message-user-border);
   border-radius: var(--r-xs);
+  box-shadow: var(--highlight-inner);
   padding: var(--user-bubble-padding);
   width: var(--user-message-width);
 }
@@ -120,11 +121,15 @@
   font-variant-numeric: tabular-nums;
 }
 
-.turn__readout-seg::before,
-.turn__clock::before {
-  content: '·';
-  margin-right: 7px;
+/* One separator per line: the trailing values group behind a single dot. */
+.turn__readout-sep {
   color: var(--border-strong);
+}
+
+.turn__readout-tail {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
 }
 
 .turn__clock {
@@ -367,6 +372,7 @@
 .md-code {
   /* figure carries a UA margin of 1em 40px; the reading field sets its own. */
   margin: 0;
+  box-shadow: var(--recess);
   border-radius: var(--structured-radius);
   overflow: hidden;
   background: var(--code-bg);

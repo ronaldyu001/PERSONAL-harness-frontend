@@ -10,6 +10,7 @@
   background: var(--composer-face);
   border: var(--seam) solid var(--composer-border);
   border-radius: var(--r-xs);
+  box-shadow: var(--highlight-inner);
   padding: var(--composer-padding);
   transition: border-color var(--dur-fast) var(--ease-standard);
 }
@@ -139,19 +140,27 @@
     opacity var(--dur-fast) var(--ease-standard);
 }
 
-/* Lit only when it is the armed primary action. */
+/* Lit only when it is the armed primary action, and raised when it is live. */
 .app[data-armed='true'] .send-btn:not(:disabled) {
   background: var(--accent-fill);
   color: var(--accent-on-fill);
+  box-shadow: var(--highlight-inner);
 }
 
 .send-btn:hover:not(:disabled) {
   opacity: 0.88;
 }
 
+/* Tactile press: the key physically gives. */
+.send-btn:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+/* Unarmed, the key sits recessed and unlit rather than merely faded out. */
 .send-btn:disabled {
-  background: var(--surface-3);
-  color: var(--text-faint);
+  background: var(--surface-1);
+  color: var(--text-secondary);
+  box-shadow: var(--recess);
 }
 
 /* Stop is the in-flight control, and in-flight owns the signal. */

@@ -88,6 +88,11 @@ export default function App({ sendChat }: AppProps) {
 
   const updatePreferences = useCallback((next: Prefs) => {
     document.documentElement.dataset.theme = next.theme
+    if (next.reduceMotion) {
+      document.documentElement.dataset.reduceMotion = 'true'
+    } else {
+      delete document.documentElement.dataset.reduceMotion
+    }
     setPrefs(next)
   }, [])
 
@@ -318,7 +323,6 @@ export default function App({ sendChat }: AppProps) {
     cancelCurrentChat(true)
     setActiveId(null)
     setTempMode(false)
-    setChatOpen(true)
   }, [cancelCurrentChat])
 
   const temporaryChat = useCallback(() => {
@@ -326,6 +330,18 @@ export default function App({ sendChat }: AppProps) {
     setActiveId(null)
     setTempMode(true)
     setChatOpen(true)
+  }, [cancelCurrentChat])
+
+  /* Toggles the mode in place. It never navigates, so arming a temporary chat
+     from the control column leaves you where you are. */
+  const toggleTemporaryMode = useCallback(() => {
+    setTempMode((current) => {
+      if (!current) {
+        cancelCurrentChat(true)
+        setActiveId(null)
+      }
+      return !current
+    })
   }, [cancelCurrentChat])
 
   const toggleTemporary = useCallback(() => {
@@ -385,9 +401,9 @@ export default function App({ sendChat }: AppProps) {
           activeId={activeId}
           chatOpen={chatOpen}
           onSelect={openConversation}
-          onNewChat={newChat}
           onOpenChat={() => setChatOpen(true)}
-          onTemporaryChat={temporaryChat}
+          onGoDashboard={() => setChatOpen(false)}
+          onTemporaryChat={toggleTemporaryMode}
           onOpenSearch={() => setSearchOpen(true)}
           temporaryActive={temporaryActive}
           prefs={prefs}
@@ -398,9 +414,11 @@ export default function App({ sendChat }: AppProps) {
         <Deck
           expanded={chatOpen}
           active={active}
+          temporaryActive={temporaryActive}
           conversations={historyConversations}
           convoLoading={convoLoading}
           onOpenConversation={openConversation}
+          onNewChat={newChat}
           onExpand={() => setChatOpen(true)}
           onCollapse={() => setChatOpen(false)}
           onSend={handleSend}

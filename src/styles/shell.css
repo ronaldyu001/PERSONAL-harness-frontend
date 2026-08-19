@@ -253,6 +253,7 @@
 
 .icon-btn:active:not(:disabled) {
   background: var(--surface-pressed);
+  transform: scale(0.96);
 }
 
 .icon-btn:disabled {
@@ -305,6 +306,7 @@
 
 .ghost-btn:active {
   background: var(--surface-pressed);
+  transform: translateY(1px);
 }
 
 .solid-btn {
@@ -324,6 +326,10 @@
   opacity: 0.88;
 }
 
+.solid-btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
 .solid-btn:disabled {
   background: var(--surface-3);
   color: var(--text-faint);
@@ -336,7 +342,7 @@
   bottom: 18px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 60;
+  z-index: var(--z-toast);
   pointer-events: none;
 }
 
@@ -347,7 +353,6 @@
   padding: 8px 13px;
   border-radius: var(--r-sm);
   background: var(--surface-2);
-  border: var(--seam) solid var(--border-soft);
   box-shadow: var(--shadow-float);
   font-size: var(--t-label);
   color: var(--text-primary);

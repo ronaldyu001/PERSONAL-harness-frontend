@@ -29,6 +29,10 @@
   --border-faint: rgba(34, 34, 30, 0.1);
   --border-soft: rgba(34, 34, 30, 0.16);
   --border-strong: rgba(34, 34, 30, 0.28);
+  /* Molded ABS catches light on its top edge; pressed parts sit in shadow. */
+  --highlight-inner: inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  --recess: inset 0 1px 2px rgba(46, 41, 30, 0.17);
+  --engrave: 0 1px 0 rgba(255, 255, 255, 0.5);
   /* Molded-edge highlight, the one material seam this world keeps. */
 
   --text-primary: #22221e;
@@ -59,8 +63,8 @@
   /* No ambient wash in a panel world. */
   --scrim: rgba(30, 30, 26, 0.34);
 
-  --shadow-float: 0 2px 6px rgba(20, 20, 18, 0.14);
-  --shadow-menu: 0 4px 16px rgba(20, 20, 18, 0.2);
+  --shadow-float: 0 2px 6px rgba(46, 41, 30, 0.16);
+  --shadow-menu: 0 4px 16px rgba(46, 41, 30, 0.22);
 
   --mark-mid: #4a4a43;
   --mark-core: #edebe5;

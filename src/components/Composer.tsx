@@ -120,7 +120,7 @@ export function Composer({
           >
             <span>{currentModel.name}</span>
             <span className="model-chip__chev" aria-hidden="true">
-              <ChevronDown size={13} strokeWidth={2} />
+              <ChevronDown size={13} strokeWidth={1.8} />
             </span>
           </button>
           <Popover
@@ -154,7 +154,7 @@ export function Composer({
                     <span className="model-menu__caption">{item.caption}</span>
                   </span>
                   {item.id === model && (
-                    <Check size={15} strokeWidth={2.2} className="model-menu__check" />
+                    <Check size={15} strokeWidth={1.8} className="model-menu__check" />
                   )}
                 </button>
               ))}
@@ -163,7 +163,7 @@ export function Composer({
         </div>
 
         <Tooltip
-          label={temporary ? 'Temporary chat on — hidden from history' : 'Temporary chat'}
+          label={temporary ? 'Temporary chat on, hidden from history' : 'Temporary chat'}
           side="top"
         >
           <button
@@ -220,7 +220,7 @@ export function Composer({
             disabled={!canSend}
             onClick={submit}
           >
-            <ArrowUp size={16} strokeWidth={2.4} />
+            <ArrowUp size={16} strokeWidth={1.8} />
           </button>
         )}
       </div>
