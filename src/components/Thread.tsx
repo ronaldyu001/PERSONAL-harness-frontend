@@ -1,28 +1,15 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { AnimatePresence, motion } from 'motion/react'
-import {
-  Check,
-  CircleAlert,
-  Copy,
-  FileText,
-  FileCode2,
-  FileSpreadsheet,
-  Image as ImageIcon,
-  PenLine,
-  RefreshCw,
-} from 'lucide-react'
+import { motion } from 'motion/react'
+import { Check, CircleAlert, Copy, PenLine, RefreshCw } from 'lucide-react'
 import { MaiaMark } from './MaiaMark'
-import { Tooltip } from './Tooltip'
 import { Markdown } from '../lib/markdown'
-import { MODELS, formatBytes } from '../config'
-import type { AssistantMessage, Attachment, Message, UserMessage } from '../types'
+import { MODELS } from '../config'
+import { useElapsed, formatElapsed } from '../hooks/useElapsed'
+import { useInferencePath } from '../lib/inference'
+import type { AssistantMessage, Message, UserMessage } from '../types'
 
-const KIND_ICONS = {
-  document: FileText,
-  image: ImageIcon,
-  code: FileCode2,
-  data: FileSpreadsheet,
-} as const
+/** Matches the startup screen threshold so both waits speak one language. */
+const REASSURE_AFTER_S = 20
 
 export interface ThreadProps {
   messages: Message[]
@@ -33,11 +20,17 @@ export interface ThreadProps {
   onToast: (text: string) => void
 }
 
-export function Thread({ messages, loading, onRegenerate, onRetry, onEditUser, onToast }: ThreadProps) {
+export function Thread({
+  messages,
+  loading,
+  onRegenerate,
+  onRetry,
+  onEditUser,
+  onToast,
+}: ThreadProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const stickToBottom = useRef(true)
 
-  /* Follow streaming output unless the reader scrolled away */
   const onScroll = () => {
     const el = scrollRef.current
     if (!el) return
@@ -46,9 +39,7 @@ export function Thread({ messages, loading, onRegenerate, onRetry, onEditUser, o
 
   useLayoutEffect(() => {
     const el = scrollRef.current
-    if (el && stickToBottom.current) {
-      el.scrollTop = el.scrollHeight
-    }
+    if (el && stickToBottom.current) el.scrollTop = el.scrollHeight
   }, [messages])
 
   return (
@@ -77,11 +68,9 @@ export function Thread({ messages, loading, onRegenerate, onRetry, onEditUser, o
   )
 }
 
-/* ── Skeleton while a conversation loads ─────────────────────── */
-
 function ThreadSkeleton() {
   return (
-    <div className="thread-skeleton" aria-hidden="true">
+    <div className="thread-skeleton" aria-busy="true" aria-label="Loading conversation">
       <div className="thread-skeleton__user" />
       <div className="thread-skeleton__row" style={{ width: '58%' }} />
       <div className="thread-skeleton__row" style={{ width: '92%' }} />
@@ -91,9 +80,15 @@ function ThreadSkeleton() {
   )
 }
 
-/* ── User message ────────────────────────────────────────────── */
+/* User turn: raised field, 1px seam, flush left, full measure. Never a bubble. */
 
-function UserBlock({ msg, onEdit }: { msg: UserMessage; onEdit: (id: string, text: string) => void }) {
+function UserBlock({
+  msg,
+  onEdit,
+}: {
+  msg: UserMessage
+  onEdit: (id: string, text: string) => void
+}) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(msg.text)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -115,21 +110,14 @@ function UserBlock({ msg, onEdit }: { msg: UserMessage; onEdit: (id: string, tex
 
   return (
     <motion.div
-      className="msg-user"
-      initial={{ opacity: 0, y: 10 }}
+      className="turn turn--user"
+      initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ type: 'spring', stiffness: 420, damping: 36 }}
+      transition={{ duration: 0.18 }}
     >
-      <div className={`msg-user__card${editing ? ' msg-user__card--editing' : ''}`}>
-        {msg.attachments.length > 0 && (
-          <div className="msg-user__files">
-            {msg.attachments.map((att) => (
-              <AttachmentBadge key={att.id} att={att} />
-            ))}
-          </div>
-        )}
+      <div className={`turn__field${editing ? ' turn__field--editing' : ''}`}>
         {editing ? (
-          <div className="msg-user__edit">
+          <div className="turn__edit">
             <textarea
               ref={textareaRef}
               value={draft}
@@ -147,7 +135,7 @@ function UserBlock({ msg, onEdit }: { msg: UserMessage; onEdit: (id: string, tex
               }}
               aria-label="Edit message"
             />
-            <div className="msg-user__edit-row">
+            <div className="turn__edit-row">
               <button
                 type="button"
                 className="ghost-btn"
@@ -159,7 +147,7 @@ function UserBlock({ msg, onEdit }: { msg: UserMessage; onEdit: (id: string, tex
                 Cancel
               </button>
               <button type="button" className="solid-btn" onClick={save} disabled={!draft.trim()}>
-                Save &amp; resend
+                Save and resend
               </button>
             </div>
           </div>
@@ -168,42 +156,25 @@ function UserBlock({ msg, onEdit }: { msg: UserMessage; onEdit: (id: string, tex
         )}
       </div>
       {!editing && (
-        <div className="msg-actions msg-actions--user">
-          <Tooltip label="Edit message" side="top">
-            <button
-              type="button"
-              className="icon-btn icon-btn--xs"
-              aria-label="Edit message"
-              onClick={() => {
-                setDraft(msg.text)
-                setEditing(true)
-              }}
-            >
-              <PenLine size={14} strokeWidth={1.8} />
-            </button>
-          </Tooltip>
+        <div className="turn__actions">
+          <button
+            type="button"
+            className="turn__action"
+            onClick={() => {
+              setDraft(msg.text)
+              setEditing(true)
+            }}
+          >
+            <PenLine size={13} strokeWidth={1.9} aria-hidden="true" />
+            Edit
+          </button>
         </div>
       )}
     </motion.div>
   )
 }
 
-function AttachmentBadge({ att }: { att: Attachment }) {
-  const Icon = KIND_ICONS[att.kind]
-  return (
-    <span className="attachment-chip attachment-chip--static">
-      <span className={`attachment-chip__icon attachment-chip__icon--${att.kind}`}>
-        <Icon size={14} strokeWidth={1.8} />
-      </span>
-      <span className="attachment-chip__meta">
-        <span className="attachment-chip__name">{att.name}</span>
-        <span className="attachment-chip__size">{formatBytes(att.size)}</span>
-      </span>
-    </span>
-  )
-}
-
-/* ── Assistant message ───────────────────────────────────────── */
+/* Assistant turn: no container at all. Prose sits directly on the page tone. */
 
 function AssistantBlock({
   msg,
@@ -217,7 +188,7 @@ function AssistantBlock({
   onToast: (text: string) => void
 }) {
   const [copied, setCopied] = useState(false)
-  const busy = msg.status === 'thinking' || msg.status === 'streaming'
+  const thinking = msg.status === 'thinking'
   const modelName = MODELS.find((m) => m.id === msg.model)?.name ?? 'Maia'
 
   const copy = () => {
@@ -229,72 +200,84 @@ function AssistantBlock({
 
   return (
     <motion.div
-      className="msg-assistant"
-      initial={{ opacity: 0, y: 8 }}
+      className="turn turn--assistant"
+      initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ type: 'spring', stiffness: 420, damping: 36 }}
+      transition={{ duration: 0.18 }}
     >
-      <div className="msg-assistant__head">
-        <MaiaMark size={17} thinking={busy} />
-        <span className="msg-assistant__name">Maia</span>
-        <AnimatePresence>
-          {msg.status === 'thinking' && (
-            <motion.span
-              className="msg-assistant__thinking"
-              initial={{ opacity: 0, x: -4 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, transition: { duration: 0.15 } }}
-            >
-              Thinking…
-            </motion.span>
-          )}
-        </AnimatePresence>
+      <div className="turn__head">
+        <MaiaMark size={17} thinking={thinking} />
+        <span className="turn__who">Maia</span>
       </div>
+
+      {thinking && <ThinkingReadout msg={msg} />}
 
       {msg.md && <Markdown md={msg.md} animateIn={msg.status === 'streaming'} />}
 
       {msg.status === 'error' && (
-        <motion.div
-          className="msg-error"
-          role="alert"
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ type: 'spring', stiffness: 480, damping: 36 }}
-        >
-          <CircleAlert size={15} strokeWidth={1.9} />
-          <div className="msg-error__meta">
-            <span>Maia hit a snag while responding.</span>
-            <span className="msg-error__hint">The connection dropped — nothing was lost.</span>
-          </div>
-          <button type="button" className="retry-btn" onClick={() => onRetry(msg.id)}>
-            <RefreshCw size={13} strokeWidth={2} />
+        <div className="turn__error" role="alert">
+          <CircleAlert size={15} strokeWidth={1.9} aria-hidden="true" />
+          <span className="turn__error-text">
+            {msg.error ?? 'Maia could not complete this response.'}
+          </span>
+          <button
+            type="button"
+            className="turn__action turn__action--retry"
+            onClick={() => onRetry(msg.id)}
+          >
+            <RefreshCw size={13} strokeWidth={1.9} aria-hidden="true" />
             Retry
           </button>
-        </motion.div>
+        </div>
       )}
 
-      {msg.status === 'stopped' && <div className="msg-stopped">Generation stopped</div>}
+      {msg.status === 'stopped' && <p className="turn__note">Generation stopped.</p>}
 
       {(msg.status === 'complete' || msg.status === 'stopped') && (
-        <div className="msg-actions">
-          <Tooltip label={copied ? 'Copied' : 'Copy response'} side="top">
-            <button type="button" className="icon-btn icon-btn--xs" aria-label="Copy response" onClick={copy}>
-              {copied ? <Check size={14} strokeWidth={2} /> : <Copy size={14} strokeWidth={1.8} />}
-            </button>
-          </Tooltip>
-          <Tooltip label="Regenerate" side="top">
-            <button
-              type="button"
-              className="icon-btn icon-btn--xs"
-              aria-label="Regenerate response"
-              onClick={() => onRegenerate(msg.id)}
-            >
-              <RefreshCw size={14} strokeWidth={1.8} />
-            </button>
-          </Tooltip>
-          <span className="msg-actions__model">{modelName}</span>
+        <div className="turn__actions">
+          <button type="button" className="turn__action" onClick={copy}>
+            {copied ? (
+              <Check size={13} strokeWidth={2} aria-hidden="true" />
+            ) : (
+              <Copy size={13} strokeWidth={1.9} aria-hidden="true" />
+            )}
+            {copied ? 'Copied' : 'Copy'}
+          </button>
+          <button type="button" className="turn__action" onClick={() => onRegenerate(msg.id)}>
+            <RefreshCw size={13} strokeWidth={1.9} aria-hidden="true" />
+            Regenerate
+          </button>
+          <span className="turn__model">{modelName}</span>
         </div>
       )}
     </motion.div>
+  )
+}
+
+/**
+ * Elapsed, never progress.
+ *
+ * The backend returns one complete response, so there is no position to report
+ * and any bar would be fiction. This shows the model, the inference path when
+ * the orchestrator actually reported one, and a tabular clock counting up.
+ */
+function ThinkingReadout({ msg }: { msg: AssistantMessage }) {
+  const seconds = useElapsed(msg.startedAt, true)
+  const path = useInferencePath()
+  const modelName = MODELS.find((m) => m.id === msg.model)?.name ?? 'Maia'
+
+  return (
+    <div className="turn__readout" role="status" aria-live="polite">
+      <span className="turn__readout-line">
+        <span>{modelName}</span>
+        {path && <span className="turn__readout-seg">{path.toUpperCase()}</span>}
+        <span className="turn__clock">{formatElapsed(seconds)}</span>
+      </span>
+      {seconds >= REASSURE_AFTER_S && (
+        <span className="turn__readout-note">
+          Local models can take a moment on first launch.
+        </span>
+      )}
+    </div>
   )
 }

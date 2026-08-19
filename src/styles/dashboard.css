@@ -1,0 +1,346 @@
+/* ─────────────────────────────────────────────────────────────
+   Deck — the panel face.
+   Regions abut. No gutters, no cards, nothing floats. Grouping is
+   done by seam, surface tone, and alignment.
+   ───────────────────────────────────────────────────────────── */
+
+.deck {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  background: var(--bg-root);
+}
+
+/* ── Regions ────────────────────────────────────────────────── */
+
+.region {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--bg-workspace);
+}
+
+/* The chat region absorbs remaining width, so its left edge is structurally
+   fixed and only its right edge can travel when the face re-registers. */
+.region--chat {
+  flex: 1 1 auto;
+  border-right: var(--seam) solid var(--border-soft);
+}
+
+.region__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: var(--workspace-header-height);
+  flex: 0 0 auto;
+  padding: 0 var(--panel-pad);
+  border-bottom: var(--seam) solid var(--border-faint);
+  color: var(--text-secondary);
+}
+
+.region__legend {
+  margin: 0;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Every region on the face carries the same engraved legend, including the
+   primary one. The conversation title is a separate, unengraved element. */
+.region__title {
+  font-size: var(--t-title);
+  font-weight: var(--w-title);
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.region__flag {
+  font-size: var(--t-meta);
+  color: var(--text-tertiary);
+  border: var(--seam) solid var(--border-soft);
+  border-radius: var(--r-xs);
+  padding: 1px 6px;
+  white-space: nowrap;
+}
+
+.region__head-end {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ghost-btn--icon {
+  gap: 6px;
+}
+
+.region__body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.region__fill {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* On the dashboard the composer sits on the region axis, with the legend and
+   the recents rows. Expanded, it adopts the thread's container so it shares the
+   reading axis exactly. Each state aligns with what is beside it. */
+.region__composer {
+  flex: 0 0 auto;
+  padding: 0 var(--panel-pad) var(--composer-bottom-space);
+}
+
+.region__composer--measure {
+  width: 100%;
+  max-width: var(--thread-width);
+  margin: 0 auto;
+  padding: 0 var(--thread-pad-x) var(--composer-bottom-space);
+}
+
+/* ── Secondary stack ────────────────────────────────────────── */
+
+.deck__stack {
+  flex: 0 0 auto;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.deck__stack-inner {
+  width: 296px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.region--dormant {
+  flex: 1;
+  background: var(--bg-root);
+  border-bottom: var(--seam) solid var(--border-faint);
+}
+
+.region--dormant:last-child {
+  border-bottom: none;
+}
+
+.region--dormant .region__head {
+  border-bottom-color: transparent;
+  color: var(--text-secondary);
+}
+
+/* The readout and the line naming what it waits on are one block. The empty
+   space belongs below them, not between them. */
+.region__body--readout {
+  padding: 2px var(--panel-pad) var(--panel-pad);
+  justify-content: flex-start;
+  gap: 10px;
+}
+
+.region__awaiting {
+  margin: 0;
+  font-size: var(--t-meta);
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+/* ── Dormant readouts: an instrument with no signal on that input ── */
+
+.readout {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.readout__rows {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding-top: 4px;
+}
+
+.readout__rows--tight {
+  gap: 6px;
+  padding-top: 0;
+}
+
+/* The reading sits at rest: the row is drawn, the value is absent. */
+.rest-row {
+  display: block;
+  height: var(--seam);
+  background: var(--border-soft);
+}
+
+.readout__dial {
+  display: flex;
+  align-items: baseline;
+  gap: 1px;
+  color: var(--text-secondary);
+}
+
+.readout__value {
+  font-size: 30px;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.readout__unit {
+  font-size: 17px;
+  line-height: 1;
+}
+
+/* ── Recents, on the dashboard ──────────────────────────────── */
+
+.recents {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 6px var(--panel-pad) 0;
+}
+
+.recents__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.recents__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 8px;
+  border-radius: var(--r-sm);
+  border-bottom: var(--seam) solid var(--border-faint);
+  color: var(--text-secondary);
+  font-size: var(--t-body);
+  text-align: left;
+  transition:
+    background-color var(--dur-fast) var(--ease-standard),
+    color var(--dur-fast) var(--ease-standard);
+}
+
+.recents__row:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+.recents__title {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.recents--empty {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 3px;
+  padding-bottom: 14px;
+}
+
+.recents__empty-line {
+  margin: 0;
+  font-size: var(--t-body);
+  color: var(--text-secondary);
+}
+
+.recents__empty-hint {
+  margin: 0;
+  font-size: var(--t-meta);
+  color: var(--text-tertiary);
+}
+
+/* ── Chat empty state: rows in the panel vocabulary, not cards ── */
+
+.chat-empty {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 0 var(--thread-pad-x) 8px;
+  max-width: var(--thread-width);
+  width: 100%;
+  margin: 0 auto;
+}
+
+.chat-empty__lead {
+  margin: 0 0 12px;
+  font-size: var(--t-body);
+  color: var(--text-secondary);
+}
+
+.chat-empty__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: var(--seam) solid var(--border-faint);
+}
+
+.chat-empty__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: var(--suggestion-padding);
+  border-bottom: var(--seam) solid var(--border-faint);
+  color: var(--text-secondary);
+  font-size: var(--t-body);
+  text-align: left;
+  transition:
+    background-color var(--dur-fast) var(--ease-standard),
+    color var(--dur-fast) var(--ease-standard);
+}
+
+.chat-empty__row:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+/* ── Responsive ─────────────────────────────────────────────── */
+
+/* Maia ships as an 800x600 window by default, so the readouts must survive
+   there: the stack narrows rather than disappearing. */
+@media (max-width: 1100px) {
+  .deck__stack-inner {
+    width: 232px;
+  }
+}
+
+/* Below 680px there is genuinely no room for a second column and the deck
+   becomes the chat region alone. */
+@media (max-width: 680px) {
+  .deck__stack {
+    display: none;
+  }
+
+  .region--chat {
+    border-right: none;
+  }
+}
+
+/* The reading column switches to the mobile inset here; the composer must
+   switch with it or the two axes part by 10px. */
+@media (max-width: 720px) {
+  .region__composer--measure,
+  .chat-empty {
+    padding-left: var(--thread-mobile-pad-x);
+    padding-right: var(--thread-mobile-pad-x);
+  }
+}

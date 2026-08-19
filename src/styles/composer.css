@@ -1,91 +1,71 @@
 /* ─────────────────────────────────────────────────────────────
-   Composer: the floating input surface
+   Composer — a flat input module on the panel face.
+   Not a floating pill. No shadow, no blur, 2px radius, 1px seam.
    ───────────────────────────────────────────────────────────── */
 
+/* The slot owns width and centring; the composer fills it. Otherwise the two
+   disagree and the composer drifts off whatever axis sits beside it. */
 .composer {
-  position: relative;
-  display: flex;
-  flex-direction: column;
+  width: 100%;
+  background: var(--composer-face);
+  border: var(--seam) solid var(--composer-border);
+  border-radius: var(--r-xs);
   padding: var(--composer-padding);
-  border-radius: var(--composer-radius);
-  background: var(--composer-glass);
-  backdrop-filter: blur(42px) saturate(1.14);
-  -webkit-backdrop-filter: blur(42px) saturate(1.14);
-  border: 1px solid var(--composer-border);
-  box-shadow: var(--highlight-inner), 0 8px 30px color-mix(in srgb, var(--bg-root) 20%, transparent);
-  transition:
-    border-color 220ms ease,
-    box-shadow 260ms ease,
-    background var(--dur-theme) var(--ease-standard),
-    color var(--dur-theme) var(--ease-standard);
-  cursor: text;
+  transition: border-color var(--dur-fast) var(--ease-standard);
 }
 
 .composer:focus-within {
   border-color: var(--accent-border);
-  box-shadow: var(--highlight-inner), 0 10px 34px color-mix(in srgb, var(--bg-root) 24%, transparent);
+}
+
+/* In-flight and the armed primary action both outrank focus, so the composer
+   border demotes to neutral and the send button is the single lit element. */
+.app[data-busy='true'] .composer:focus-within,
+.app[data-armed='true'] .composer:focus-within {
+  border-color: var(--border-strong);
 }
 
 .composer--temp {
-  border-style: solid;
-  border-color: var(--accent-border);
-  box-shadow: var(--highlight-inner), inset 0 0 0 1px var(--accent-tint), var(--shadow-float);
-}
-
-.composer--dragging {
-  border-color: var(--ring);
   border-style: dashed;
-  background: var(--glass-heavy);
 }
-
-/* ── Input area ── */
 
 .composer__input {
   position: relative;
   overflow: hidden;
-  min-height: var(--composer-line-height);
 }
 
 .composer__input textarea {
   position: absolute;
   inset: 0;
   width: 100%;
+  height: 100%;
   resize: none;
-  background: none;
   border: none;
   outline: none;
-  padding: 0;
+  background: transparent;
   font-size: var(--composer-input-size);
   line-height: var(--composer-line-height);
   color: var(--text-primary);
-  caret-color: var(--accent);
-  overflow-y: auto;
 }
 
 .composer__input textarea::placeholder {
-  color: var(--text-faint);
+  color: var(--text-secondary);
 }
 
-.composer__input textarea:focus-visible {
-  box-shadow: none;
-}
-
+/* Invisible twin that measures the real wrapped height. */
 .composer__replica {
   visibility: hidden;
   white-space: pre-wrap;
-  word-break: break-word;
+  overflow-wrap: anywhere;
   font-size: var(--composer-input-size);
   line-height: var(--composer-line-height);
   min-height: var(--composer-line-height);
-  pointer-events: none;
 }
-
-/* ── Controls row ── */
 
 .composer__row {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   margin-top: var(--composer-row-space);
 }
 
@@ -94,28 +74,41 @@
 }
 
 .composer__hint {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-size: 12px;
-  color: var(--text-faint);
-  margin-right: 9px;
+  font-size: var(--t-meta);
+  color: var(--text-tertiary);
+  margin-right: 4px;
+  white-space: nowrap;
 }
+
+.composer__hint kbd {
+  font-family: inherit;
+  font-size: 10.5px;
+  border: var(--seam) solid var(--border-soft);
+  border-radius: var(--r-xs);
+  padding: 1px 4px;
+}
+
+/* ── Model chip ─────────────────────────────────────────────── */
 
 .composer__model-slot {
   position: relative;
 }
 
 .model-chip {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-size: 12.5px;
-  font-weight: 550;
-  color: var(--text-secondary);
   padding: var(--model-chip-padding);
-  border-radius: 999px;
-  transition: background var(--dur-fast) ease, color var(--dur-fast) ease;
+  border-radius: var(--r-sm);
+  font-size: var(--t-label);
+  font-weight: var(--w-label);
+  color: var(--text-secondary);
+  transition:
+    background-color var(--dur-fast) var(--ease-standard),
+    color var(--dur-fast) var(--ease-standard);
 }
 
 .model-chip:hover,
@@ -130,155 +123,41 @@
   color: var(--text-tertiary);
 }
 
-/* ── Send / stop ── */
+/* ── Send and stop ──────────────────────────────────────────── */
 
 .send-btn {
-  width: var(--composer-control-size);
-  height: var(--composer-control-size);
-  border-radius: 999px;
   display: grid;
   place-items: center;
-  background: var(--accent-gradient);
-  color: var(--accent-ink);
-  box-shadow: var(--highlight-inner), var(--shadow-control);
+  flex: 0 0 auto;
+  width: var(--composer-control-size);
+  height: var(--composer-control-size);
+  border-radius: var(--r-sm);
+  background: var(--surface-3);
+  color: var(--text-secondary);
   transition:
-    filter var(--dur-fast) ease,
-    background var(--dur-med) ease,
-    box-shadow var(--dur-med) ease,
-    color var(--dur-med) ease;
+    background-color var(--dur-fast) var(--ease-standard),
+    opacity var(--dur-fast) var(--ease-standard);
+}
+
+/* Lit only when it is the armed primary action. */
+.app[data-armed='true'] .send-btn:not(:disabled) {
+  background: var(--accent-fill);
+  color: var(--accent-on-fill);
 }
 
 .send-btn:hover:not(:disabled) {
-  filter: brightness(1.08);
+  opacity: 0.88;
 }
 
 .send-btn:disabled {
-  background: var(--surface-hover);
+  background: var(--surface-3);
   color: var(--text-faint);
-  box-shadow: none;
 }
 
+/* Stop is the in-flight control, and in-flight owns the signal. */
 .send-btn--stop {
-  background: var(--surface-3);
-  color: var(--accent-strong);
-  border: 1px solid var(--accent-border);
-  box-shadow: 0 0 0 3px var(--accent-tint);
+  background: var(--accent-fill);
+  color: var(--accent-on-fill);
 }
 
-.send-btn--stop:hover {
-  background: var(--surface-pressed);
-  filter: none;
-}
 
-/* ── Attachments ── */
-
-.composer__chips {
-  overflow: hidden;
-}
-
-.composer__chips-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding-bottom: 11px;
-}
-
-.attachment-chip {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 5.5px 9px 5.5px 6px;
-  border-radius: 11px;
-  background: var(--surface-2);
-  border: 1px solid var(--border-faint);
-  box-shadow: var(--highlight-inner);
-  max-width: 230px;
-  cursor: default;
-}
-
-.attachment-chip__icon {
-  flex: none;
-  width: 27px;
-  height: 27px;
-  display: grid;
-  place-items: center;
-  border-radius: 8px;
-}
-
-.attachment-chip__icon--document { background: var(--accent-tint); color: var(--accent); }
-.attachment-chip__icon--image    { background: var(--surface-selected); color: var(--success); }
-.attachment-chip__icon--code     { background: var(--surface-hover); color: var(--text-secondary); }
-.attachment-chip__icon--data     { background: var(--accent-tint); color: var(--accent-strong); }
-
-.attachment-chip__meta {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.attachment-chip__name {
-  font-size: 12.5px;
-  font-weight: 500;
-  color: var(--text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.attachment-chip__size {
-  font-size: 10.5px;
-  color: var(--text-tertiary);
-}
-
-.attachment-chip__remove {
-  position: absolute;
-  top: -7px;
-  right: -7px;
-  width: 19px;
-  height: 19px;
-  display: grid;
-  place-items: center;
-  border-radius: 999px;
-  background: var(--surface-3);
-  border: 1px solid var(--border-soft);
-  color: var(--text-secondary);
-  opacity: 0;
-  transform: scale(0.7);
-  transition:
-    opacity var(--dur-fast) ease,
-    transform var(--dur-fast) var(--ease-out),
-    color var(--dur-fast) ease,
-    background var(--dur-fast) ease;
-}
-
-.attachment-chip:hover .attachment-chip__remove,
-.attachment-chip__remove:focus-visible {
-  opacity: 1;
-  transform: scale(1);
-}
-
-.attachment-chip__remove:hover {
-  color: var(--text-strong);
-  background: var(--surface-pressed);
-}
-
-/* ── Drop state ── */
-
-.composer__drop {
-  position: absolute;
-  inset: 5px;
-  z-index: 5;
-  border-radius: 18px;
-  border: 1.5px dashed var(--ring);
-  background: var(--glass-heavy);
-  backdrop-filter: blur(3px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 9px;
-  color: var(--accent);
-  font-size: 13.5px;
-  font-weight: 550;
-  pointer-events: none;
-}

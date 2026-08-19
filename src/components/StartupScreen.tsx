@@ -73,7 +73,7 @@ export function StartupScreen({
       animate={{ opacity: 1 }}
       exit={reduceMotion
         ? { opacity: 0 }
-        : { opacity: 0, scale: 1.012, filter: 'blur(7px)' }}
+        : { opacity: 0, scale: 1.008 }}
       transition={{ duration: reduceMotion ? 0.01 : 0.34, ease: [0.22, 1, 0.36, 1] }}
     >
       <div className="startup-screen__ambient" aria-hidden="true" />
@@ -153,9 +153,7 @@ export function StartupScreen({
             </button>
           </div>
         ) : (
-          <div className="startup-screen__progress" aria-hidden="true">
-            <span />
-          </div>
+          <div className="startup-screen__progress" aria-hidden="true" />
         )}
       </div>
 

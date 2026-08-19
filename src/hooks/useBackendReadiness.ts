@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { inferencePathFromStatus, type InferencePath } from '../lib/inference'
 
 export type BackendStartupPhase = 'checking' | 'delayed' | 'ready' | 'error'
 export type StartupStep =
@@ -57,6 +58,7 @@ export function useBackendReadiness({
   )
   const [statusMessage, setStatusMessage] = useState<string>()
   const [errorCode, setErrorCode] = useState<string>()
+  const [inferencePath, setInferencePath] = useState<InferencePath>()
   const [attempt, setAttempt] = useState(0)
 
   const retry = useCallback(async () => {
@@ -123,6 +125,8 @@ export function useBackendReadiness({
             if (!stopped) {
               setStep(payload.step)
               setStatusMessage(payload.message)
+              const path = inferencePathFromStatus(payload.message)
+              if (path) setInferencePath(path)
             }
             if (payload.step !== 'waiting-backend') {
               if (!stopped) scheduleNextCheck(checkReadiness)
@@ -181,5 +185,5 @@ export function useBackendReadiness({
     }
   }, [attempt, healthUrl, orchestratorStartUrl, orchestratorStatusUrl])
 
-  return { cancel, errorCode, phase, retry, statusMessage, step }
+  return { cancel, errorCode, inferencePath, phase, retry, statusMessage, step }
 }

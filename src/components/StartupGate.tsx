@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useBackendReadiness } from '../hooks/useBackendReadiness'
+import { InferenceContext } from '../lib/inference'
 import { StartupScreen } from './StartupScreen'
 
 interface StartupGateProps {
@@ -20,7 +21,7 @@ export function StartupGate({
   orchestratorRetryUrl,
   children,
 }: StartupGateProps) {
-  const { cancel, errorCode, phase, retry, statusMessage, step } =
+  const { cancel, errorCode, inferencePath, phase, retry, statusMessage, step } =
     useBackendReadiness({
       healthUrl,
       orchestratorStartUrl,
@@ -45,7 +46,9 @@ export function StartupGate({
             ease: [0.22, 1, 0.36, 1],
           }}
         >
-          {children}
+          <InferenceContext.Provider value={inferencePath}>
+            {children}
+          </InferenceContext.Provider>
         </motion.div>
       ) : (
         <StartupScreen
