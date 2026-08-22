@@ -1,6 +1,6 @@
 /* ─────────────────────────────────────────────────────────────
    Maia — panel primitives.
-   One grotesque family, tight geometry, 1px seams, no blur.
+   One grotesque family, soft geometry, floating panels on ground.
    Theme-specific semantic tokens live in theme-dark/light.css.
    ───────────────────────────────────────────────────────────── */
 
@@ -9,12 +9,18 @@
   --display: var(--sans);
   --mono: 'JetBrains Mono Variable', ui-monospace, 'SFMono-Regular', Menlo, monospace;
 
-  /* Panel geometry — molded plastic, not web bubbles. */
-  --r-xs: 2px;
-  --r-sm: 3px;
-  --r-md: 4px;
-  --r-lg: 5px;
-  --r-xl: 6px;
+  /* Geometry — softened. The panel survives as tone and elevation; the hard
+     edge does not. Corners are generous, and they nest: a child's radius is
+     always at least one step below its parent's, so curves stay concentric. */
+  --r-xs: 5px;
+  --r-sm: 8px;
+  --r-md: 11px;
+  --r-lg: 14px;
+  --r-xl: 18px;
+  /* Floating regions. Card radii hold the 12–16px band. */
+  --r-panel: 16px;
+  /* Pills are for small controls only — the switch, the send key, chips. */
+  --r-pill: 999px;
   --seam: 1px;
 
   /* Type scale — six steps, ~1.15 ratio. Weight promotes before size does. */
@@ -45,8 +51,8 @@
   --user-message-width: 100%;
   --user-message-mobile-width: 100%;
   --user-message-space: 30px;
-  --user-bubble-radius: var(--r-md);
-  --user-bubble-padding: 10px 14px;
+  --user-bubble-radius: var(--r-lg);
+  --user-bubble-padding: 11px 15px;
   --assistant-message-space: 42px;
   --assistant-head-space: 10px;
   --heading-space-before: 0.9em;
@@ -65,7 +71,7 @@
   --quote-radius: 0;
   --quote-background: transparent;
   --divider-space: 1.4em;
-  --structured-radius: var(--r-md);
+  --structured-radius: var(--r-lg);
   --table-cell-padding: 9px 12px;
   --code-block-padding: 14px 16px;
   --code-bar-padding: 7px 9px 7px 14px;
@@ -74,8 +80,8 @@
   --inline-code-radius: var(--r-xs);
   --composer-slot-width: 700px;
   --composer-bottom-space: 18px;
-  --composer-padding: 10px 11px 9px;
-  --composer-radius: var(--r-md);
+  --composer-padding: 12px 13px 10px;
+  --composer-radius: var(--r-xl);
   --composer-input-size: 15px;
   --composer-line-height: 23px;
   --composer-row-space: 7px;
@@ -89,14 +95,17 @@
   --settings-row-padding: 9px;
   --segment-option-padding: 5px 12px;
   --suggestion-padding: 9px 11px;
-  --suggestion-radius: var(--r-sm);
+  --suggestion-radius: var(--r-md);
   --suggestion-icon-size: 26px;
   --suggestion-grid-gap: 1px;
   --home-stack-space: 24px;
   --workspace-header-height: 46px;
 
-  /* Dashboard panel field */
-  --panel-gap: 0px;
+  /* The frame. Floating panels need ground to float on, so the shell holds a
+     margin and the regions hold a gutter. Both are constant across densities:
+     the frame is a property of the object, not of the reading density. */
+  --frame-pad: 10px;
+  --panel-gap: 8px;
   --panel-pad: 16px;
   --dash-pad: 20px;
 
@@ -108,11 +117,13 @@
   --z-tooltip: 70;
   --z-startup: 80;
 
+  /* Exponential ease-out: fast departure, long settle. The softness is in
+     the tail, which is what reads as composure rather than snap. */
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
-  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
-  --dur-fast: 120ms;
-  --dur-med: 190ms;
-  --dur-slow: 260ms;
+  --ease-standard: cubic-bezier(0.32, 0.72, 0, 1);
+  --dur-fast: 150ms;
+  --dur-med: 220ms;
+  --dur-slow: 300ms;
   --dur-theme: 200ms;
 }
 
@@ -122,7 +133,7 @@
   --md-block-gap: 6px;
   --thread-pad-top: 32px;
   --user-message-space: 22px;
-  --user-bubble-padding: 8px 12px;
+  --user-bubble-padding: 9px 13px;
   --assistant-message-space: 32px;
   --assistant-head-space: 8px;
   --heading-space-before: 0.55em;
@@ -138,7 +149,7 @@
   --code-bar-padding: 5px 7px 5px 11px;
   --code-line-height: 1.5;
   --composer-bottom-space: 12px;
-  --composer-padding: 8px 9px 7px;
+  --composer-padding: 9px 10px 8px;
   --composer-input-size: 14px;
   --composer-line-height: 21px;
   --composer-row-space: 5px;
@@ -155,7 +166,6 @@
   --suggestion-icon-size: 24px;
   --home-stack-space: 18px;
   --workspace-header-height: 42px;
-  --panel-gap: 0px;
   --panel-pad: 12px;
   --dash-pad: 14px;
 }
@@ -183,7 +193,7 @@
   --code-bar-padding: 9px 12px 9px 17px;
   --code-line-height: 1.76;
   --composer-bottom-space: 24px;
-  --composer-padding: 13px 14px 12px;
+  --composer-padding: 15px 16px 13px;
   --composer-input-size: 16px;
   --composer-line-height: 26px;
   --composer-row-space: 9px;
@@ -200,7 +210,6 @@
   --suggestion-icon-size: 30px;
   --home-stack-space: 32px;
   --workspace-header-height: 52px;
-  --panel-gap: 0px;
   --panel-pad: 20px;
   --dash-pad: 26px;
 }
@@ -281,15 +290,16 @@ a {
   color: var(--text-tertiary);
 }
 
-/* Focus ring — a hard panel outline, never a soft glow. */
+/* Focus ring — a real outline, never a soft glow. It stands off the control
+   now so it reads around a curve instead of cutting across it. */
 :focus {
   outline: none;
 }
 
 :focus-visible {
   outline: 2px solid var(--ring-active, var(--ring));
-  outline-offset: 1px;
-  border-radius: var(--r-xs);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
 }
 
 /* DIRECTION.md §3 precedence: in-flight beats focused beats selected.
@@ -316,7 +326,7 @@ a {
 
 *::-webkit-scrollbar-thumb {
   background: var(--scrollbar);
-  border-radius: 0;
+  border-radius: var(--r-pill);
   border: 3px solid transparent;
   background-clip: content-box;
 }

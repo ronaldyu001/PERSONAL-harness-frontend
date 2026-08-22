@@ -29,8 +29,21 @@ export interface DeckProps {
 
 const SECONDARY = PANELS.filter((panel) => panel.slot === 'secondary')
 
+const PANEL_GAP_FALLBACK = 8
+
+/* The gutter between the chat panel and the stack lives inside the stack, so
+   the animated width has to carry it: panel plus gutter collapse as one and
+   the chat panel's right edge lands flush against the frame. --panel-gap is
+   deliberately constant across densities, which is what lets a single read
+   stay in step with the stylesheet. */
+function readPanelGap() {
+  const raw = getComputedStyle(document.documentElement).getPropertyValue('--panel-gap')
+  const parsed = Number.parseFloat(raw)
+  return Number.isFinite(parsed) ? parsed : PANEL_GAP_FALLBACK
+}
+
 function useStackWidth() {
-  const read = () => (window.innerWidth <= 1100 ? 232 : 296)
+  const read = () => (window.innerWidth <= 1100 ? 232 : 296) + readPanelGap()
   const [width, setWidth] = useState(read)
   useEffect(() => {
     const onResize = () => setWidth(read())
@@ -141,7 +154,8 @@ export function Deck(props: DeckProps) {
       </section>
 
       {/* Secondary regions translate off-frame; they never resize the chat's
-          left edge. Width animates to zero so the face stays continuous. */}
+          left edge. Width animates to zero, gutter included, so the chat panel
+          ends flush against the frame rather than short of it. */}
       <motion.div
         className="deck__stack"
         animate={{ width: stackWidth }}

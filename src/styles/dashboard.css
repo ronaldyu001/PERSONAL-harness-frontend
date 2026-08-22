@@ -1,7 +1,9 @@
 /* ─────────────────────────────────────────────────────────────
-   Deck — the panel face.
-   Regions abut. No gutters, no cards, nothing floats. Grouping is
-   done by seam, surface tone, and alignment.
+   Deck — regions as floating panels.
+   Each region is its own rounded surface on the ground, separated by a
+   gutter rather than a seam. The gutter belongs to the stack, not to the
+   deck's flex gap, so it collapses with the stack when the face
+   re-registers and never strands dead space at the right edge.
    ───────────────────────────────────────────────────────────── */
 
 .deck {
@@ -14,30 +16,47 @@
 
 /* ── Regions ────────────────────────────────────────────────── */
 
+/* Elevation once: a shadow, so no border. The sheen is a 3% top wash that
+   keeps a large flat surface from reading as printed paper. */
 .region {
   display: flex;
   flex-direction: column;
   min-width: 0;
   min-height: 0;
-  background: var(--bg-workspace);
+  background-color: var(--bg-workspace);
+  background-image: var(--sheen);
+  border-radius: var(--r-panel);
+  box-shadow: var(--elev-panel);
+  overflow: hidden;
 }
 
 /* The chat region absorbs remaining width, so its left edge is structurally
    fixed and only its right edge can travel when the face re-registers. */
 .region--chat {
   flex: 1 1 auto;
-  border-right: var(--seam) solid var(--border-soft);
 }
 
+/* The rule under the head is inset from the panel's edges, so it never runs
+   into the corner radius and flattens it. */
 .region__head {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 8px;
   height: var(--workspace-header-height);
   flex: 0 0 auto;
   padding: 0 var(--panel-pad);
-  border-bottom: var(--seam) solid var(--border-faint);
   color: var(--text-secondary);
+}
+
+.region__head::after {
+  content: '';
+  position: absolute;
+  left: var(--panel-pad);
+  right: var(--panel-pad);
+  bottom: 0;
+  height: var(--seam);
+  background: var(--border-faint);
 }
 
 .region__legend {
@@ -66,8 +85,8 @@
   font-size: var(--t-meta);
   color: var(--text-secondary);
   border: var(--seam) dashed var(--border-strong);
-  border-radius: var(--r-xs);
-  padding: 1px 6px;
+  border-radius: var(--r-pill);
+  padding: 2px 9px;
   white-space: nowrap;
 }
 
@@ -119,26 +138,31 @@
   min-width: 0;
 }
 
+/* The gutter lives on the inner block. The animated outer width carries it,
+   so panel and gutter collapse together and the chat panel's right edge lands
+   flush against the frame in the expanded state. */
 .deck__stack-inner {
   width: 296px;
   height: 100%;
+  margin-left: var(--panel-gap);
   display: flex;
   flex-direction: column;
+  gap: var(--panel-gap);
 }
 
+/* Dormant regions sit on the quieter plane: still panels, but not the
+   display field, because there is nothing to read on them. */
 .region--dormant {
   flex: 1;
-  background: var(--bg-root);
-  border-bottom: var(--seam) solid var(--border-faint);
-}
-
-.region--dormant:last-child {
-  border-bottom: none;
+  background-color: var(--surface-1);
 }
 
 .region--dormant .region__head {
-  border-bottom-color: transparent;
   color: var(--text-secondary);
+}
+
+.region--dormant .region__head::after {
+  display: none;
 }
 
 /* The readout and the line naming what it waits on are one block. The empty
@@ -226,16 +250,20 @@
   list-style: none;
   margin: 0;
   padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
+/* Rows are separated by rhythm and a hover fill, not by a rule under each
+   one: a stack of hairlines is the thing that reads as a ledger. */
 .recents__row {
   display: flex;
   align-items: center;
   gap: 10px;
   width: 100%;
-  padding: 9px 8px;
-  border-radius: var(--r-sm);
-  border-bottom: var(--seam) solid var(--border-faint);
+  padding: 10px 10px;
+  border-radius: var(--r-md);
   color: var(--text-secondary);
   font-size: var(--t-body);
   text-align: left;
@@ -302,7 +330,9 @@
   list-style: none;
   margin: 0;
   padding: 0;
-  border-top: var(--seam) solid var(--border-faint);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .chat-empty__row {
@@ -312,7 +342,7 @@
   gap: 12px;
   width: 100%;
   padding: var(--suggestion-padding);
-  border-bottom: var(--seam) solid var(--border-faint);
+  border-radius: var(--suggestion-radius);
   color: var(--text-secondary);
   font-size: var(--t-body);
   text-align: left;
@@ -341,10 +371,6 @@
 @media (max-width: 680px) {
   .deck__stack {
     display: none;
-  }
-
-  .region--chat {
-    border-right: none;
   }
 }
 

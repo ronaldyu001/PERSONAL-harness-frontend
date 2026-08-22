@@ -1,13 +1,16 @@
 /* ─────────────────────────────────────────────────────────────
-   Shell — one continuous instrument face.
-   The control column is pinned; the deck fills what is left.
-   No blur, no gradients, no ambient washes. Depth is a 1px seam.
+   Shell — panels floating on ground.
+   The control column is still pinned; the deck fills what is left.
+   The frame inset is what makes a rounded corner mean anything: without
+   ground showing around it, a radius is just a clipped box.
    ───────────────────────────────────────────────────────────── */
 
 .app {
   display: flex;
   height: 100%;
   width: 100%;
+  padding: var(--frame-pad);
+  gap: var(--panel-gap);
   background: var(--bg-root);
   color: var(--text-primary);
   overflow: hidden;
@@ -15,13 +18,16 @@
 
 /* ── Control column ─────────────────────────────────────────── */
 
+/* Elevation is declared once: a shadow, and therefore no border. */
 .column {
   display: flex;
   flex-direction: column;
   flex: 0 0 auto;
   min-width: 0;
-  background: var(--surface-1);
-  border-right: var(--seam) solid var(--border-soft);
+  background-color: var(--surface-1);
+  background-image: var(--sheen);
+  border-radius: var(--r-panel);
+  box-shadow: var(--elev-panel);
   padding: 10px 8px 8px;
   gap: 12px;
   overflow: hidden;
@@ -39,7 +45,7 @@
   align-items: center;
   gap: 9px;
   padding: 4px;
-  border-radius: var(--r-sm);
+  border-radius: var(--r-md);
   min-width: 0;
   flex: 1;
 }
@@ -75,8 +81,8 @@
   align-items: center;
   gap: 10px;
   width: 100%;
-  padding: var(--navigation-row-padding) 7px;
-  border-radius: var(--r-sm);
+  padding: var(--navigation-row-padding) 9px;
+  border-radius: var(--r-md);
   color: var(--text-secondary);
   font-size: var(--t-label);
   font-weight: var(--w-label);
@@ -111,7 +117,8 @@
   background: var(--surface-pressed);
 }
 
-/* Selected is the lowest signal claim: a raised tone plus a left seam. */
+/* Selected is the lowest signal claim: a raised tone plus a left marker.
+   Inset on a rounded row, the marker hugs the curve rather than cutting it. */
 .column__row--on {
   background: var(--surface-selected);
   color: var(--text-primary);
@@ -130,7 +137,7 @@
   color: var(--text-secondary);
   border: var(--seam) solid var(--border-soft);
   border-radius: var(--r-xs);
-  padding: 1px 4px;
+  padding: 1px 5px;
   white-space: nowrap;
 }
 
@@ -171,8 +178,8 @@
 .column__convo {
   display: block;
   width: 100%;
-  padding: var(--conversation-row-padding) 7px;
-  border-radius: var(--r-sm);
+  padding: var(--conversation-row-padding) 9px;
+  border-radius: var(--r-md);
   font-size: var(--t-label);
   color: var(--text-secondary);
   text-align: left;
@@ -239,7 +246,7 @@
   place-items: center;
   width: var(--icon-control-sm);
   height: var(--icon-control-sm);
-  border-radius: var(--r-sm);
+  border-radius: var(--r-md);
   color: var(--text-secondary);
   transition:
     background-color var(--dur-fast) var(--ease-standard),
@@ -285,12 +292,13 @@
   color: var(--text-primary);
 }
 
+/* Text controls are pills — the one place this world spends a full radius. */
 .ghost-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 5px 9px;
-  border-radius: var(--r-sm);
+  padding: 5px 11px;
+  border-radius: var(--r-pill);
   font-size: var(--t-label);
   font-weight: var(--w-label);
   color: var(--text-secondary);
@@ -313,8 +321,8 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 5px 11px;
-  border-radius: var(--r-sm);
+  padding: 5px 13px;
+  border-radius: var(--r-pill);
   font-size: var(--t-label);
   font-weight: var(--w-label);
   background: var(--accent-fill);
@@ -350,9 +358,10 @@
   display: flex;
   align-items: center;
   gap: 7px;
-  padding: 8px 13px;
-  border-radius: var(--r-sm);
-  background: var(--surface-2);
+  padding: 9px 15px;
+  border-radius: var(--r-pill);
+  background-color: var(--surface-2);
+  background-image: var(--sheen);
   box-shadow: var(--shadow-float);
   font-size: var(--t-label);
   color: var(--text-primary);
@@ -364,6 +373,13 @@
 @media (max-width: 900px) {
   .column {
     padding: 8px 6px 6px;
+  }
+}
+
+/* Below the frame's usefulness the panels give their inset back to content. */
+@media (max-width: 680px) {
+  .app {
+    padding: var(--panel-gap);
   }
 }
 

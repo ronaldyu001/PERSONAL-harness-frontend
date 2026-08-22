@@ -1,7 +1,8 @@
 /* ─────────────────────────────────────────────────────────────
    Thread — the reading field.
    The assistant turn has no container at all; its prose sits directly
-   on the page tone. The user turn is a raised, seamed field.
+   on the panel tone. The user turn is a softly rounded tinted field,
+   bounded by tone alone — no seam, because the tint is enough.
    ───────────────────────────────────────────────────────────── */
 
 .thread {
@@ -48,11 +49,12 @@
   margin-bottom: var(--assistant-message-space);
 }
 
-/* User turn: raised the way a pressed key sits proud of a panel face. */
+/* User turn: a tinted field with a generous radius. The border rests
+   transparent and is spent on the editing state instead. */
 .turn__field {
   background: var(--message-user-bg);
   border: var(--seam) solid var(--message-user-border);
-  border-radius: var(--r-xs);
+  border-radius: var(--user-bubble-radius);
   box-shadow: var(--highlight-inner);
   padding: var(--user-bubble-padding);
   width: var(--user-message-width);
@@ -156,8 +158,8 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 8px;
-  border-radius: var(--r-sm);
+  padding: 5px 10px;
+  border-radius: var(--r-pill);
   font-size: var(--t-label);
   font-weight: var(--w-label);
   color: var(--text-tertiary);
@@ -221,13 +223,13 @@
   height: 44px;
   width: 100%;
   max-width: 68ch;
-  border-radius: var(--r-xs);
+  border-radius: var(--user-bubble-radius);
   background: var(--skeleton-low);
 }
 
 .thread-skeleton__row {
   height: 11px;
-  border-radius: var(--r-xs);
+  border-radius: var(--r-pill);
   background: var(--skeleton-low);
 }
 
@@ -328,20 +330,31 @@
   margin-left: var(--nested-list-indent);
 }
 
-/* Blockquote is a 2px left seam. No tint, no background. */
+/* Blockquote is a 2px left rule with rounded ends. No tint, no background. */
 .md-quote {
+  position: relative;
   margin: 0;
   padding: var(--quote-padding);
-  border-left: var(--quote-border-width) solid var(--border-strong);
   color: var(--text-secondary);
   font-style: italic;
+}
+
+.md-quote::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: var(--quote-border-width);
+  border-radius: var(--r-pill);
+  background: var(--border-strong);
 }
 
 /* Tables: hairline rules, tabular figures, no zebra, no filled header. */
 .md-table-wrap {
   overflow-x: auto;
   border: var(--seam) solid var(--border-soft);
-  border-radius: var(--r-sm);
+  border-radius: var(--r-md);
 }
 
 .md-table {
@@ -368,7 +381,8 @@
   border-bottom: none;
 }
 
-/* Code is a recessed display window — the one dark field in the light theme. */
+/* Code is a recessed display window — the one dark field in the light theme.
+   Its own tone separates it completely, so it needs no border on top. */
 .md-code {
   /* figure carries a UA margin of 1em 40px; the reading field sets its own. */
   margin: 0;
@@ -376,7 +390,6 @@
   border-radius: var(--structured-radius);
   overflow: hidden;
   background: var(--code-bg);
-  border: var(--seam) solid var(--border-soft);
 }
 
 .md-code__bar {
@@ -397,8 +410,8 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 3px 7px;
-  border-radius: var(--r-xs);
+  padding: 4px 9px;
+  border-radius: var(--r-pill);
   font-size: var(--t-meta);
   color: var(--code-muted);
   transition: color var(--dur-fast) var(--ease-standard);

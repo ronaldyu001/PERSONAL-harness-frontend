@@ -1,39 +1,53 @@
-/* Light theme — pale ABS instrument panel.
-   The panel face is the ground; display fields are lighter windows cut into it.
-   Flat tones only: no glass, no blur, no gradients. Depth is a 1px seam. */
+/* Light theme — pale ABS, softened.
+   The ground is the deepest tone; panels float above it as lighter fields.
+   Depth is carried by layered elevation and a faint top sheen, not by a seam. */
 
 :root[data-theme='light'],
 .app[data-theme='light'] {
   color-scheme: light;
 
-  --bg-root: #cfccc3;
-  --bg-workspace: #edebe5;
-  --surface-1: #c4c1b7;
-  --surface-2: #dad7ce;
-  --surface-3: #b6b3a9;
+  /* Four planes. Ground sits under everything; the display field is the
+     brightest surface, because it is the one you read. */
+  --bg-root: #d6d3ca;
+  --bg-workspace: #f6f4ef;
+  --surface-1: #eeece5;
+  --surface-2: #fcfbf7;
+  --surface-3: #e2dfd6;
 
-  /* Formerly translucent materials — now flat panel tones. */
-  --composer-face: #dad7ce;
-  --composer-border: rgba(34, 34, 30, 0.22);
+  --composer-face: #fcfbf7;
+  --composer-border: rgba(34, 34, 30, 0.16);
 
-  --surface-hover: rgba(34, 34, 30, 0.06);
-  --surface-pressed: rgba(34, 34, 30, 0.11);
-  --surface-selected: rgba(34, 34, 30, 0.09);
-  --segment-selected: #edebe5;
+  --surface-hover: rgba(34, 34, 30, 0.05);
+  --surface-pressed: rgba(34, 34, 30, 0.09);
+  --surface-selected: rgba(34, 34, 30, 0.07);
+  --segment-selected: #fcfbf7;
 
-  /* User turns are a recessed field, never a filled bubble. */
-  --message-user-bg: #dad7ce;
-  --message-user-border: rgba(34, 34, 30, 0.16);
+  /* The user turn is a tinted field, bounded by tone alone. */
+  --message-user-bg: #eae7de;
+  --message-user-border: transparent;
   --message-user-text: #22221e;
 
-  --border-faint: rgba(34, 34, 30, 0.1);
-  --border-soft: rgba(34, 34, 30, 0.16);
-  --border-strong: rgba(34, 34, 30, 0.28);
-  /* Molded ABS catches light on its top edge; pressed parts sit in shadow. */
-  --highlight-inner: inset 0 1px 0 rgba(255, 255, 255, 0.55);
-  --recess: inset 0 1px 2px rgba(46, 41, 30, 0.17);
-  --engrave: 0 1px 0 rgba(255, 255, 255, 0.5);
-  /* Molded-edge highlight, the one material seam this world keeps. */
+  --border-faint: rgba(34, 34, 30, 0.07);
+  --border-soft: rgba(34, 34, 30, 0.12);
+  --border-strong: rgba(34, 34, 30, 0.22);
+  /* Kept for raised controls, at a fraction of its old strength. */
+  --highlight-inner: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  --recess: inset 0 1px 2px rgba(46, 41, 30, 0.09);
+  /* Engraving belonged to the hard panel. Legends now read by tone alone. */
+  --engrave: none;
+
+  /* Elevation, declared in two layers: a tight contact shadow and a wide
+     ambient one. Never paired with a border on the same element. */
+  --elev-panel:
+    0 1px 2px rgba(46, 41, 30, 0.05),
+    0 8px 20px -8px rgba(46, 41, 30, 0.16);
+  --elev-raised:
+    0 1px 3px rgba(46, 41, 30, 0.07),
+    0 12px 28px -10px rgba(46, 41, 30, 0.2);
+
+  /* A 3% wash down from the top edge, so surfaces read lit rather than
+     printed. Low enough that it never becomes a gradient you notice. */
+  --sheen: linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0) 44%);
 
   --text-primary: #22221e;
   --text-strong: #121210;
@@ -41,38 +55,41 @@
   --text-tertiary: #5f5f57;
   --text-faint: #74746a;
 
-  --accent: #b4470a;
-  --accent-border: rgba(180, 71, 10, 0.42);
-  --ring: rgba(180, 71, 10, 0.62);
+  --accent: #a8420a;
+  --accent-border: rgba(168, 66, 10, 0.42);
+  --ring: rgba(168, 66, 10, 0.62);
   --focus-neutral: #22221e;
-  --accent-fill: #b4470a;
+  --accent-fill: #a8420a;
   --accent-on-fill: #fff7f0;
   --switch-knob: #f5f3ec;
   --switch-knob-on: #f5f3ec;
   --control-on: #4a4a43;
 
-  --success: #3f6b36;
-  --danger: #a33218;
-  --danger-strong: #85260f;
+  --success: #3b6432;
+  --danger: #993016;
+  --danger-strong: #7d240e;
 
-  --selection-bg: rgba(210, 84, 10, 0.22);
+  --selection-bg: rgba(210, 84, 10, 0.2);
   --selection-text: #22221e;
-  --scrollbar: rgba(34, 34, 30, 0.22);
-  --scrollbar-hover: rgba(34, 34, 30, 0.34);
+  --scrollbar: rgba(34, 34, 30, 0.18);
+  --scrollbar-hover: rgba(34, 34, 30, 0.3);
 
-  /* No ambient wash in a panel world. */
-  --scrim: rgba(30, 30, 26, 0.34);
+  --scrim: rgba(30, 30, 26, 0.32);
 
-  --shadow-float: 0 2px 6px rgba(46, 41, 30, 0.16);
-  --shadow-menu: 0 4px 16px rgba(46, 41, 30, 0.22);
+  --shadow-float:
+    0 1px 2px rgba(46, 41, 30, 0.06),
+    0 8px 20px -8px rgba(46, 41, 30, 0.18);
+  --shadow-menu:
+    0 2px 4px rgba(46, 41, 30, 0.07),
+    0 16px 40px -12px rgba(46, 41, 30, 0.26);
 
   --mark-mid: #4a4a43;
-  --mark-core: #edebe5;
+  --mark-core: #f6f4ef;
 
   /* Code is a recessed display window, dark in both themes. */
   --code-bg: #24241f;
   --code-bar: rgba(255, 255, 255, 0.05);
-  --code-inline-bg: rgba(34, 34, 30, 0.08);
+  --code-inline-bg: rgba(34, 34, 30, 0.07);
   --code-text: #e4e2da;
   --code-muted: #9a9a90;
   --code-accent: #e88b45;
@@ -82,5 +99,5 @@
   --code-type: #c9c6bd;
   --code-punct: #9a9a90;
 
-  --skeleton-low: rgba(34, 34, 30, 0.05);
+  --skeleton-low: rgba(34, 34, 30, 0.055);
 }
