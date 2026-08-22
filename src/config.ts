@@ -2,8 +2,8 @@ import type { Conversation, ModelOption } from './types'
 
 export const MODELS: ModelOption[] = [
   {
-    id: 'llama',
-    name: 'Llama 3.1',
+    id: 'qwen',
+    name: 'Qwen 3 14B',
     caption: 'Local model through LiteLLM',
     badge: 'Default',
   },

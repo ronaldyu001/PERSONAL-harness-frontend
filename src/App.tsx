@@ -62,7 +62,7 @@ export default function App({ sendChat }: AppProps) {
   const [columnExpanded, setColumnExpanded] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [tempMode, setTempMode] = useState(false)
-  const [model, setModel] = useState('llama')
+  const [model, setModel] = useState('qwen')
   const [toast, setToast] = useState<{ id: number; text: string } | null>(null)
   const [prefs, setPrefs] = useState<Prefs>(readPreferences)
   const [armed, setArmed] = useState(false)
@@ -234,8 +234,8 @@ export default function App({ sendChat }: AppProps) {
           ),
         )
       }
-      /* Sending from the dashboard opens the conversation surface. */
-      setChatOpen(true)
+      /* Sending never moves the surface: the dashboard's conversation panel
+         holds the turn, and expanding stays the reader's call. */
       void requestChat(convoId, assistantMsg.id, text, model, currentConversation?.sessionId)
     },
     [active, model, requestChat, tempMode],
@@ -243,7 +243,9 @@ export default function App({ sendChat }: AppProps) {
 
   const handleStop = useCallback(() => cancelCurrentChat(true), [cancelCurrentChat])
 
-  const handleRegenerate = useCallback(
+  /* Retry is the one resend left: it recovers a turn that failed, and reuses
+     the message and model the failed turn already carried. */
+  const handleRetry = useCallback(
     (assistantId: string) => {
       if (!active) return
       const assistantIndex = active.messages.findIndex((item) => item.id === assistantId)
@@ -259,6 +261,7 @@ export default function App({ sendChat }: AppProps) {
         ...item,
         md: '',
         status: 'thinking',
+        error: undefined,
         startedAt: Date.now(),
       }))
       void requestChat(active.id, assistantId, userMessage.text, requestModel, active.sessionId)
@@ -266,49 +269,11 @@ export default function App({ sendChat }: AppProps) {
     [active, model, requestChat, updateMessage],
   )
 
-  const handleRetry = useCallback(
-    (assistantId: string) => handleRegenerate(assistantId),
-    [handleRegenerate],
-  )
-
-  const handleEditUser = useCallback(
-    (userId: string, newText: string) => {
-      if (!active) return
-      const idx = active.messages.findIndex((m) => m.id === userId)
-      if (idx === -1) return
-      cancelCurrentChat(false)
-      const assistantMsg: AssistantMessage = {
-        id: uid('a'),
-        role: 'assistant',
-        md: '',
-        status: 'thinking',
-        model,
-        startedAt: Date.now(),
-      }
-      setConversations((prev) =>
-        prev.map((c) =>
-          c.id !== active.id
-            ? c
-            : {
-                ...c,
-                sessionId: undefined,
-                messages: [
-                  ...c.messages.slice(0, idx),
-                  { ...c.messages[idx], text: newText } as Message,
-                  assistantMsg,
-                ],
-              },
-        ),
-      )
-      showToast('Edited messages start a new conversation context.')
-      void requestChat(active.id, assistantMsg.id, newText, model)
-    },
-    [active, cancelCurrentChat, model, requestChat, showToast],
-  )
-
+  /* Opening a conversation loads it; it does not move the reader. The
+     dashboard's conversation panel shows whatever is loaded, so history can be
+     opened without leaving the dashboard. */
   const openConversation = useCallback(
     (id: string) => {
-      setChatOpen(true)
       if (id === activeId) return
       window.clearTimeout(loadTimer.current)
       setActiveId(id)
@@ -318,6 +283,10 @@ export default function App({ sendChat }: AppProps) {
     },
     [activeId],
   )
+
+  /* The conversation surface is a toggle, like temporary mode: the same
+     control that opens it puts the reader back on the dashboard. */
+  const toggleChat = useCallback(() => setChatOpen((open) => !open), [])
 
   const newChat = useCallback(() => {
     cancelCurrentChat(true)
@@ -401,7 +370,7 @@ export default function App({ sendChat }: AppProps) {
           activeId={activeId}
           chatOpen={chatOpen}
           onSelect={openConversation}
-          onOpenChat={() => setChatOpen(true)}
+          onToggleChat={toggleChat}
           onGoDashboard={() => setChatOpen(false)}
           onTemporaryChat={toggleTemporaryMode}
           onOpenSearch={() => setSearchOpen(true)}
@@ -422,9 +391,7 @@ export default function App({ sendChat }: AppProps) {
           onExpand={() => setChatOpen(true)}
           onCollapse={() => setChatOpen(false)}
           onSend={handleSend}
-          onRegenerate={handleRegenerate}
           onRetry={handleRetry}
-          onEditUser={handleEditUser}
           onToast={showToast}
           reduceMotion={prefs.reduceMotion}
           composer={{

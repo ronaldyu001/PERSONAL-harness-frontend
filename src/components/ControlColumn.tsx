@@ -24,7 +24,7 @@ export interface ControlColumnProps {
   activeId: string | null
   chatOpen: boolean
   onSelect: (id: string) => void
-  onOpenChat: () => void
+  onToggleChat: () => void
   onGoDashboard: () => void
   onTemporaryChat: () => void
   onOpenSearch: () => void
@@ -82,11 +82,13 @@ export function ControlColumn(props: ControlColumnProps) {
       </div>
 
       <div className="column__actions">
+        {/* Toggles the surface in place, the way temporary mode toggles the
+            mode: pressing it again returns the reader to the dashboard. */}
         <ColumnRow
           expanded={expanded}
           label="Conversation"
           icon={<MessagesSquare size={16} strokeWidth={1.8} />}
-          onClick={props.onOpenChat}
+          onClick={props.onToggleChat}
           active={chatOpen}
         />
         <ColumnRow

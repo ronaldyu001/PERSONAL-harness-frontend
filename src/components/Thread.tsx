@@ -1,6 +1,6 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { motion } from 'motion/react'
-import { Check, CircleAlert, Copy, PenLine, RefreshCw } from 'lucide-react'
+import { Check, CircleAlert, Copy, RefreshCw } from 'lucide-react'
 import { MaiaMark } from './MaiaMark'
 import { Markdown } from '../lib/markdown'
 import { MODELS } from '../config'
@@ -14,20 +14,11 @@ const REASSURE_AFTER_S = 20
 export interface ThreadProps {
   messages: Message[]
   loading: boolean
-  onRegenerate: (assistantId: string) => void
   onRetry: (assistantId: string) => void
-  onEditUser: (userId: string, newText: string) => void
   onToast: (text: string) => void
 }
 
-export function Thread({
-  messages,
-  loading,
-  onRegenerate,
-  onRetry,
-  onEditUser,
-  onToast,
-}: ThreadProps) {
+export function Thread({ messages, loading, onRetry, onToast }: ThreadProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const stickToBottom = useRef(true)
 
@@ -42,20 +33,22 @@ export function Thread({
     if (el && stickToBottom.current) el.scrollTop = el.scrollHeight
   }, [messages])
 
+  const lastIndex = messages.length - 1
+
   return (
     <div className="thread" ref={scrollRef} onScroll={onScroll}>
       <div className="thread__col">
         {loading ? (
           <ThreadSkeleton />
         ) : (
-          messages.map((msg) =>
+          messages.map((msg, index) =>
             msg.role === 'user' ? (
-              <UserBlock key={msg.id} msg={msg} onEdit={onEditUser} />
+              <UserBlock key={msg.id} msg={msg} current={index === lastIndex} onToast={onToast} />
             ) : (
               <AssistantBlock
                 key={msg.id}
                 msg={msg}
-                onRegenerate={onRegenerate}
+                current={index === lastIndex}
                 onRetry={onRetry}
                 onToast={onToast}
               />
@@ -80,33 +73,57 @@ function ThreadSkeleton() {
   )
 }
 
-/* User turn: raised field, 1px seam, flush left, full measure. Never a bubble. */
+/**
+ * Copy is the only action a turn carries.
+ *
+ * The row keeps its place in the layout on every turn — reserving it is what
+ * stops the thread reflowing under the pointer — but on turns behind the
+ * current one the ink is withheld until the turn is hovered or holds focus.
+ */
+function useCopyAction(text: string, notice: string, onToast: (text: string) => void) {
+  const [copied, setCopied] = useState(false)
+  const timer = useRef<number | undefined>(undefined)
+
+  useEffect(() => () => window.clearTimeout(timer.current), [])
+
+  const copy = useCallback(() => {
+    navigator.clipboard.writeText(text).catch(() => {})
+    setCopied(true)
+    onToast(notice)
+    window.clearTimeout(timer.current)
+    timer.current = window.setTimeout(() => setCopied(false), 1800)
+  }, [notice, onToast, text])
+
+  return { copied, copy }
+}
+
+function CopyAction({ copied, onCopy }: { copied: boolean; onCopy: () => void }) {
+  return (
+    <button type="button" className="turn__action" onClick={onCopy}>
+      {copied ? (
+        <Check size={13} strokeWidth={1.8} aria-hidden="true" />
+      ) : (
+        <Copy size={13} strokeWidth={1.8} aria-hidden="true" />
+      )}
+      {copied ? 'Copied' : 'Copy'}
+    </button>
+  )
+}
+
+const buttonsClass = (current: boolean) => `turn__buttons${current ? '' : ' turn__buttons--quiet'}`
+
+/* User turn: raised field, flush left, full measure. Never a bubble. */
 
 function UserBlock({
   msg,
-  onEdit,
+  current,
+  onToast,
 }: {
   msg: UserMessage
-  onEdit: (id: string, text: string) => void
+  current: boolean
+  onToast: (text: string) => void
 }) {
-  const [editing, setEditing] = useState(false)
-  const [draft, setDraft] = useState(msg.text)
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
-
-  useEffect(() => {
-    if (editing) {
-      const el = textareaRef.current
-      el?.focus()
-      el?.setSelectionRange(el.value.length, el.value.length)
-    }
-  }, [editing])
-
-  const save = () => {
-    const next = draft.trim()
-    setEditing(false)
-    if (next && next !== msg.text) onEdit(msg.id, next)
-    else setDraft(msg.text)
-  }
+  const { copied, copy } = useCopyAction(msg.text, 'Message copied', onToast)
 
   return (
     <motion.div
@@ -115,61 +132,14 @@ function UserBlock({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.18 }}
     >
-      <div className={`turn__field${editing ? ' turn__field--editing' : ''}`}>
-        {editing ? (
-          <div className="turn__edit">
-            <textarea
-              ref={textareaRef}
-              value={draft}
-              rows={Math.min(6, Math.max(2, draft.split('\n').length))}
-              onChange={(e) => setDraft(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault()
-                  save()
-                }
-                if (e.key === 'Escape') {
-                  setEditing(false)
-                  setDraft(msg.text)
-                }
-              }}
-              aria-label="Edit message"
-            />
-            <div className="turn__edit-row">
-              <button
-                type="button"
-                className="ghost-btn"
-                onClick={() => {
-                  setEditing(false)
-                  setDraft(msg.text)
-                }}
-              >
-                Cancel
-              </button>
-              <button type="button" className="solid-btn" onClick={save} disabled={!draft.trim()}>
-                Save and resend
-              </button>
-            </div>
-          </div>
-        ) : (
-          <p>{msg.text}</p>
-        )}
+      <div className="turn__field">
+        <p>{msg.text}</p>
       </div>
-      {!editing && (
-        <div className="turn__actions">
-          <button
-            type="button"
-            className="turn__action"
-            onClick={() => {
-              setDraft(msg.text)
-              setEditing(true)
-            }}
-          >
-            <PenLine size={13} strokeWidth={1.8} aria-hidden="true" />
-            Edit
-          </button>
+      <div className="turn__actions">
+        <div className={buttonsClass(current)}>
+          <CopyAction copied={copied} onCopy={copy} />
         </div>
-      )}
+      </div>
     </motion.div>
   )
 }
@@ -178,25 +148,18 @@ function UserBlock({
 
 function AssistantBlock({
   msg,
-  onRegenerate,
+  current,
   onRetry,
   onToast,
 }: {
   msg: AssistantMessage
-  onRegenerate: (id: string) => void
+  current: boolean
   onRetry: (id: string) => void
   onToast: (text: string) => void
 }) {
-  const [copied, setCopied] = useState(false)
+  const { copied, copy } = useCopyAction(msg.md, 'Response copied', onToast)
   const thinking = msg.status === 'thinking'
   const modelName = MODELS.find((m) => m.id === msg.model)?.name ?? 'Maia'
-
-  const copy = () => {
-    navigator.clipboard.writeText(msg.md).catch(() => {})
-    setCopied(true)
-    onToast('Response copied')
-    window.setTimeout(() => setCopied(false), 1800)
-  }
 
   return (
     <motion.div
@@ -235,18 +198,9 @@ function AssistantBlock({
 
       {(msg.status === 'complete' || msg.status === 'stopped') && (
         <div className="turn__actions">
-          <button type="button" className="turn__action" onClick={copy}>
-            {copied ? (
-              <Check size={13} strokeWidth={1.8} aria-hidden="true" />
-            ) : (
-              <Copy size={13} strokeWidth={1.8} aria-hidden="true" />
-            )}
-            {copied ? 'Copied' : 'Copy'}
-          </button>
-          <button type="button" className="turn__action" onClick={() => onRegenerate(msg.id)}>
-            <RefreshCw size={13} strokeWidth={1.8} aria-hidden="true" />
-            Regenerate
-          </button>
+          <div className={buttonsClass(current)}>
+            <CopyAction copied={copied} onCopy={copy} />
+          </div>
           <span className="turn__model">{modelName}</span>
         </div>
       )}

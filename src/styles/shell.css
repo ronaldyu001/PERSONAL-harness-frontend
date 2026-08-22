@@ -317,32 +317,6 @@
   transform: translateY(1px);
 }
 
-.solid-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 13px;
-  border-radius: var(--r-pill);
-  font-size: var(--t-label);
-  font-weight: var(--w-label);
-  background: var(--accent-fill);
-  color: var(--accent-on-fill);
-  transition: opacity var(--dur-fast) var(--ease-standard);
-}
-
-.solid-btn:hover:not(:disabled) {
-  opacity: 0.88;
-}
-
-.solid-btn:active:not(:disabled) {
-  transform: translateY(1px);
-}
-
-.solid-btn:disabled {
-  background: var(--surface-3);
-  color: var(--text-faint);
-}
-
 /* ── Toast ──────────────────────────────────────────────────── */
 
 .toast-slot {

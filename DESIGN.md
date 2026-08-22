@@ -166,6 +166,7 @@ in a secondary tone (`.model-menu__title`, `.settings__title`).
 ├── nav.column            pinned; 56px rail, 244px expanded; floating panel
 └── main.deck             flex row, gap 0
     ├── section.region--chat      flex: 1 1 auto  (absorbs remaining width)
+    ├── .deck__resizer           absolute, in the gutter; dashboard only
     └── .deck__stack             animated width; clips .deck__stack-inner,
                                  which carries margin-left: --panel-gap
 ```
@@ -174,9 +175,39 @@ in a secondary tone (`.model-menu__title`, `.settings__title`).
 would survive the stack collapsing to zero and strand 8px of dead ground at the
 right edge in the expanded state. Putting it on `.deck__stack-inner` means the
 animated outer width carries panel *and* gutter, so the two collapse as one and
-the chat panel lands flush against the frame. `useStackWidth()` in `Deck.tsx`
-adds the computed `--panel-gap` to the breakpoint width for exactly this reason;
-the token is constant across densities so a single read cannot drift.
+the chat panel lands flush against the frame. `useDeckSizing()` in `Deck.tsx`
+adds the computed `--panel-gap` to the resting panel width for exactly this
+reason; the token is constant across densities so a single read cannot drift.
+
+**Both splits are the reader's.** One `Separator` component serves two axes,
+each a focusable `role="separator"` sitting in the gutter it moves:
+
+| | Vertical (`--x`) | Horizontal (`--y`) |
+|---|---|---|
+| Splits | conversation ↔ readouts | the two readouts |
+| Stores | `harness.dashboard.stackWidth`, in px | `harness.dashboard.readoutSplit`, as a fraction |
+| Floors | readouts 160px, conversation 340px | 104px per readout |
+| Keys | ←/→ by 16px | ↑/↓ by 24px |
+
+**Floored, never capped.** Each side declares the size below which it stops
+being readable and everything between those floors belongs to whoever is
+dragging. 160px is measured, not guessed: it is where `PENDING TASKS` exactly
+fills its head. Shift triples a key step, Home and End go to the two floors,
+double-click or Enter clears the preference — the width back to its breakpoint
+default, the readouts back to an even split. The stored value is kept, not
+rewritten, when a small window forces a tighter split; it returns when the room
+does. A fraction is the right unit vertically for the same reason pixels are
+horizontally: the stack's height follows the window, its width does not.
+
+A separator draws nothing at rest — between two floating panels the ground
+already is the line — and shows a 2px rule under the pointer, running the whole
+gutter while held. Both exist only on the dashboard: they unmount when the face
+expands, which is also what keeps a focusable element out of the `aria-hidden`
+stack.
+
+`.deck__stack-inner` keeps its **resting** width while the outer collapses, so
+expanding clips the readouts away rather than squeezing them. The width comes
+from `Deck.tsx` now; the stylesheet no longer names it.
 
 The chat region's **left edge is structurally fixed**: it is the flex child that
 absorbs remaining width, so only its right edge can move. Measured at **74px**
@@ -191,9 +222,9 @@ overridden tokens.
 
 | Width | Behaviour |
 |---|---|
-| ≤1100px | `.deck__stack-inner` narrows to 232px (`useStackWidth()` in `Deck.tsx` keeps the animated value in step) |
+| ≤1100px | The stack's default resting width is 232px rather than 296px (`useStackSizing()` in `Deck.tsx` owns both, so the animated value and the laid-out value cannot disagree). A stored preference survives the breakpoint; the CHAT_MIN floor clamps it |
 | ≤720px | Thread column, chat empty state, and expanded composer switch to `--thread-mobile-pad-x` |
-| ≤680px | `.deck__stack` hides; `.app` drops its frame inset to `--panel-gap` so the panels give the margin back to content |
+| ≤680px | `.deck__stack` and `.deck__resizer` hide; `.app` drops its frame inset to `--panel-gap` so the panels give the margin back to content |
 
 Maia ships as an **800×600** Tauri window, which is why the stack narrows rather
 than disappearing at that size — both readouts are present there.
@@ -207,7 +238,7 @@ than disappearing at that size — both readouts are present there.
 | | Assistant turn | User turn |
 |---|---|---|
 | Ground | `--bg-workspace` (the panel tone) | `--message-user-bg` |
-| Edge | none | none — `--message-user-border` rests transparent, and is spent on the editing state |
+| Edge | none | none — `--message-user-border` rests transparent; the tint is the whole boundary |
 | Radius | none | `--user-bubble-radius` (`--r-lg`, 14px) |
 | Width | full measure | full measure (`--user-message-width: 100%`) |
 | Alignment | flush left | flush left — never right-aligned |
@@ -218,7 +249,15 @@ background, `0px` border, `0px` radius. The **"Maia" label is rendered text**,
 not decoration: with the container gone it is the turn's only non-visual
 distinction and its accessible name.
 
-The reading measure is `68ch` inside a `--thread-width` column.
+**The reading measure is one token.** `--thread-measure` (80ch) bounds the
+prose, and `--thread-width` is derived from it — measure plus two
+`--thread-pad-x` — so the thread column, the composer, and the quick starts all
+inherit it and the composer ends up exactly as wide as the text above it, both
+edges. Raising the one token widens all four together.
+
+The `ch` unit resolves against the shell's 14px rather than the prose size, so
+80ch is 642px: about **75 characters** of 15px prose at Default — the top of the
+65–75 band — loosening to ~80 at Snug and tightening to ~70 at Roomy.
 
 ### The five statuses
 
@@ -231,13 +270,44 @@ The reading measure is `68ch` inside a `--thread-width` column.
   actually reported a GPU probe (`inferencePathFromStatus`); it is omitted
   rather than guessed.
 - **`streaming`** — text replaces the clock. No cursor artifact.
-- **`complete`** — the action row (Copy, Regenerate, model name) at the Label
-  step, always present rather than hover-only, so keyboard and touch reach it.
+- **`complete`** — the action row (Copy, model name) at the Label step. Copy is
+  the only action a turn carries: regenerate and edit-and-resend were both
+  removed, so nothing in the thread rewrites history any more.
 - **`stopped`** — a Meta-step line, `font-style: normal`. Not an apology.
 - **`error`** — `--danger` on text and icon only, no tint, no border,
   `role="alert"`. It renders `msg.error`, the adapter's own message, so the
   permanent line carries the diagnosis instead of a transient toast. Retry
   survives as a real control.
+
+### The action row is reserved; the ink is not
+
+Every turn keeps its action row in the layout, so the thread never reflows
+under the pointer and the rhythm is the same hovered or not. On turns **behind
+the current one** the buttons are held at `opacity: 0` and revealed by
+`.turn:hover` or `:focus-within` — opacity only, so the control stays in the
+layout, in the accessibility tree, and in the tab order, and a keyboard reveals
+it exactly the way the pointer does. The last turn keeps its actions lit,
+`@media (hover: none)` restores them everywhere, and the model name never fades:
+it is a reading, not a control. This is a deliberate reversal of the previous
+always-visible rule — see §11.
+
+The user turn now carries Copy too, in the same row and the same vocabulary as
+the assistant's.
+
+### What the dashboard panel holds
+
+The conversation panel shows **the conversation it is holding**, expanded or
+not: opening one from recents, from the column's history, or from search loads
+it in place rather than throwing the reader into the full surface. History
+appears in the panel only when there is nothing loaded to show, and quick starts
+take its place when the reader is on a new or temporary chat. Sending never
+moves the surface either — expanding stays the reader's call, made with the
+panel's Expand control or the column's Conversation row, which toggles the
+surface the way the row beneath it toggles temporary mode.
+
+The composer follows whatever it sits under: the reading axis when a
+conversation or the quick starts are on the panel, the region axis under
+history.
 
 ### The composer
 
@@ -251,10 +321,20 @@ Enter sends, Shift+Enter breaks, **Esc stops an in-flight turn** — bound both 
 the textarea and globally in `App.tsx`.
 
 **Axis:** the slot owns width and centring, and the composer fills it.
-`.region__composer` sits on the region axis on the dashboard (with the legend
-and recents); `.region__composer--measure` adopts the thread container when
-expanded, so it shares the reading axis exactly. Verified delta 0 in both
-states at 1055px and 375px.
+`.region__composer` sits on the region axis under history (with the legend and
+the recents rows); `.region__composer--measure` adopts the thread container
+whenever a conversation or the quick starts are on the panel, so it shares the
+reading axis exactly.
+
+The thread reserves a scrollbar gutter on **both** edges, which is what keeps
+the centred column from shifting by half a scrollbar. Centring alone holds the
+axis while the column is capped by the measure, but below that width the column
+is the narrower of the two and the composer used to sit 10px wider on each
+side. The slot now gives back the same gutter — `width: calc(100% - 2 *
+var(--scrollbar-size))` on both the composer slot and the quick starts, with
+`--scrollbar-size` also feeding the scrollbar rule itself so one value cannot
+drift from the other. Verified delta 0 at 1280px, at 800px, at the 340px drag
+floor, and at 375px.
 
 ### Empty state
 
@@ -351,7 +431,11 @@ clock counting is information.
   soft glow, and never varies with unrelated application state. The offset is
   what lets it read *around* a rounded control instead of cutting across it.
 - **Keyboard:** Cmd/Ctrl+K search, Cmd/Ctrl+B column, Esc stops a turn, Enter
-  sends. Turn actions are always rendered.
+  sends. Turn actions are always rendered and always focusable; behind the
+  current turn they are revealed by hover or focus rather than removed. The
+  separators are focusable `role="separator"` controls with live
+  `aria-valuenow`, and both unmount rather than sit inside the `aria-hidden`
+  stack when the face expands.
 - Browser surfaces are themed: selection, caret (`--accent`), scrollbars,
   focus ring.
 - One icon family (lucide-react) at a single `strokeWidth` of `1.8`; the sole
@@ -384,12 +468,13 @@ Recorded so the next contributor does not read them as defects to "fix".
 
 1. **The reading measure is centred** in the chat region, so it recentres when
    the region widens. DIRECTION.md's fixed-edge invariant is about the region
-   edge and the chrome, not the measure. Left-pinning a 68ch column would
+   edge and the chrome, not the measure. Left-pinning the column would
    strand roughly 800px of void at 1440px. Composer and prose travel together;
    they no longer drift independently.
-2. **The expanded chat head shows the engraved legend and the conversation
-   title together**, which reads slightly redundant. Accepted so the primary
-   region is not the only one on the face without a legend.
+2. **The chat head shows the engraved legend and the conversation title
+   together**, which reads slightly redundant, and now does so on the dashboard
+   as well. Accepted so the primary region is not the only one on the face
+   without a legend; the legend shrinks first when the panel is narrow.
 3. **`.switch` is a pill again** — an inset track with a round knob, which is
    what `--r-pill` exists for: small controls. Its on-state stays neutral
    (`--control-on`, `--switch-knob-on`) so it never competes for the signal.
@@ -404,6 +489,35 @@ Recorded so the next contributor does not read them as defects to "fix".
 5. **`design-system/maia/MASTER.md`** is still on disk and specifies a
    violet/pink system that contradicts this one. PRODUCT.md records it as
    non-binding research.
+11. **`--scrollbar-size` assumes the WebKit scrollbar rule**, 10px, because
+   Maia ships in a Chromium WebView. Firefox's `scrollbar-width: thin` reserves
+   its own width and the axis would be off by the difference there; the shipped
+   runtime is the one that is verified.
+7. **Turn actions are hover-revealed behind the current turn**, reversing the
+   earlier always-visible rule. Requested directly, and the cost is paid rather
+   than dodged: the row keeps its space so nothing reflows, opacity is the only
+   thing withheld, focus reveals it as reliably as hover, and touch pointers get
+   it unconditionally. The always-visible rule stands for the current turn, for
+   Retry, and for the model name.
+10. **The reading measure sits at the top of the band, by request.**
+   `--thread-measure` 80ch is ~75 characters of Default prose, up from ~64
+   (the old `68ch` resolved the same way). At Snug it reaches ~80, above the
+   65–75 guidance. Accepted: the ask was explicitly for more width, the density
+   that overshoots is the one chosen for density, and the whole thing is one
+   token to walk back.
+9. **The separator's focus indicator is its own rule, not an outline.** A 14px
+   invisible strip outlined at `outline-offset: 2px` draws two full-height
+   lines around something that is not a visible object. On `:focus-visible` the
+   strip suppresses the outline and paints `.deck__resizer-line` at
+   `var(--ring-active)`, full height — still 2px, still the ring token, and it
+   marks exactly what moves. The only control in the app with a custom focus
+   treatment.
+8. **Regenerate and edit-and-resend are gone**, at the owner's request, along
+   with `handleEditUser`, the user turn's editing state, and the toast that
+   explained the session reset an edit caused. Retry stays: it recovers a turn
+   that failed rather than rewriting one that succeeded, and it is the only
+   resend left. `PRODUCT.md` still lists regenerate under the message lifecycle
+   — product truth on that point is now ahead of the build, deliberately.
 
 ---
 
@@ -420,10 +534,37 @@ grep -rn "blur(" src/                    # 0
 grep -rn "gradient" src/styles/          # 3: --sheen ×2, the thread mask
 ```
 
-Measured live at 1280×800, both themes: `.column` / `.region` radius 16px with
+Measured again after the two-axis separator work, at 1280×800 in headless
+Chromium. Prose, user field, and composer share both edges exactly —
+`199 … 841`, 642px — in the dashboard panel. The vertical separator runs the
+conversation from 340px (`Home`) to 1028px (`End`) at that viewport, where the
+readouts sit at their 160px floor with `PENDING TASKS` filling its head to the
+pixel and no clipping. The horizontal separator splits the readouts 386/386 by
+default, holds a 104px floor at both ends, steps 24px per arrow key, and clears
+back to even on Enter; a stored 0.8653 renders 668/104 at 800px tall, clamps to
+268/104 in a 400px window, and returns to 668/104 when the room does. Expanding
+the face removes both separators — zero focusable descendants inside the
+`aria-hidden` stack — and restores them with the stored split on the way back.
+
+Measured before that at 1280×800 in headless Chromium after the dashboard work,
+both themes. The chat panel rests at `[74 … 966]` on the dashboard with the
+stack outer at 304 (296 + the 8px gutter) and the separator centred on the
+gutter at 970, 14px wide. Dragging it 90px right lands chat `[74 … 1056]`,
+stack 214/206, `aria-valuenow` 982, and `harness.dashboard.stackWidth` = 206;
+ArrowRight steps it to the 176 floor, Home to the 420 ceiling, Enter clears the
+preference back to 296. At 800×600 the split settles at chat 476 / stack 232 —
+the 460px conversation floor holds — and at 600px the stack and the separator
+are both `display: none`. Toggling the column's Conversation row expands to
+`[74 … 1270]` and back to the stored split; the separator unmounts while
+expanded. Thread column and composer share the axis exactly on the dashboard
+(both start at 198px, delta 0). Older turns report `opacity: 0` on their action
+buttons and `1` under `:hover` or `:focus-within`, in both themes and all three
+densities; the current turn stays at `1`.
+
+Measured previously at 1280×800, both themes: `.column` / `.region` radius 16px with
 `--elev-panel` and **0px border**; composer radius 18px; send key 999px; chat
 panel `[74 … 1270]` expanded against a 1280px viewport with `--frame-pad` 10 —
-i.e. flush, with the gutter collapsed. Reading measure 68ch. Also exercised at
+i.e. flush, with the gutter collapsed. Also exercised at
 800×600 (the shipped window) and 375px.
 
 Two defects found and fixed during that pass, both pre-existing: `.search-result`

@@ -38,7 +38,7 @@
 /* ── Turns ──────────────────────────────────────────────────── */
 
 .turn {
-  max-width: 68ch;
+  max-width: var(--thread-measure);
 }
 
 .turn--user {
@@ -49,8 +49,8 @@
   margin-bottom: var(--assistant-message-space);
 }
 
-/* User turn: a tinted field with a generous radius. The border rests
-   transparent and is spent on the editing state instead. */
+/* User turn: a tinted field with a generous radius. Bounded by tone alone —
+   the border rests transparent, because the tint is enough. */
 .turn__field {
   background: var(--message-user-bg);
   border: var(--seam) solid var(--message-user-border);
@@ -67,28 +67,6 @@
   color: var(--message-user-text);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-}
-
-.turn__field--editing {
-  border-color: var(--border-strong);
-}
-
-.turn__edit textarea {
-  width: 100%;
-  resize: none;
-  background: transparent;
-  border: none;
-  outline: none;
-  font-size: var(--prose-size);
-  line-height: var(--prose-line-height);
-  color: var(--text-primary);
-}
-
-.turn__edit-row {
-  display: flex;
-  justify-content: flex-end;
-  gap: 6px;
-  margin-top: 8px;
 }
 
 /* Assistant turn head: the label is the turn's accessible name. */
@@ -145,13 +123,41 @@
   line-height: 1.45;
 }
 
-/* ── Turn actions: present for keyboard and touch, not hover-only ── */
+/* ── Turn actions: the row is reserved, the ink is not ────────── */
 
+/* Every turn keeps the row, so nothing reflows under the pointer and the
+   thread's rhythm is the same whether a turn is hovered or not. */
 .turn__actions {
   display: flex;
   align-items: center;
   gap: 2px;
   margin-top: 10px;
+}
+
+.turn__buttons {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* Behind the current turn the copy control waits to be asked for. Opacity
+   only — the button stays in the layout, in the accessibility tree, and in
+   the tab order, so keyboard reveals it exactly the way the pointer does. */
+.turn__buttons--quiet {
+  opacity: 0;
+  transition: opacity var(--dur-med) var(--ease-standard);
+}
+
+.turn:hover .turn__buttons--quiet,
+.turn__buttons--quiet:focus-within {
+  opacity: 1;
+}
+
+/* Nothing hovers on a touch screen, so there the row is simply present. */
+@media (hover: none) {
+  .turn__buttons--quiet {
+    opacity: 1;
+  }
 }
 
 .turn__action {
@@ -222,7 +228,7 @@
 .thread-skeleton__user {
   height: 44px;
   width: 100%;
-  max-width: 68ch;
+  max-width: var(--thread-measure);
   border-radius: var(--user-bubble-radius);
   background: var(--skeleton-low);
 }
