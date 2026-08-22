@@ -1,16 +1,18 @@
 /* ─────────────────────────────────────────────────────────────
-   Composer — a flat input module on the panel face.
-   Not a floating pill. No shadow, no blur, 2px radius, 1px seam.
+   Composer — a raised input module sitting on the panel.
+   Elevation is the shadow; the border is reserved for state, so it rests
+   transparent and only colours when focus or temporary mode claims it.
    ───────────────────────────────────────────────────────────── */
 
 /* The slot owns width and centring; the composer fills it. Otherwise the two
    disagree and the composer drifts off whatever axis sits beside it. */
 .composer {
   width: 100%;
-  background: var(--composer-face);
-  border: var(--seam) solid var(--composer-border);
-  border-radius: var(--r-xs);
-  box-shadow: var(--highlight-inner);
+  background-color: var(--composer-face);
+  background-image: var(--sheen);
+  border: var(--seam) solid transparent;
+  border-radius: var(--composer-radius);
+  box-shadow: var(--elev-raised);
   padding: var(--composer-padding);
   transition: border-color var(--dur-fast) var(--ease-standard);
 }
@@ -26,8 +28,11 @@
   border-color: var(--border-strong);
 }
 
+/* Temporary mode reads as a provisional edge — the same dashed language the
+   region flag uses, so the two are one signal rather than two. */
 .composer--temp {
   border-style: dashed;
+  border-color: var(--border-strong);
 }
 
 .composer__input {
@@ -103,7 +108,7 @@
   align-items: center;
   gap: 5px;
   padding: var(--model-chip-padding);
-  border-radius: var(--r-sm);
+  border-radius: var(--r-pill);
   font-size: var(--t-label);
   font-weight: var(--w-label);
   color: var(--text-secondary);
@@ -126,13 +131,14 @@
 
 /* ── Send and stop ──────────────────────────────────────────── */
 
+/* The send key is round: the one control the eye should find without reading. */
 .send-btn {
   display: grid;
   place-items: center;
   flex: 0 0 auto;
   width: var(--composer-control-size);
   height: var(--composer-control-size);
-  border-radius: var(--r-sm);
+  border-radius: var(--r-pill);
   background: var(--surface-3);
   color: var(--text-secondary);
   transition:
@@ -156,10 +162,10 @@
   transform: scale(0.96);
 }
 
-/* Unarmed, the key sits recessed and unlit rather than merely faded out. */
+/* Unarmed, the key sits quietly inset rather than merely faded out. */
 .send-btn:disabled {
-  background: var(--surface-1);
-  color: var(--text-secondary);
+  background: var(--surface-3);
+  color: var(--text-tertiary);
   box-shadow: var(--recess);
 }
 

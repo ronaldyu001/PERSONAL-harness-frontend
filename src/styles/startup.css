@@ -1,8 +1,8 @@
 /* ─────────────────────────────────────────────────────────────
    Startup — the one ceremony the brief pinned.
-   Same moment, rebuilt in the panel's material language: a fixed
-   three-stage track with a real position, because startup genuinely
-   has one. No ambient washes, no halo glow.
+   Same moment, in the softened material: a single rounded card floating
+   on the ground, carrying a fixed three-stage track with a real position,
+   because startup genuinely has one. No ambient washes, no halo glow.
    ───────────────────────────────────────────────────────────── */
 
 .startup-screen {
@@ -29,10 +29,11 @@
   flex-direction: column;
   align-items: center;
   width: min(340px, 100%);
-  background: var(--bg-workspace);
-  border: var(--seam) solid var(--border-soft);
-  border-radius: var(--r-md);
-  padding: 28px 24px 24px;
+  background-color: var(--bg-workspace);
+  background-image: var(--sheen);
+  border-radius: var(--r-panel);
+  box-shadow: var(--elev-panel);
+  padding: 30px 26px 26px;
 }
 
 .startup-screen__mark {
@@ -67,15 +68,17 @@
 
 /* ── The fixed track: Docker, Services, Maia ────────────────── */
 
+/* The track is an inset trough; the stages sit in it as positions. */
 .startup-screen__steps {
   list-style: none;
   display: flex;
+  gap: 2px;
   width: 100%;
   margin: 0 0 18px;
-  padding: 0;
-  border: var(--seam) solid var(--border-soft);
-  border-radius: var(--r-sm);
-  overflow: hidden;
+  padding: 3px;
+  border-radius: var(--r-md);
+  background: var(--surface-3);
+  box-shadow: var(--recess);
 }
 
 .startup-screen__step {
@@ -85,16 +88,21 @@
   align-items: center;
   gap: 7px;
   padding: 9px 4px 8px;
+  border-radius: var(--r-sm);
   font-size: var(--legend-size);
   font-weight: var(--legend-weight);
   letter-spacing: var(--legend-tracking);
   text-transform: uppercase;
   color: var(--text-tertiary);
-  border-right: var(--seam) solid var(--border-faint);
 }
 
-.startup-screen__step:last-child {
-  border-right: none;
+/* Only the stage in play sits proud. If completed stages stayed raised the
+   track would read as filled rather than as a position, which is the one
+   thing this screen exists to show. */
+.startup-screen__step--active,
+.startup-screen__step--error {
+  background: var(--bg-workspace);
+  box-shadow: var(--highlight-inner);
 }
 
 /* The lamp: the only lit thing on this screen. */
@@ -150,7 +158,8 @@
    one. Nothing here sweeps: an indeterminate bar is the thing this world bans. */
 .startup-screen__progress {
   width: 100%;
-  height: var(--seam);
+  height: 2px;
+  border-radius: var(--r-pill);
   background: var(--border-faint);
   margin-top: 4px;
 }
@@ -166,8 +175,8 @@
 }
 
 .startup-screen__retry {
-  padding: 6px 12px;
-  border-radius: var(--r-sm);
+  padding: 7px 16px;
+  border-radius: var(--r-pill);
   font-size: var(--t-label);
   font-weight: var(--w-label);
   background: var(--accent-fill);
