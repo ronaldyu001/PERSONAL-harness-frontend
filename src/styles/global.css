@@ -44,14 +44,39 @@
   --prose-size: 15px;
   --prose-line-height: 1.62;
   --md-block-gap: 10px;
-  /* The reading measure, and the column derived from it. `ch` here resolves
-     against the shell's 14px, not the prose size, so 80ch is ~75 characters of
-     15px prose at Default — the top of the 65–75 band — loosening to ~80 at
-     Snug and tightening to ~70 at Roomy. Widen the prose by raising this one
-     token; the column, the composer, and the quick starts all follow it, which
-     is what keeps the composer exactly as wide as the text above it. */
-  --thread-measure: 80ch;
-  --thread-width: calc(var(--thread-measure) + 2 * var(--thread-pad-x));
+  /* The reading column is a share of the conversation card, not a fixed
+     measure. A constant width snaps: under it the column is card-wide, over it
+     the column stops while the card keeps going — so expanding the card, or a
+     view change that resized it, moved the prose between two different widths
+     for no reason the reader could see. As a fraction the column is constant
+     whenever the card is, and travels with the card whenever it is not.
+     Unitless, so the thread and the composer can each multiply it against
+     their own containing block and still land on one axis. Widen the prose by
+     raising this one token; the column, the composer, and the quick starts all
+     follow it.
+
+     The share is bounded at both ends, and both bounds are legibility rather
+     than taste. `ch` resolves against the shell's 14px, not the prose size, so
+     the two read in Default prose as ~101 characters and ~50.
+
+     The ceiling stops the column growing when the card has not stopped: past
+     roughly a hundred characters the eye stops finding the next line
+     reliably. It sits far enough out that a 1280px window reaches it in
+     neither view — it is for the large display.
+
+     The floor is the opposite case, and the reason it is a floor rather than a
+     second share: a wide card can afford to spend a tenth of itself on margin
+     each side, and a narrow one cannot. Under the floor the margin is what
+     gives way, not the prose — the column takes the whole card rather than a
+     share of it, so shrinking the conversation costs the reader margin before
+     it costs them words. Between the two the column simply rests at the floor
+     while the card catches up, which is what keeps the whole run continuous:
+     the width only ever grows with the card, never against it. */
+  --thread-fill: 0.78;
+  --thread-measure-cap: 108ch;
+  --thread-measure-floor: 54ch;
+  --thread-width-cap: calc(var(--thread-measure-cap) + 2 * var(--thread-pad-x));
+  --thread-width-floor: calc(var(--thread-measure-floor) + 2 * var(--thread-pad-x));
   --thread-pad-top: 40px;
   --thread-pad-x: 28px;
   --thread-mobile-pad-x: 18px;
@@ -224,6 +249,33 @@
   --dash-pad: 26px;
 }
 
+/* The reading axis, resolved. Two tokens because the two have different bases
+   — the thread's containing block is already inset by the scrollbar gutter it
+   reserves, and the slot has to give the same gutter back before it measures —
+   and one token each because the slot has three consumers (the composer, the
+   quick starts, history) that must not drift apart. Percentages inside a
+   custom property stay unresolved until the property is used, so both resolve
+   against the conversation card at the point of use.
+
+   Declared on `.app` rather than `:root` on purpose. A var() inside a custom
+   property is substituted where the property is *declared*, so a bound
+   resolved at `:root` could not see a density variant retuning
+   --thread-pad-x — the variants sit on `.app`, which carries data-style, so
+   resolving here keeps the bounds and the padding reading the same value.
+   Anything that retunes an input below this element has to re-resolve both. */
+.app {
+  --thread-column: clamp(
+    min(100%, var(--thread-width-floor)),
+    100% * var(--thread-fill),
+    var(--thread-width-cap)
+  );
+  --thread-slot: clamp(
+    min(100% - 2 * var(--scrollbar-size), var(--thread-width-floor)),
+    (100% - 2 * var(--scrollbar-size)) * var(--thread-fill),
+    var(--thread-width-cap)
+  );
+}
+
 *,
 *::before,
 *::after {
@@ -385,6 +437,16 @@ a {
   }
   50% {
     transform: scale(1.05);
+  }
+}
+
+/* A share of the card protects the measure while there is a card to spare.
+   On a small card there is not: the reading inset already tightens here, and
+   holding a fraction back on top of it would starve the prose rather than
+   frame it, so the column takes the whole card. */
+@media (max-width: 720px) {
+  :root {
+    --thread-fill: 1;
   }
 }
 

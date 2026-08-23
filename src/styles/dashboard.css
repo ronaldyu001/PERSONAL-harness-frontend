@@ -119,21 +119,18 @@
   flex-direction: column;
 }
 
-/* On the dashboard the composer sits on the region axis, with the legend and
-   the recents rows. Expanded, it adopts the thread's container so it shares the
-   reading axis exactly. Each state aligns with what is beside it. */
+/* The composer always adopts the thread's container, so it shares the reading
+   axis exactly — and so does everything that can stand in the region above it.
+   One axis per card is what makes the width a property of the card rather than
+   of whichever view happens to be showing.
+
+   The thread reserves a scrollbar gutter on both edges, so the slot gives the
+   same gutter back before taking its share. Both then measure the same share
+   of the same base, which is what holds the two edges together at every card
+   width rather than only at the widths where a bound happened to bind. */
 .region__composer {
   flex: 0 0 auto;
-  padding: 0 var(--panel-pad) var(--composer-bottom-space);
-}
-
-/* The thread reserves a scrollbar gutter on both edges. Centring alone keeps
-   the two on one axis while the column is capped by the measure; below that
-   the column is the narrower of the two, so the slot gives back the same
-   gutter and the edges hold at every width. */
-.region__composer--measure {
-  width: calc(100% - 2 * var(--scrollbar-size));
-  max-width: var(--thread-width);
+  width: var(--thread-slot);
   margin: 0 auto;
   padding: 0 var(--thread-pad-x) var(--composer-bottom-space);
 }
@@ -346,7 +343,13 @@ body[data-resizing='y'] {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: 6px var(--panel-pad) 0;
+  padding: 6px var(--thread-pad-x) 0;
+  /* The reading axis, on the quick starts' terms: history is the other thing
+     the composer can sit under, so it is measured the same way rather than on
+     the region's own padding. Otherwise toggling temporary mode — which only
+     swaps one empty state for the other — moved the composer. */
+  width: var(--thread-slot);
+  margin: 0 auto;
 }
 
 .recents__list {
@@ -418,8 +421,7 @@ body[data-resizing='y'] {
   flex-direction: column;
   justify-content: flex-end;
   padding: 0 var(--thread-pad-x) 8px;
-  max-width: var(--thread-width);
-  width: calc(100% - 2 * var(--scrollbar-size));
+  width: var(--thread-slot);
   margin: 0 auto;
 }
 
@@ -478,8 +480,9 @@ body[data-resizing='y'] {
 /* The reading column switches to the mobile inset here; the composer must
    switch with it or the two axes part by 10px. */
 @media (max-width: 720px) {
-  .region__composer--measure,
-  .chat-empty {
+  .region__composer,
+  .chat-empty,
+  .recents {
     padding-left: var(--thread-mobile-pad-x);
     padding-right: var(--thread-mobile-pad-x);
   }

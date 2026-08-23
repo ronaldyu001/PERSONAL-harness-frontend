@@ -281,11 +281,10 @@ export function Deck(props: DeckProps) {
             </motion.div>
           </AnimatePresence>
 
-          {/* The composer follows whatever it sits under: the reading axis when
-              a conversation is on the panel, the region axis under history. */}
-          <div
-            className={`region__composer${view === 'recents' ? '' : ' region__composer--measure'}`}
-          >
+          {/* The composer holds the reading axis under every view. What fills
+              the region above it changes; the axis it is measured on does not,
+              so nothing the reader toggles moves the input under their hands. */}
+          <div className="region__composer">
             <Composer {...props.composer} onSend={props.onSend} />
           </div>
         </div>

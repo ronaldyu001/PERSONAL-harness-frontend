@@ -249,15 +249,58 @@ background, `0px` border, `0px` radius. The **"Maia" label is rendered text**,
 not decoration: with the container gone it is the turn's only non-visual
 distinction and its accessible name.
 
-**The reading measure is one token.** `--thread-measure` (80ch) bounds the
-prose, and `--thread-width` is derived from it — measure plus two
-`--thread-pad-x` — so the thread column, the composer, and the quick starts all
-inherit it and the composer ends up exactly as wide as the text above it, both
-edges. Raising the one token widens all four together.
+**The reading measure is a share of the card, not a fixed width.**
+`--thread-fill` (0.78) is what the thread column, the composer, the quick
+starts, and the recents rows each take of the conversation card, so all four
+are exactly as wide as one another at every card width — same axis, both edges.
+`--thread-width-cap` (`--thread-measure-cap`, 108ch) and `--thread-width-floor`
+(`--thread-measure-floor`, 54ch), each plus two `--thread-pad-x`, bound the
+share at either end. Raising any of them widens all four together.
 
-The `ch` unit resolves against the shell's 14px rather than the prose size, so
-80ch is 642px: about **75 characters** of 15px prose at Default — the top of the
-65–75 band — loosening to ~80 at Snug and tightening to ~70 at Roomy.
+A fixed width snapped. Under it the column was card-wide; over it the column
+stopped while the card kept going — so expanding the conversation, or a view
+change that resized the card, moved the prose between two unrelated widths. A
+share is constant whenever the card is and travels with the card whenever it is
+not, which is the rule the reader can actually see. The token is unitless so the
+thread and the composer can each multiply it against their own containing block
+— the thread's is inset by the scrollbar gutter it reserves, the composer gives
+the same gutter back before taking its share — and still land on one axis.
+
+Both bounds are legibility, not taste. The `ch` unit resolves against the
+shell's 14px rather than the prose size, so the two read in Default prose as
+about **101 characters** and about **50**.
+
+The **ceiling** stops the column growing when the card has not: past roughly a
+hundred characters the eye stops finding the next line reliably. It sits far
+enough out that a 1280px window reaches it in neither view — it is for the
+large display, where the share alone would run the measure past reading.
+
+The **floor** is the opposite case, and the reason it is a floor rather than a
+second share: a wide card can afford a tenth of itself as margin on each side
+and a narrow one cannot. Under the floor the margin is what gives way — the
+column takes the whole card rather than a share of it, so shrinking the
+conversation costs the reader margin before it costs them words. At the 340px
+drag floor that is 264px of text rather than 194px. Between floor and share the
+column rests at the floor while the card catches up, which is what keeps the
+run continuous: **the width only ever grows with the card, never against it** —
+verified monotonic across every card width from 340 to 1500px, in all three
+densities.
+
+`--thread-column` and `--thread-slot` resolve the whole expression once each
+(the two differ only in base — the thread's containing block is already inset
+by the scrollbar gutter it reserves; the slot gives the same gutter back before
+it measures). Both are declared on `.app`, not `:root`: a `var()` inside a
+custom property is substituted where the property is *declared*, so a bound
+resolved at `:root` could not see a density variant retuning `--thread-pad-x`.
+The variants live on `.app`, which carries `data-style`, so resolving there
+keeps the bounds and the padding reading one value.
+
+**One card, one axis.** The composer used to sit on the region axis under
+history and adopt the reading axis everywhere else, which meant toggling
+temporary mode — a change that only swaps one empty state for another and never
+touches the card's width — moved the input under the reader's hands. History is
+now measured the same way the quick starts are, and the composer holds the
+reading axis under every view.
 
 ### The five statuses
 
@@ -321,20 +364,22 @@ Enter sends, Shift+Enter breaks, **Esc stops an in-flight turn** — bound both 
 the textarea and globally in `App.tsx`.
 
 **Axis:** the slot owns width and centring, and the composer fills it.
-`.region__composer` sits on the region axis under history (with the legend and
-the recents rows); `.region__composer--measure` adopts the thread container
-whenever a conversation or the quick starts are on the panel, so it shares the
-reading axis exactly.
+`.region__composer` adopts the thread's container under **every** view — the
+thread, the quick starts, and history alike — so it shares the reading axis
+exactly and never moves when the reader toggles between them. It used to sit on
+the region axis under history, which meant toggling temporary mode moved the
+input even though the card had not changed width at all.
 
 The thread reserves a scrollbar gutter on **both** edges, which is what keeps
-the centred column from shifting by half a scrollbar. Centring alone holds the
-axis while the column is capped by the measure, but below that width the column
-is the narrower of the two and the composer used to sit 10px wider on each
-side. The slot now gives back the same gutter — `width: calc(100% - 2 *
-var(--scrollbar-size))` on both the composer slot and the quick starts, with
-`--scrollbar-size` also feeding the scrollbar rule itself so one value cannot
-drift from the other. Verified delta 0 at 1280px, at 800px, at the 340px drag
-floor, and at 375px.
+the centred column from shifting by half a scrollbar. The slot gives back the
+same gutter before taking its share — `calc((100% - 2 * var(--scrollbar-size))
+* var(--thread-fill))` inside `--thread-slot`, shared by the composer slot, the
+quick starts, and the recents list, with `--scrollbar-size` also feeding the
+scrollbar rule itself so one value cannot drift from the other. Both are
+centred on the card, so the axis holds at the floor and the ceiling too.
+Verified across every card width from 340 to 1500px in all three densities —
+thread turn, user bubble, quick start row, and recents row all flush with the
+composer on both edges, worst delta 0.016px (sub-pixel layout rounding).
 
 ### Empty state
 
@@ -499,12 +544,15 @@ Recorded so the next contributor does not read them as defects to "fix".
    thing withheld, focus reveals it as reliably as hover, and touch pointers get
    it unconditionally. The always-visible rule stands for the current turn, for
    Retry, and for the model name.
-10. **The reading measure sits at the top of the band, by request.**
-   `--thread-measure` 80ch is ~75 characters of Default prose, up from ~64
-   (the old `68ch` resolved the same way). At Snug it reaches ~80, above the
-   65–75 guidance. Accepted: the ask was explicitly for more width, the density
-   that overshoots is the one chosen for density, and the whole thing is one
-   token to walk back.
+10. **The reading measure is proportional, and leaves the band at both ends.**
+   `--thread-fill` 0.78 puts Default prose at ~73 characters on the dashboard
+   and ~101 expanded, against 65–75 guidance; under `--thread-width-floor` a
+   dragged-narrow card falls to ~31. Accepted: the ask was
+   for a width that stays put when the card does and moves when the card moves,
+   and a fixed measure cannot do both — it snaps at the width where its cap
+   starts binding, which is exactly the seam the reader was seeing. The
+   overshoot is bounded by `--thread-measure-cap`, and the whole thing is two
+   tokens to walk back.
 9. **The separator's focus indicator is its own rule, not an outline.** A 14px
    invisible strip outlined at `outline-offset: 2px` draws two full-height
    lines around something that is not a visible object. On `:focus-visible` the

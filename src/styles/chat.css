@@ -25,8 +25,11 @@
 }
 
 .thread__col {
-  width: 100%;
-  max-width: var(--thread-width);
+  /* The thread reserves a scrollbar gutter on both edges, so the share is
+     taken of what is left inside them — the same base the slot works from,
+     which is why the two edges agree at every card width. Both are centred on
+     the card, so they stay on one axis at the floor and the ceiling too. */
+  width: var(--thread-column);
   margin: 0 auto;
   padding: var(--thread-pad-top) var(--thread-pad-x) 0;
 }
@@ -37,9 +40,8 @@
 
 /* ── Turns ──────────────────────────────────────────────────── */
 
-.turn {
-  max-width: var(--thread-measure);
-}
+/* A turn is the column: the measure is held by .thread__col, once, so nothing
+   inside the thread carries a second width of its own to fall out of step. */
 
 .turn--user {
   margin-bottom: var(--user-message-space);
@@ -228,7 +230,6 @@
 .thread-skeleton__user {
   height: 44px;
   width: 100%;
-  max-width: var(--thread-measure);
   border-radius: var(--user-bubble-radius);
   background: var(--skeleton-low);
 }
