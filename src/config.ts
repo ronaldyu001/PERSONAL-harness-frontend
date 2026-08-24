@@ -1,4 +1,4 @@
-import type { Conversation, ModelOption } from './types'
+import type { HistoryGroup, ModelOption } from './types'
 
 export const MODELS: ModelOption[] = [
   {
@@ -16,10 +16,11 @@ export const SUGGESTIONS = [
   'What can I cook with miso and rice?',
 ]
 
-export const GROUP_LABELS: Record<Conversation['group'], string> = {
+export const GROUP_LABELS: Record<HistoryGroup, string> = {
   today: 'Today',
   yesterday: 'Yesterday',
   week: 'Previous 7 days',
+  older: 'Older',
 }
 
 export function formatBytes(bytes: number): string {

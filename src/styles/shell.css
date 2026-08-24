@@ -317,6 +317,22 @@
   transform: translateY(1px);
 }
 
+/* A recovery action that belongs inside its sentence, not beside it as a pill. */
+.link-btn {
+  display: inline;
+  font-size: inherit;
+  font-weight: inherit;
+  color: var(--text-primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  border-radius: var(--r-sm);
+  transition: color var(--dur-fast) var(--ease-standard);
+}
+
+.link-btn:hover {
+  color: var(--accent-fill);
+}
+
 /* ── Toast ──────────────────────────────────────────────────── */
 
 .toast-slot {

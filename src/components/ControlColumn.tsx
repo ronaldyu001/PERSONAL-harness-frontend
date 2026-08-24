@@ -13,9 +13,10 @@ import { Tooltip } from './Tooltip'
 import { Popover } from './Popover'
 import { SettingsPanel, type Prefs } from './SettingsPanel'
 import { GROUP_LABELS } from '../config'
+import { historyGroup } from '../lib/history_groups'
 import type { Conversation, HistoryGroup } from '../types'
 
-const GROUPS: HistoryGroup[] = ['today', 'yesterday', 'week']
+const GROUPS: HistoryGroup[] = ['today', 'yesterday', 'week', 'older']
 
 export interface ControlColumnProps {
   expanded: boolean
@@ -24,6 +25,9 @@ export interface ControlColumnProps {
   activeId: string | null
   chatOpen: boolean
   onSelect: (id: string) => void
+  historyLoading: boolean
+  historyError: string | null
+  onRetryHistory: () => void
   onToggleChat: () => void
   onGoDashboard: () => void
   onTemporaryChat: () => void
@@ -111,11 +115,24 @@ export function ControlColumn(props: ControlColumnProps) {
       {expanded && (
         <div className="column__history">
           <h2 className="legend column__legend">Recents</h2>
-          {conversations.length === 0 ? (
+          {props.historyLoading && conversations.length === 0 ? (
+            <p className="column__empty" role="status">
+              Loading your conversations&#8230;
+            </p>
+          ) : props.historyError && conversations.length === 0 ? (
+            <p className="column__empty" role="status">
+              {props.historyError}{' '}
+              <button type="button" className="link-btn" onClick={props.onRetryHistory}>
+                Try again
+              </button>
+            </p>
+          ) : conversations.length === 0 ? (
             <p className="column__empty">Your conversations will appear here.</p>
           ) : (
             GROUPS.map((group) => {
-              const items = conversations.filter((c) => c.group === group)
+              const items = conversations.filter(
+                (c) => historyGroup(c.lastUpdated) === group,
+              )
               if (!items.length) return null
               return (
                 <section key={group} className="column__group" aria-label={GROUP_LABELS[group]}>
@@ -141,7 +158,7 @@ export function ControlColumn(props: ControlColumnProps) {
           )}
           {/* A standing condition gets a standing line, not a toast. */}
           <p className="column__standing">
-            Held in memory for this session. Stored history is coming.
+            Stored conversations open for reading. Start a new chat to continue one.
           </p>
         </div>
       )}

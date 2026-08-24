@@ -29,13 +29,22 @@ export interface AssistantMessage {
 
 export type Message = UserMessage | AssistantMessage
 
-export type HistoryGroup = 'today' | 'yesterday' | 'week'
+export type HistoryGroup = 'today' | 'yesterday' | 'week' | 'older'
+
+/**
+ * Where a conversation came from. A conversation read back from storage is
+ * read-only: the agent keeps no context for it once the API restarts, so
+ * continuing it would answer with none.
+ */
+export type ConversationOrigin = 'local' | 'history'
 
 export interface Conversation {
+  /** The id the backend knows this conversation by; minted before the first send. */
   id: string
-  sessionId?: string
   title: string
-  group: HistoryGroup
+  origin: ConversationOrigin
+  /** ISO instant of the last turn; drives the sidebar grouping. */
+  lastUpdated?: string
   temporary?: boolean
   messages: Message[]
 }

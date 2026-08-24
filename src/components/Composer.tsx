@@ -21,6 +21,8 @@ export interface ComposerProps {
   onToggleTemporary: () => void
   showHints: boolean
   interfaceStyle: 'snug' | 'default' | 'roomy'
+  /** A stored conversation is readable but cannot be continued. */
+  readOnly?: boolean
   autoFocus?: boolean
   /** Raised while the composer holds a sendable draft, so the shell can
       arbitrate which single element is allowed to carry the signal. */
@@ -37,6 +39,7 @@ export function Composer({
   onToggleTemporary,
   showHints,
   interfaceStyle,
+  readOnly = false,
   autoFocus,
   onArmedChange,
 }: ComposerProps) {
@@ -48,7 +51,7 @@ export function Composer({
   const replicaRef = useRef<HTMLDivElement>(null)
   const modelButtonRef = useRef<HTMLButtonElement>(null)
 
-  const canSend = text.trim().length > 0 && !streaming
+  const canSend = text.trim().length > 0 && !streaming && !readOnly
 
   useEffect(() => {
     onArmedChange?.(canSend)
@@ -63,8 +66,8 @@ export function Composer({
   }, [text, interfaceStyle])
 
   useEffect(() => {
-    if (autoFocus) textareaRef.current?.focus()
-  }, [autoFocus])
+    if (autoFocus && !readOnly) textareaRef.current?.focus()
+  }, [autoFocus, readOnly])
 
   const submit = () => {
     if (!canSend) return
@@ -85,7 +88,9 @@ export function Composer({
   }
 
   return (
-    <div className={`composer${temporary ? ' composer--temp' : ''}`}>
+    <div
+      className={`composer${temporary ? ' composer--temp' : ''}${readOnly ? ' composer--readonly' : ''}`}
+    >
       <motion.div
         className="composer__input"
         animate={{ height: inputHeight }}
@@ -96,8 +101,9 @@ export function Composer({
           ref={textareaRef}
           value={text}
           rows={1}
-          placeholder="Ask Maia anything"
+          placeholder={readOnly ? 'This conversation is read-only' : 'Ask Maia anything'}
           aria-label="Message Maia"
+          disabled={readOnly}
           onChange={(event) => setText(event.target.value)}
           onKeyDown={handleKeyDown}
         />
@@ -107,123 +113,133 @@ export function Composer({
         </div>
       </motion.div>
 
-      <div className="composer__row">
-        <div className="composer__model-slot">
-          <button
-            type="button"
-            ref={modelButtonRef}
-            id="model-trigger"
-            className={`model-chip${modelOpen ? ' model-chip--open' : ''}`}
-            aria-haspopup="menu"
-            aria-expanded={modelOpen}
-            onClick={() => setModelOpen((open) => !open)}
-          >
-            <span>{currentModel.name}</span>
-            <span className="model-chip__chev" aria-hidden="true">
-              <ChevronDown size={13} strokeWidth={1.8} />
-            </span>
-          </button>
-          <Popover
-            open={modelOpen}
-            onClose={() => setModelOpen(false)}
-            anchorRef={modelButtonRef}
-            placement="top-start"
-            width={264}
-            labelledBy="model-trigger"
-          >
-            <div className="model-menu">
-              <div className="model-menu__title">Model</div>
-              {MODELS.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  className={`menu-item model-menu__item${item.id === model ? ' model-menu__item--on' : ''}`}
-                  data-menu-item
-                  role="menuitemradio"
-                  aria-checked={item.id === model}
-                  onClick={() => {
-                    onModelChange(item.id)
-                    setModelOpen(false)
-                  }}
-                >
-                  <span className="model-menu__meta">
-                    <span className="model-menu__name">
-                      {item.name}
-                      {item.badge && <span className="model-menu__badge">{item.badge}</span>}
-                    </span>
-                    <span className="model-menu__caption">{item.caption}</span>
-                  </span>
-                  {item.id === model && (
-                    <Check size={15} strokeWidth={1.8} className="model-menu__check" />
-                  )}
-                </button>
-              ))}
-            </div>
-          </Popover>
-        </div>
-
-        <Tooltip
-          label={temporary ? 'Temporary chat on, hidden from history' : 'Temporary chat'}
-          side="top"
-        >
-          <button
-            type="button"
-            className={`icon-btn icon-btn--sm${temporary ? ' icon-btn--accent' : ''}`}
-            aria-label="Toggle temporary chat"
-            aria-pressed={temporary}
-            onClick={onToggleTemporary}
-          >
-            <MessageSquareDashed size={16} strokeWidth={1.8} />
-          </button>
-        </Tooltip>
-
-        <div className="composer__spacer" />
-
-        <AnimatePresence>
-          {showHints && (canSend || streaming) && (
-            <motion.span
-              className="composer__hint"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.15 }}
-            >
-              {streaming ? (
-                <>
-                  <kbd>Esc</kbd> to stop
-                </>
-              ) : (
-                <>
-                  <kbd>&#9166;</kbd> to send
-                </>
-              )}
-            </motion.span>
-          )}
-        </AnimatePresence>
-
-        {streaming ? (
-          <Tooltip label="Stop generating" shortcut="Esc" side="top">
+      {/* Read-only drops the row entirely: a model picker and a send
+          button that cannot fire are worse than absent. The composer keeps
+          its place on the reading axis either way. */}
+      {readOnly ? (
+        <p className="composer__notice" role="status">
+          Maia keeps no context for a stored conversation. Start a new chat to keep
+          talking.
+        </p>
+      ) : (
+        <div className="composer__row">
+          <div className="composer__model-slot">
             <button
               type="button"
-              className="send-btn send-btn--stop"
-              aria-label="Stop generating"
-              onClick={onStop}
+              ref={modelButtonRef}
+              id="model-trigger"
+              className={`model-chip${modelOpen ? ' model-chip--open' : ''}`}
+              aria-haspopup="menu"
+              aria-expanded={modelOpen}
+              onClick={() => setModelOpen((open) => !open)}
             >
-              <Square size={10} strokeWidth={0} fill="currentColor" />
+              <span>{currentModel.name}</span>
+              <span className="model-chip__chev" aria-hidden="true">
+                <ChevronDown size={13} strokeWidth={1.8} />
+              </span>
+            </button>
+            <Popover
+              open={modelOpen}
+              onClose={() => setModelOpen(false)}
+              anchorRef={modelButtonRef}
+              placement="top-start"
+              width={264}
+              labelledBy="model-trigger"
+            >
+              <div className="model-menu">
+                <div className="model-menu__title">Model</div>
+                {MODELS.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className={`menu-item model-menu__item${item.id === model ? ' model-menu__item--on' : ''}`}
+                    data-menu-item
+                    role="menuitemradio"
+                    aria-checked={item.id === model}
+                    onClick={() => {
+                      onModelChange(item.id)
+                      setModelOpen(false)
+                    }}
+                  >
+                    <span className="model-menu__meta">
+                      <span className="model-menu__name">
+                        {item.name}
+                        {item.badge && <span className="model-menu__badge">{item.badge}</span>}
+                      </span>
+                      <span className="model-menu__caption">{item.caption}</span>
+                    </span>
+                    {item.id === model && (
+                      <Check size={15} strokeWidth={1.8} className="model-menu__check" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            </Popover>
+          </div>
+
+          <Tooltip
+            label={temporary ? 'Temporary chat on, hidden from history' : 'Temporary chat'}
+            side="top"
+          >
+            <button
+              type="button"
+              className={`icon-btn icon-btn--sm${temporary ? ' icon-btn--accent' : ''}`}
+              aria-label="Toggle temporary chat"
+              aria-pressed={temporary}
+              onClick={onToggleTemporary}
+            >
+              <MessageSquareDashed size={16} strokeWidth={1.8} />
             </button>
           </Tooltip>
-        ) : (
-          <button
-            type="button"
-            className="send-btn"
-            aria-label="Send message"
-            disabled={!canSend}
-            onClick={submit}
-          >
-            <ArrowUp size={16} strokeWidth={1.8} />
-          </button>
-        )}
-      </div>
+
+          <div className="composer__spacer" />
+
+          <AnimatePresence>
+            {showHints && !readOnly && (canSend || streaming) && (
+              <motion.span
+                className="composer__hint"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }}
+              >
+                {streaming ? (
+                  <>
+                    <kbd>Esc</kbd> to stop
+                  </>
+                ) : (
+                  <>
+                    <kbd>&#9166;</kbd> to send
+                  </>
+                )}
+              </motion.span>
+            )}
+          </AnimatePresence>
+
+          {streaming ? (
+            <Tooltip label="Stop generating" shortcut="Esc" side="top">
+              <button
+                type="button"
+                className="send-btn send-btn--stop"
+                aria-label="Stop generating"
+                onClick={onStop}
+              >
+                <Square size={10} strokeWidth={0} fill="currentColor" />
+              </button>
+            </Tooltip>
+          ) : (
+            <button
+              type="button"
+              className="send-btn"
+              aria-label="Send message"
+              disabled={!canSend}
+              onClick={submit}
+            >
+              <ArrowUp size={16} strokeWidth={1.8} />
+            </button>
+          )}
+        </div>
+      )}
     </div>
   )
 }

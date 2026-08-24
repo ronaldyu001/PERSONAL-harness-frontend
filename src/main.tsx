@@ -14,7 +14,9 @@ import './styles/startup.css'
 import App from './App.tsx'
 import { StartupGate } from './components/StartupGate'
 import { SendChat } from './application/chat/send_chat'
+import { LoadConversations } from './application/conversation/load_conversations'
 import { HttpChatAdapter } from './infrastructure/chat/http_chat_adapter'
+import { HttpConversationHistoryAdapter } from './infrastructure/conversation/http_conversation_history_adapter'
 import { LocalStorageUserIdentityAdapter } from './infrastructure/identity/local_storage_user_identity_adapter'
 
 const apiBaseUrl = import.meta.env.DEV
@@ -29,8 +31,10 @@ const orchestratorStatusUrl = import.meta.env.DEV ? '/orchestrator/status' : und
 const orchestratorCancelUrl = import.meta.env.DEV ? '/orchestrator/cancel' : undefined
 const orchestratorRetryUrl = import.meta.env.DEV ? '/orchestrator/retry' : undefined
 const chatAdapter = new HttpChatAdapter(apiBaseUrl)
+const historyAdapter = new HttpConversationHistoryAdapter(apiBaseUrl)
 const identityAdapter = new LocalStorageUserIdentityAdapter()
 const sendChat = new SendChat(chatAdapter, identityAdapter)
+const loadConversations = new LoadConversations(historyAdapter, identityAdapter)
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -41,7 +45,7 @@ createRoot(document.getElementById('root')!).render(
       orchestratorCancelUrl={orchestratorCancelUrl}
       orchestratorRetryUrl={orchestratorRetryUrl}
     >
-      <App sendChat={sendChat} />
+      <App sendChat={sendChat} loadConversations={loadConversations} />
     </StartupGate>
   </StrictMode>,
 )

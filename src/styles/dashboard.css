@@ -94,6 +94,13 @@
   white-space: nowrap;
 }
 
+/* Dashed reads as provisional; a stored conversation is settled, so its flag
+   takes the solid edge. */
+.region__flag--settled {
+  border-style: solid;
+  border-color: var(--border-soft);
+}
+
 .region__head-end {
   margin-left: auto;
   display: flex;

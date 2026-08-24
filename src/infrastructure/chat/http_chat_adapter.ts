@@ -19,17 +19,20 @@ export class ChatApiError extends Error {
 }
 
 export class HttpChatAdapter implements ChatPort {
-  private readonly endpoint: string
+  private readonly baseUrl: string
 
   constructor(baseUrl = '') {
-    this.endpoint = `${baseUrl.replace(/\/$/, '')}/api/chat`
+    this.baseUrl = baseUrl.replace(/\/$/, '')
   }
 
   async chat(request: ChatRequest): Promise<ChatResult> {
     let response: Response
+    /* The route carries the intent: a temporary turn goes to the endpoint
+       that does not persist it, rather than sending a flag. */
+    const endpoint = `${this.baseUrl}${request.temporary ? '/api/temp-chat' : '/api/chat'}`
 
     try {
-      response = await fetch(this.endpoint, {
+      response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

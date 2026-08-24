@@ -6,7 +6,11 @@ import { SearchOverlay } from './components/SearchOverlay'
 import { Toast } from './components/Toast'
 import type { Prefs } from './components/SettingsPanel'
 import type { SendChat } from './application/chat/send_chat'
+import type { LoadConversations } from './application/conversation/load_conversations'
+import type { ConversationDetail } from './application/conversation/schemas'
 import type { AssistantMessage, Conversation, Message, UserMessage } from './types'
+
+const HISTORY_LOAD_FAILED = 'Could not load your conversations.'
 
 let seq = 0
 const uid = (prefix: string) => `${prefix}-${Date.now()}-${seq++}`
@@ -49,12 +53,40 @@ interface PendingChat {
 
 interface AppProps {
   sendChat: SendChat
+  loadConversations: LoadConversations
+}
+
+/** Map one stored conversation onto the shape the thread renders. */
+function toConversation(detail: ConversationDetail, title: string): Conversation {
+  return {
+    id: detail.conversationId,
+    title: detail.title ?? title,
+    origin: 'history',
+    lastUpdated: detail.lastUpdated ?? undefined,
+    messages: detail.messages.flatMap<Message>((record, index) => {
+      const id = record.messageId ?? `${detail.conversationId}-${index}`
+      if (record.role === 'user') {
+        return [{ id, role: 'user', text: record.content, attachments: [] }]
+      }
+      if (record.role !== 'assistant') return []
+      const model = record.metadata.model
+      return [
+        {
+          id,
+          role: 'assistant',
+          md: record.content,
+          status: 'complete',
+          model: typeof model === 'string' ? model : 'unknown',
+        },
+      ]
+    }),
+  }
 }
 
 const isAbortError = (error: unknown) =>
   error instanceof DOMException && error.name === 'AbortError'
 
-export default function App({ sendChat }: AppProps) {
+export default function App({ sendChat, loadConversations }: AppProps) {
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [activeId, setActiveId] = useState<string | null>(null)
   const [chatOpen, setChatOpen] = useState(false)
@@ -66,9 +98,11 @@ export default function App({ sendChat }: AppProps) {
   const [toast, setToast] = useState<{ id: number; text: string } | null>(null)
   const [prefs, setPrefs] = useState<Prefs>(readPreferences)
   const [armed, setArmed] = useState(false)
+  const [historyLoading, setHistoryLoading] = useState(true)
+  const [historyError, setHistoryError] = useState<string | null>(null)
 
   const pendingChatRef = useRef<PendingChat | null>(null)
-  const loadTimer = useRef<number | undefined>(undefined)
+  const historyRequestRef = useRef<AbortController | null>(null)
   const toastTimer = useRef<number | undefined>(undefined)
 
   const active = conversations.find((c) => c.id === activeId) ?? null
@@ -114,6 +148,56 @@ export default function App({ sendChat }: AppProps) {
       ?.setAttribute('content', prefs.theme === 'light' ? '#cfccc3' : '#262624')
   }, [prefs])
 
+  /* No synchronous setState here: the effect below calls this on mount, and
+     historyLoading already starts true. Only the retry path resets it. */
+  const fetchHistory = useCallback(
+    async (signal?: AbortSignal) => {
+      try {
+        const listing = await loadConversations.list({ signal })
+        if (signal?.aborted) return
+        setConversations((prev) => {
+          /* Merge rather than replace: a conversation started before the list
+             arrived is already local, and its live messages outrank a stored
+             listing. */
+          const known = new Set(prev.map((conversation) => conversation.id))
+          const stored = listing
+            .filter((info) => !known.has(info.conversationId))
+            .map<Conversation>((info) => ({
+              id: info.conversationId,
+              title: info.title,
+              origin: 'history',
+              lastUpdated: info.lastUpdated,
+              messages: [],
+            }))
+          return [...prev, ...stored]
+        })
+        setHistoryError(null)
+      } catch (error) {
+        if (isAbortError(error)) return
+        setHistoryError(HISTORY_LOAD_FAILED)
+      } finally {
+        if (!signal?.aborted) setHistoryLoading(false)
+      }
+    },
+    [loadConversations],
+  )
+
+  useEffect(() => {
+    const controller = new AbortController()
+    /* Loading remote data on mount sets state by definition. Without a
+       fetching library or a Suspense boundary there is no version of this the
+       rule accepts, and every write here is guarded by the abort signal. */
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void fetchHistory(controller.signal)
+    return () => controller.abort()
+  }, [fetchHistory])
+
+  const retryHistory = useCallback(() => {
+    setHistoryLoading(true)
+    setHistoryError(null)
+    void fetchHistory()
+  }, [fetchHistory])
+
   /* Conversation state helpers */
 
   const updateMessage = useCallback(
@@ -155,7 +239,7 @@ export default function App({ sendChat }: AppProps) {
       msgId: string,
       message: string,
       requestModel: string,
-      sessionId?: string,
+      temporary: boolean,
     ) => {
       cancelCurrentChat(true)
       const controller = new AbortController()
@@ -165,7 +249,10 @@ export default function App({ sendChat }: AppProps) {
         const result = await sendChat.execute({
           message,
           model: requestModel,
-          sessionId,
+          /* The conversation id is the session id: the frontend mints it, so
+             the backend never has to hand one back. */
+          sessionId: convoId,
+          temporary,
           signal: controller.signal,
         })
 
@@ -177,7 +264,7 @@ export default function App({ sendChat }: AppProps) {
               ? conversation
               : {
                   ...conversation,
-                  sessionId: result.sessionId,
+                  lastUpdated: new Date().toISOString(),
                   messages: conversation.messages.map((item) =>
                     item.id === msgId && item.role === 'assistant'
                       ? { ...item, md: result.content, status: 'complete' }
@@ -204,6 +291,10 @@ export default function App({ sendChat }: AppProps) {
 
   const handleSend = useCallback(
     (text: string) => {
+      /* A stored conversation has no agent context behind it, so it cannot be
+         continued. The composer is disabled; this is the guard behind it. */
+      if (active?.origin === 'history') return
+
       const userMsg: Message = { id: uid('u'), role: 'user', text, attachments: [] }
       const assistantMsg: AssistantMessage = {
         id: uid('a'),
@@ -215,13 +306,16 @@ export default function App({ sendChat }: AppProps) {
       }
 
       const currentConversation = active
-      const convoId = currentConversation?.id ?? uid('c')
+      /* Minted here, before the first request, so the conversation carries its
+         real id from the start and never has to be re-keyed mid-flight. */
+      const convoId = currentConversation?.id ?? crypto.randomUUID()
       if (!currentConversation) {
         const title = text.length > 44 ? `${text.slice(0, 44).replace(/\s+\S*$/, '')}…` : text
         const convo: Conversation = {
           id: convoId,
           title,
-          group: 'today',
+          origin: 'local',
+          lastUpdated: new Date().toISOString(),
           temporary: tempMode,
           messages: [userMsg, assistantMsg],
         }
@@ -236,7 +330,13 @@ export default function App({ sendChat }: AppProps) {
       }
       /* Sending never moves the surface: the dashboard's conversation panel
          holds the turn, and expanding stays the reader's call. */
-      void requestChat(convoId, assistantMsg.id, text, model, currentConversation?.sessionId)
+      void requestChat(
+        convoId,
+        assistantMsg.id,
+        text,
+        model,
+        currentConversation?.temporary ?? tempMode,
+      )
     },
     [active, model, requestChat, tempMode],
   )
@@ -247,7 +347,7 @@ export default function App({ sendChat }: AppProps) {
      the message and model the failed turn already carried. */
   const handleRetry = useCallback(
     (assistantId: string) => {
-      if (!active) return
+      if (!active || active.origin === 'history') return
       const assistantIndex = active.messages.findIndex((item) => item.id === assistantId)
       const userMessage = active.messages
         .slice(0, assistantIndex)
@@ -264,7 +364,13 @@ export default function App({ sendChat }: AppProps) {
         error: undefined,
         startedAt: Date.now(),
       }))
-      void requestChat(active.id, assistantId, userMessage.text, requestModel, active.sessionId)
+      void requestChat(
+        active.id,
+        assistantId,
+        userMessage.text,
+        requestModel,
+        active.temporary ?? false,
+      )
     },
     [active, model, requestChat, updateMessage],
   )
@@ -274,14 +380,46 @@ export default function App({ sendChat }: AppProps) {
      opened without leaving the dashboard. */
   const openConversation = useCallback(
     (id: string) => {
-      if (id === activeId) return
-      window.clearTimeout(loadTimer.current)
       setActiveId(id)
       setTempMode(false)
+
+      const conversation = conversations.find((item) => item.id === id)
+      /* Only a stored conversation has messages still to fetch, and an empty
+         one is also the retry path: selecting it again asks again. */
+      if (!conversation || conversation.origin !== 'history') return
+      if (conversation.messages.length > 0) return
+
+      const controller = new AbortController()
+      historyRequestRef.current?.abort()
+      historyRequestRef.current = controller
       setConvoLoading(true)
-      loadTimer.current = window.setTimeout(() => setConvoLoading(false), 420)
+
+      void loadConversations
+        .get({ conversationId: id, signal: controller.signal })
+        .then((detail) => {
+          if (controller.signal.aborted) return
+          if (!detail) {
+            showToast('That conversation is no longer available.')
+            return
+          }
+          setConversations((prev) =>
+            prev.map((item) =>
+              item.id === id ? toConversation(detail, item.title) : item,
+            ),
+          )
+        })
+        .catch((error: unknown) => {
+          if (isAbortError(error)) return
+          showToast('Could not open that conversation. Select it to try again.')
+        })
+        .finally(() => {
+          if (historyRequestRef.current === controller) {
+            historyRequestRef.current = null
+            setConvoLoading(false)
+          }
+        })
     },
-    [activeId],
+    [conversations, loadConversations, showToast],
   )
 
   /* The conversation surface is a toggle, like temporary mode: the same
@@ -370,6 +508,9 @@ export default function App({ sendChat }: AppProps) {
           activeId={activeId}
           chatOpen={chatOpen}
           onSelect={openConversation}
+          historyLoading={historyLoading}
+          historyError={historyError}
+          onRetryHistory={retryHistory}
           onToggleChat={toggleChat}
           onGoDashboard={() => setChatOpen(false)}
           onTemporaryChat={toggleTemporaryMode}
@@ -403,6 +544,7 @@ export default function App({ sendChat }: AppProps) {
             onToggleTemporary: toggleTemporary,
             showHints: prefs.showHints,
             interfaceStyle: prefs.style,
+            readOnly: active?.origin === 'history',
             autoFocus: true,
             onArmedChange: setArmed,
           }}

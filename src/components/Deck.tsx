@@ -225,6 +225,9 @@ export function Deck(props: DeckProps) {
           {(props.temporaryActive || active?.temporary) && (
             <span className="region__flag">Temporary</span>
           )}
+          {active?.origin === 'history' && (
+            <span className="region__flag region__flag--settled">Read-only</span>
+          )}
           <div className="region__head-end">
             <Tooltip label="New chat" side="bottom">
               <button

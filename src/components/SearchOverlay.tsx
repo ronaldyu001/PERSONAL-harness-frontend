@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { MessageSquare, Search } from 'lucide-react'
 import { GROUP_LABELS } from '../config'
+import { historyGroup } from '../lib/history_groups'
 import type { Conversation } from '../types'
 
 export function SearchOverlay({
@@ -126,7 +127,9 @@ export function SearchOverlay({
                   >
                     <MessageSquare size={15} strokeWidth={1.8} />
                     <span className="search-result__title">{c.title}</span>
-                    <span className="search-result__group">{GROUP_LABELS[c.group]}</span>
+                    <span className="search-result__group">
+                      {GROUP_LABELS[historyGroup(c.lastUpdated)]}
+                    </span>
                   </button>
                 ))
               )}
