@@ -19,6 +19,10 @@
   --r-xl: 18px;
   /* Floating regions. Card radii hold the 12–16px band. */
   --r-panel: 16px;
+  /* A panel that meets the window has no ground behind its corner to round
+     against, so it does not round. Cards that float inside the frame — the
+     startup screen's, the popovers — keep --r-panel. */
+  --r-frame: 0px;
   /* Pills are for small controls only — the switch, the send key, chips. */
   --r-pill: 999px;
   --seam: 1px;
@@ -80,8 +84,8 @@
   --thread-pad-top: 40px;
   --thread-pad-x: 28px;
   --thread-mobile-pad-x: 18px;
-  --user-message-width: 100%;
-  --user-message-mobile-width: 100%;
+  --user-message-width: 78%;
+  --user-message-mobile-width: 88%;
   --user-message-space: 30px;
   --user-bubble-radius: var(--r-lg);
   --user-bubble-padding: 11px 15px;
@@ -136,8 +140,15 @@
   /* The frame. Floating panels need ground to float on, so the shell holds a
      margin and the regions hold a gutter. Both are constant across densities:
      the frame is a property of the object, not of the reading density. */
-  --frame-pad: 10px;
-  --panel-gap: 8px;
+  /* The face is continuous. Neither the frame nor the gutter shows ground:
+     the panels run to the window's edges and to each other, and what divides
+     them is tone and a seam rather than a channel of the ground behind them.
+
+     Both are still tokens, and both are still read once — Deck.tsx measures
+     --panel-gap rather than assuming it — so the face can be opened back up
+     from here without touching anything that lays out against it. */
+  --frame-pad: 0px;
+  --panel-gap: 0px;
   /* The thread reserves this on both edges (`scrollbar-gutter: stable`), so
      anything that has to share the thread's axis has to inset by it too. */
   --scrollbar-size: 10px;

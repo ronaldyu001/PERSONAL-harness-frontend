@@ -1,0 +1,590 @@
+/* ─────────────────────────────────────────────────────────────
+   Investigate — the bench.
+
+   Maia's dashboard is the face of the instrument. This is the service side:
+   the same object, opened, in a cooler material. Nothing about the world
+   changes — the frame, the elevation, the type scale, the accent rationing,
+   and the ban on filled status chips all hold. Three things shift, and they
+   shift together:
+
+     1. The material cools. The warm ABS of the face gives way to the grey
+        of the chassis under it. Same four planes, same luminance, hue only,
+        so every contrast pair measured for the face still holds here.
+     2. Data is set in the mono face. Timestamps, identifiers, token counts,
+        and recorded payloads are measurements, not prose, and a column of
+        them has to align on the character. This is the code rule applied to
+        the thing code writes, not mono worn as a costume.
+     3. The rules come back. The face groups by panel boundary and tone and
+        avoids stacked hairlines, because a stack of them reads as a ledger.
+        Down here it is a ledger, and it is ruled like one.
+   ───────────────────────────────────────────────────────────── */
+
+.app[data-theme='dark'] .bench {
+  --bg-workspace: #1b1d1f;
+  --surface-2: #24272a;
+  --surface-3: #2d3033;
+  --segment-selected: #3e4348;
+
+  --surface-hover: rgba(216, 226, 235, 0.06);
+  --surface-pressed: rgba(216, 226, 235, 0.11);
+  --surface-selected: rgba(216, 226, 235, 0.08);
+
+  --border-faint: rgba(216, 226, 235, 0.08);
+  --border-soft: rgba(216, 226, 235, 0.13);
+  --border-strong: rgba(216, 226, 235, 0.24);
+
+  --text-primary: #e2e5e8;
+  --text-strong: #f1f4f6;
+  --text-secondary: #a4a8ad;
+  --text-tertiary: #8d9196;
+  --text-faint: #82868b;
+
+  --sheen: linear-gradient(180deg, rgba(226, 236, 245, 0.03), rgba(255, 255, 255, 0) 44%);
+}
+
+.app[data-theme='light'] .bench {
+  --bg-workspace: #f0f2f4;
+  --surface-2: #f9fafb;
+  --surface-3: #dfe3e7;
+  --segment-selected: #f9fafb;
+
+  --surface-hover: rgba(28, 34, 40, 0.05);
+  --surface-pressed: rgba(28, 34, 40, 0.09);
+  --surface-selected: rgba(28, 34, 40, 0.07);
+
+  --border-faint: rgba(28, 34, 40, 0.08);
+  --border-soft: rgba(28, 34, 40, 0.13);
+  --border-strong: rgba(28, 34, 40, 0.22);
+
+  --text-primary: #1f2225;
+  --text-strong: #14171a;
+  --text-secondary: #454a4f;
+  --text-tertiary: #5a6067;
+  --text-faint: #6c7278;
+
+  --sheen: linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0) 44%);
+}
+
+/* The bench occupies the deck's place exactly: the control column is pinned
+   and does not know which surface is mounted beside it. */
+.bench {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  background: var(--bg-root);
+}
+
+.region--bench {
+  flex: 1 1 auto;
+}
+
+/* The channel selector sits in the head, between the legend and the flag —
+   the log being read is a property of the panel, not of its contents. */
+.bench__tabs {
+  margin-left: 4px;
+  max-width: 380px;
+}
+
+.bench__tabs .segmented__opt {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.bench__body {
+  position: relative;
+  flex-direction: row;
+  min-width: 0;
+}
+
+/* ── The ledger column ──────────────────────────────────────── */
+
+.bench__ledger {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 336px;
+  /* The resting width; the reader's stored one arrives as an inline flex
+     basis, and the stacked layout below drops both. */
+  min-width: 0;
+  min-height: 0;
+  border-right: var(--seam) solid var(--border-faint);
+}
+
+.bench__ledger-head {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px var(--panel-pad) 10px;
+  border-bottom: var(--seam) solid var(--border-faint);
+}
+
+.bench__summary {
+  margin: 0;
+  font-size: var(--t-meta);
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.bench__source {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  margin: 0;
+  font-size: var(--t-meta);
+  color: var(--text-tertiary);
+}
+
+.bench__seed-note {
+  color: var(--text-tertiary);
+}
+
+/* Identifiers, clocks, counts, payloads: the record's measurements. */
+.bench__mono,
+.ledger__clock,
+.ledger__seed,
+.record__mono,
+.record__payload {
+  font-family: var(--mono);
+  font-variant-ligatures: none;
+}
+
+/* ── Filters ────────────────────────────────────────────────── */
+
+/* Pills, which this world spends on small controls. A count rides in each
+   one: the filter that would empty the ledger says so before it is pressed. */
+.bench__facets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.bench__facet {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border-radius: var(--r-pill);
+  font-size: var(--t-meta);
+  color: var(--text-secondary);
+  transition:
+    background-color var(--dur-fast) var(--ease-standard),
+    color var(--dur-fast) var(--ease-standard);
+}
+
+.bench__facet:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+.bench__facet--on {
+  background: var(--surface-selected);
+  color: var(--text-primary);
+  box-shadow: var(--highlight-inner);
+}
+
+.bench__facet-count {
+  font-family: var(--mono);
+  font-size: 0.9em;
+  color: var(--text-tertiary);
+}
+
+.bench__facet--on .bench__facet-count {
+  color: var(--text-secondary);
+}
+
+.bench__note {
+  margin: 0;
+  padding: 14px var(--panel-pad);
+  font-size: var(--t-meta);
+  line-height: 1.5;
+  color: var(--text-tertiary);
+}
+
+/* ── Rows ───────────────────────────────────────────────────── */
+
+.ledger {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.ledger__group {
+  padding-bottom: 2px;
+}
+
+/* The turn a record belongs to. Not a legend: uppercase tracking belongs to
+   panel faces, so the group speaks in the label step, quietly. */
+.ledger__group-label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin: 0;
+  padding: 8px var(--panel-pad) 6px;
+  background: var(--bg-workspace);
+  font-size: var(--t-meta);
+  font-weight: var(--w-meta);
+  color: var(--text-tertiary);
+}
+
+.ledger__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ledger__list li + li .ledger__row {
+  border-top: var(--seam) solid var(--border-faint);
+}
+
+.ledger__row {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+  padding: 9px var(--panel-pad);
+  text-align: left;
+  color: var(--text-secondary);
+  transition: background-color var(--dur-fast) var(--ease-standard);
+}
+
+.ledger__row:hover {
+  background: var(--surface-hover);
+}
+
+/* Selection is the lowest claim on the accent, so it demotes under both a
+   turn in flight and an armed composer — the same rule the sidebar's open
+   conversation follows, because it is the same claim. */
+.ledger__row--on {
+  background: var(--surface-selected);
+  box-shadow: inset 2px 0 0 var(--accent-fill);
+}
+
+.app[data-busy='true'] .ledger__row--on,
+.app[data-armed='true'] .ledger__row--on {
+  box-shadow: inset 2px 0 0 var(--border-strong);
+}
+
+.ledger__line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ledger__clock {
+  font-size: var(--t-meta);
+  color: var(--text-tertiary);
+}
+
+.ledger__row--on .ledger__clock {
+  color: var(--text-secondary);
+}
+
+/* A seeded row is marked on the row, not disclaimed in a footnote. */
+.ledger__seed {
+  margin-left: auto;
+  padding: 1px 6px;
+  border: var(--seam) dashed var(--border-strong);
+  border-radius: var(--r-pill);
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  color: var(--text-tertiary);
+}
+
+.ledger__detail {
+  font-size: var(--t-meta);
+  color: var(--text-tertiary);
+}
+
+/* ── The outcome mark ───────────────────────────────────────── */
+
+/* Colour is demoted here as everywhere: text and icon, never a filled chip
+   or a tinted row. The word is always present, so the state survives without
+   the colour at all. */
+.outcome {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--t-meta);
+  font-weight: var(--w-label);
+  color: var(--text-secondary);
+}
+
+.outcome--pass {
+  color: var(--success);
+}
+
+.outcome--fail {
+  color: var(--danger);
+}
+
+.outcome--work {
+  color: var(--text-primary);
+}
+
+.outcome--rest {
+  color: var(--text-tertiary);
+}
+
+/* ── The record ─────────────────────────────────────────────── */
+
+.bench__inspector {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+/* The record takes the width it is given. A measure cap belongs to prose,
+   and only one line here is prose — everything else is a field, a list, or a
+   recorded payload, all of which read better wide than wrapped early.
+
+   Wide is not the same as flush: the pane's own inset is wider than the
+   ledger's, so a payload running the full width still stands off the edge it
+   scrolls past. It follows the density like every other inset. */
+.record {
+  --record-pad-x: calc(var(--panel-pad) + 10px);
+
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 18px var(--record-pad-x) 30px;
+}
+
+.record__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.record__identity {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.record__outcome {
+  font-size: var(--t-title);
+  font-weight: var(--w-title);
+}
+
+.record__meaning {
+  margin: 0;
+  max-width: 68ch;
+  font-size: var(--t-body);
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.record__facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 22px;
+  margin: 0;
+}
+
+.record__fact {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  font-size: var(--t-meta);
+}
+
+.record__fact dt {
+  color: var(--text-tertiary);
+}
+
+.record__fact dd {
+  margin: 0;
+  color: var(--text-primary);
+}
+
+/* The one line on this surface that would be a lie if it were quiet. */
+.record__seed {
+  margin: 0;
+  max-width: 74ch;
+  padding: 9px 12px;
+  border: var(--seam) dashed var(--border-strong);
+  border-radius: var(--r-md);
+  font-size: var(--t-meta);
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.record__section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.record__section-title {
+  margin: 0;
+  font-size: var(--t-label);
+  font-weight: var(--w-label);
+  color: var(--text-secondary);
+}
+
+/* Recorded text is pressed into the panel, the way a code block is: it is
+   the material the record is about, not the panel's own voice. */
+.record__payload {
+  margin: 0;
+  max-height: 260px;
+  overflow: auto;
+  padding: 10px 12px;
+  border-radius: var(--r-sm);
+  background: var(--surface-3);
+  box-shadow: var(--recess);
+  font-size: var(--t-meta);
+  line-height: var(--code-line-height);
+  color: var(--text-primary);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.record__payload--quiet {
+  max-height: 140px;
+  color: var(--text-secondary);
+}
+
+.record__absent {
+  margin: 0;
+  font-size: var(--t-meta);
+  line-height: 1.5;
+  color: var(--text-tertiary);
+}
+
+.record__violations,
+.record__tools,
+.record__tool-calls {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: var(--t-meta);
+  color: var(--text-primary);
+}
+
+.record__violations li {
+  display: flex;
+  gap: 8px;
+  line-height: 1.5;
+}
+
+/* The count is the list; a bullet glyph would be a drawn mark this world
+   does not own. The rule carries the item instead. */
+.record__violations li::before {
+  content: '';
+  flex: 0 0 auto;
+  width: 10px;
+  margin-top: 0.62em;
+  height: var(--seam);
+  background: var(--border-strong);
+}
+
+.record__error {
+  margin: 0;
+  font-size: var(--t-meta);
+  line-height: 1.5;
+  color: var(--danger);
+}
+
+.record__error-type {
+  font-family: var(--mono);
+}
+
+.record__tool-note {
+  margin-left: 8px;
+  color: var(--text-tertiary);
+}
+
+.record__messages {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  counter-reset: message;
+}
+
+.record__message {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 12px;
+  border-top: var(--seam) solid var(--border-faint);
+}
+
+.record__message:first-child {
+  padding-top: 0;
+  border-top: none;
+}
+
+.record__message-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.record__role {
+  font-size: var(--t-label);
+  font-weight: var(--w-label);
+  color: var(--text-primary);
+}
+
+.record__chars {
+  font-size: var(--t-meta);
+  color: var(--text-tertiary);
+}
+
+.record__aside {
+  margin: 0;
+  font-size: var(--t-meta);
+  color: var(--text-tertiary);
+}
+
+/* ── Responsive ─────────────────────────────────────────────── */
+
+/* The bench is a two-column reading. Below this it becomes one column with
+   the ledger on top: a 336px list and a record side by side stop being
+   either at that width. */
+@media (max-width: 900px) {
+  .bench__body {
+    flex-direction: column;
+  }
+
+  .bench__ledger {
+    /* Beats the stored width, which is applied inline: the surface drops that
+       style once it has measured itself, and this covers the frame before the
+       first measurement arrives. */
+    flex: 0 1 auto !important;
+    max-height: 44%;
+    border-right: none;
+    border-bottom: var(--seam) solid var(--border-faint);
+  }
+
+  .bench__tabs {
+    max-width: none;
+  }
+}
+
+@media (max-width: 680px) {
+  .record {
+    --record-pad-x: var(--thread-mobile-pad-x);
+  }
+}

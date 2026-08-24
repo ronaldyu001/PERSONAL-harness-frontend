@@ -14,6 +14,19 @@ export interface UserMessage {
   attachments: Attachment[]
 }
 
+/**
+ * What a turn cost, as the provider reported it.
+ *
+ * Every field is optional because every field is optional on the wire: a
+ * provider that reports nothing leaves the turn without a reading rather than
+ * with a zero.
+ */
+export interface TurnUsage {
+  input?: number
+  output?: number
+  total?: number
+}
+
 export interface AssistantMessage {
   id: string
   role: 'assistant'
@@ -25,6 +38,12 @@ export interface AssistantMessage {
   startedAt?: number
   /** What actually failed, so the turn itself carries the diagnosis. */
   error?: string
+  /** Tokens the provider reported for this turn, when it reported any. */
+  usage?: TurnUsage
+  /** Wall clock from send to answer, measured here rather than reported. */
+  durationMs?: number
+  /** Why the model stopped, when the backend passed it through. */
+  finishReason?: string
 }
 
 export type Message = UserMessage | AssistantMessage

@@ -59,7 +59,13 @@
   border-radius: var(--user-bubble-radius);
   box-shadow: var(--highlight-inner);
   padding: var(--user-bubble-padding);
-  width: var(--user-message-width);
+  /* The field hugs its text and stops short of the far edge: a turn is a
+     message, not a band across the column, so it never reads as full-bleed.
+     It sits against the right rail, which is what marks it as the reader's
+     side of the exchange once it no longer spans the measure. */
+  width: fit-content;
+  max-width: var(--user-message-width);
+  margin-left: auto;
 }
 
 .turn__field p {
@@ -136,6 +142,12 @@
   margin-top: 10px;
 }
 
+/* The user's row follows its field to the right rail, so the control sits
+   under the message it belongs to rather than across the column from it. */
+.turn--user .turn__actions {
+  justify-content: flex-end;
+}
+
 .turn__buttons {
   display: flex;
   align-items: center;
@@ -180,12 +192,6 @@
 .turn__action:focus-visible {
   background: var(--surface-hover);
   color: var(--text-primary);
-}
-
-.turn__model {
-  margin-left: auto;
-  font-size: var(--t-meta);
-  color: var(--text-tertiary);
 }
 
 /* ── Error: danger on text and icon only. No tint, no container. ── */
@@ -477,6 +483,256 @@
   color: var(--code-punct);
 }
 
+/* ── The conversation's own readouts ────────────────────────── */
+
+/* Expanding is a trade, and this is the other half of it: the ambient
+   readouts leave the frame, and readings about the conversation arrive in
+   their place. The rail lives inside the chat region rather than beside it,
+   so the region's edges still travel exactly as §7 measures them — only what
+   is inside the panel changes.
+
+   A rule, not a gutter: this is one panel divided, and a seam is what divides
+   a panel. The rail never floats. */
+.aside {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* On the panel head's own line, with the same rule under it: two columns of
+   one card, so their heads are one line. */
+.aside__head {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  height: var(--workspace-header-height);
+  padding: 0 var(--panel-pad);
+}
+
+/* Inset like the panel head's own rule, so the two read as one line across
+   the card rather than as two rules that failed to meet. */
+.aside__head::after {
+  content: '';
+  position: absolute;
+  left: var(--panel-pad);
+  right: var(--panel-pad);
+  bottom: 0;
+  height: var(--seam);
+  background: var(--border-faint);
+}
+
+.aside__scroll {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  gap: 20px;
+  padding: 14px var(--panel-pad) 20px;
+  scrollbar-gutter: stable;
+}
+
+.aside__block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* The label step in a secondary tone: the engraved legend is rationed to
+   panel faces, and this is inside one. */
+.aside__title {
+  margin: 0;
+  font-size: var(--t-label);
+  font-weight: var(--w-label);
+  color: var(--text-secondary);
+}
+
+.aside__empty {
+  margin: auto var(--panel-pad) 20px;
+  font-size: var(--t-meta);
+  line-height: 1.55;
+  color: var(--text-tertiary);
+}
+
+.aside__facts {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin: 0;
+}
+
+/* Label left, reading right, on one baseline: a column of readings has to
+   align on its values or it stops being a column. */
+.aside__fact {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: var(--t-meta);
+}
+
+.aside__fact dt {
+  flex: 0 0 auto;
+  color: var(--text-tertiary);
+}
+
+.aside__fact dd {
+  margin: 0;
+  min-width: 0;
+  text-align: right;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.aside__mono,
+.aside__session,
+.aside__turn-meta,
+.aside__turn-index {
+  font-family: var(--mono);
+  font-variant-ligatures: none;
+}
+
+.aside__note {
+  margin: 0;
+  font-size: var(--t-meta);
+  line-height: 1.5;
+  color: var(--text-tertiary);
+}
+
+/* What the conversation has cost. The numbers settle rather than jump — the
+   movement is the notification, so nothing here has to flash — and the bar is
+   the shape of the split, drawn in the neutral ramp because no reading here
+   is good or bad news. */
+.aside__cost {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.aside__cost-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0;
+  font-size: var(--t-meta);
+  color: var(--text-tertiary);
+}
+
+.aside__cost-total .aside__mono {
+  font-size: var(--t-label);
+  color: var(--text-primary);
+}
+
+/* A pressed track with the input share filled: the context is re-sent whole
+   every turn, so this is nearly always a wide bar with a short tail, and that
+   shape is the reading. */
+.aside__meter {
+  display: flex;
+  height: 5px;
+  border-radius: var(--r-pill);
+  background: var(--surface-3);
+  box-shadow: var(--recess);
+  overflow: hidden;
+}
+
+.aside__meter-fill {
+  height: 100%;
+  border-radius: var(--r-pill);
+  background: var(--border-strong);
+}
+
+.aside__cost-split {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0;
+  font-size: var(--t-meta);
+  color: var(--text-tertiary);
+}
+
+/* The turn list is the reason the whole frame is worth having, so it takes
+   the room the fixed blocks are not using. */
+.aside__block--turns {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.aside__turns {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.aside__turns li + li .aside__turn {
+  border-top: var(--seam) solid var(--border-faint);
+}
+
+.aside__turn {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+  padding: 8px 8px;
+  border-radius: var(--r-sm);
+  text-align: left;
+  transition: background-color var(--dur-fast) var(--ease-standard);
+}
+
+.aside__turn:hover {
+  background: var(--surface-hover);
+}
+
+.aside__turn-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.aside__turn-index {
+  flex: 0 0 auto;
+  font-size: var(--t-meta);
+  color: var(--text-tertiary);
+}
+
+/* One line of the question is the whole index entry: two would make the rail
+   a second thread. */
+.aside__turn-text {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: var(--t-meta);
+  color: var(--text-primary);
+}
+
+.aside__turn-meta {
+  padding-left: 20px;
+  font-size: var(--t-meta);
+  color: var(--text-tertiary);
+}
+
+.aside__session {
+  margin: 0;
+  font-size: var(--t-meta);
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+}
+
+/* ── Responsive ─────────────────────────────────────────────── */
+
+/* The rail narrows before it goes, and both widths live in Deck.tsx so the
+   animated value and the laid-out value cannot disagree. Below 900px there is
+   no room for it at all: it unmounts rather than squeezing the reading column
+   under its floor, and the head's toggle goes with it. */
+
 /* ── Responsive ─────────────────────────────────────────────── */
 
 @media (max-width: 720px) {
@@ -486,6 +742,6 @@
   }
 
   .turn__field {
-    width: var(--user-message-mobile-width);
+    max-width: var(--user-message-mobile-width);
   }
 }

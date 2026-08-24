@@ -26,8 +26,10 @@ charcoal ABS. Neither is derived from the other, and both are first-class.
 
 **Materials.** Softened, deliberately: the object is the same instrument, made
 in a finer material. No blur and no `backdrop-filter` — that ban holds. Radii
-are 5–18px (`--r-xs`…`--r-xl`), regions take `--r-panel` 16px, and `--r-pill` is
-spent only on small controls (the switch, the send key, chips, text buttons).
+are 5–18px (`--r-xs`…`--r-xl`), and `--r-pill` is spent only on small controls
+(the switch, the send key, chips, text buttons). Cards that float inside the
+frame — the startup screen's, the popovers — take `--r-panel` 16px; the shell's
+own panels take `--r-frame`, which is 0 (§4).
 Two gradient exemptions now exist: the thread mask in §7, and `--sheen`, a ~3%
 top-down wash on panel surfaces so a large flat field reads as lit rather than
 printed. Both are legibility and material devices, not decoration.
@@ -47,11 +49,25 @@ both are inset, so neither counts as an elevation declaration. **Elevation is
 declared once**: a real drop shadow, never a drop shadow plus a border. Verified
 zero border-plus-drop-shadow pairs across the stylesheets.
 
-**The face is a set of floating panels.** The shell holds a `--frame-pad` 10px
-margin and the regions a `--panel-gap` 8px gutter, so ground shows around and
-between every panel — which is what makes a radius mean anything. Both are
-constant across densities: the frame is a property of the object, not of the
-reading density.
+**The face is continuous.** Both insets are closed: `--frame-pad` is 0, so the
+panels run to the window's edges with no band of ground between the title bar
+and the face, and `--panel-gap` is 0, so they run to each other. The ground is
+still the deepest tone in the palette and still the surface everything is
+described against — it simply has nowhere to show through any more.
+
+What divides the face is therefore **tone and seam**, not a channel. Adjacent
+panels are different planes (`--surface-1` against `--bg-workspace`), and where
+two of the same plane meet — the stacked readouts — a 1px seam is drawn inside
+the lower one as an inset shadow, so no layout moves to make room for a line.
+Elevation stays: at a flush boundary its horizontal bleed is a soft groove of a
+pixel or two, which is what a divided face wants there anyway.
+
+A panel that meets the window has no ground behind its corner to round against,
+so `--r-frame` is 0 and the outer corners are square. Radius returns wherever
+something genuinely floats — the startup card, popovers, menus, the composer.
+
+Both tokens are still read rather than assumed (`Deck.tsx` measures
+`--panel-gap` at runtime), so the face opens back up from a single value.
 
 Grouping is now done by panel boundary, surface tone, and alignment. Elevation
 is declared **once**: a floating panel carries `--elev-panel` and therefore no
@@ -162,11 +178,11 @@ in a secondary tone (`.model-menu__title`, `.settings__title`).
 ## 4. Layout
 
 ```
-.app                      flex row, 100% height, --frame-pad 10px, gap 8px
+.app                      flex row, 100% height, --frame-pad 0, gap 8px
 ├── nav.column            pinned; 56px rail, 244px expanded; floating panel
 └── main.deck             flex row, gap 0
     ├── section.region--chat      flex: 1 1 auto  (absorbs remaining width)
-    ├── .deck__resizer           absolute, in the gutter; dashboard only
+    ├── .resizer                 absolute, in the gutter; dashboard only
     └── .deck__stack             animated width; clips .deck__stack-inner,
                                  which carries margin-left: --panel-gap
 ```
@@ -179,8 +195,10 @@ the chat panel lands flush against the frame. `useDeckSizing()` in `Deck.tsx`
 adds the computed `--panel-gap` to the resting panel width for exactly this
 reason; the token is constant across densities so a single read cannot drift.
 
-**Both splits are the reader's.** One `Separator` component serves two axes,
-each a focusable `role="separator"` sitting in the gutter it moves:
+**Every split is the reader's.** One `Separator` component (`Separator.tsx`,
+styled in `shell.css`, storage helpers in `lib/panel_split.ts`) serves two axes
+and three splits, each a focusable `role="separator"` sitting in the gutter it
+moves. The third is the bench's, in §13:
 
 | | Vertical (`--x`) | Horizontal (`--y`) |
 |---|---|---|
@@ -210,9 +228,10 @@ expanding clips the readouts away rather than squeezing them. The width comes
 from `Deck.tsx` now; the stylesheet no longer names it.
 
 The chat region's **left edge is structurally fixed**: it is the flex child that
-absorbs remaining width, so only its right edge can move. Measured at **74px**
-(`--frame-pad` 10 + rail 56 + `--panel-gap` 8) in both states at 1280px; its
-right edge travels `966 → 1270`, landing exactly on the frame inset.
+absorbs remaining width, so only its right edge can move. It now starts at
+**64px** (rail 56 + `--panel-gap` 8, with the frame closed) and its right edge
+travels to the window's own edge. The invariant is unchanged; the numbers moved
+with the frame, and the ones quoted in §12 were measured before it closed.
 
 Density is driven by `[data-style='snug' | 'roomy']` overriding the `:root`
 scale. `--frame-pad` and `--panel-gap` are deliberately **not** among the
@@ -224,7 +243,7 @@ overridden tokens.
 |---|---|
 | ≤1100px | The stack's default resting width is 232px rather than 296px (`useStackSizing()` in `Deck.tsx` owns both, so the animated value and the laid-out value cannot disagree). A stored preference survives the breakpoint; the CHAT_MIN floor clamps it |
 | ≤720px | Thread column, chat empty state, and expanded composer switch to `--thread-mobile-pad-x` |
-| ≤680px | `.deck__stack` and `.deck__resizer` hide; `.app` drops its frame inset to `--panel-gap` so the panels give the margin back to content |
+| ≤680px | `.deck__stack` and the deck's `.resizer` hide. Neither the frame nor the gutter has an inset left to give back at any width |
 
 Maia ships as an **800×600** Tauri window, which is why the stack narrows rather
 than disappearing at that size — both readouts are present there.
@@ -396,6 +415,51 @@ standing line, not a toast.
 
 ---
 
+### 5.1 Expanding is a trade
+
+Collapsing the readout stack is only half of what expanding does. The other
+half arrives inside the chat region: a **detail rail**, the same instrument
+logic pointed at the conversation instead of at the machine around it. It is
+the reason to expand rather than read the card.
+
+The region becomes two columns — `.region__main` carries the head, the thread
+and the composer; `.region__aside` carries the rail — so the head's controls
+end where the rail begins and travel with it. The rail runs the full height of
+the panel with its own head on the panel head's line, and it opens and closes
+by the same mechanic the stack collapses with: an animated width clipping a
+block that keeps its own. Widths live in `Deck.tsx` (296px, 236px at ≤1120px,
+nothing at ≤900px where the reading column would fall under its floor); the
+state is a preference, stored under `harness.conversation.detail`.
+
+What it reads: turns, last activity, model, whether the conversation is kept,
+what it has cost in tokens, the slowest and fastest answer, an index of turns
+that scrolls the thread to any of them, and the session id — which is the
+conversation's own id, and therefore the id its records are on the bench under.
+`Open in Investigate` carries it there and narrows the whole bench to it.
+
+Every reading comes from the conversation in hand. Usage and wall clock are
+kept on the turn as it completes (`AssistantMessage.usage`, `durationMs`);
+turns that reported none say so rather than reading zero, and a stored
+conversation says why it has none. The cost block **settles** rather than
+jumps: the figures travel to their new reading on `--ease-standard` over 0.62s
+and the split bar travels with them, so a turn landing is announced by
+movement rather than by a flash. Tabular figures keep the width still while it
+counts.
+
+**Search is the history's, not the shell's.** The card's head carries the
+history control, an icon like every other control in that head, with its name
+and `Ctrl+K` in the tooltip. The view behind it is the history and the search
+of it; the field is what greets the reader inside. It is focused on open and
+filters what is loaded — and because a
+filtered list is short, the page sentinel comes back into view and the rest
+loads on its own. Ctrl+K opens that view rather than a surface of its own; the
+overlay it replaced is gone, along with its styles. The control column is down
+to the two surfaces (Conversation, Investigate) and Preferences: temporary
+mode belongs to the composer that will send the turn, and a row for it would
+have been a second place to reach the same switch.
+
+---
+
 ## 6. Dormant regions
 
 Tasks and weather are **instruments with no signal on that input**. The region,
@@ -427,9 +491,24 @@ gutter included — and its inner block translates off-frame. The chat region's
 left edge does not move; only its right edge travels. Measured at 1280px: left
 `74` in both states, right `966 → 1270`.
 
+**Views travel on a rail.** A view that replaces another slides rather than
+dissolves: what arrives comes from the side it lives on, what leaves goes the
+other way, and the frame never moves. Direction is derived, never remembered —
+the bench is to the right of the deck, history is to the right of what it
+covers — and it rides on the `AnimatePresence` boundary as `custom`, so the
+outgoing view leaves against the incoming one rather than on the direction it
+happened to arrive with. Two distances, in `lib/motion.ts`: 34px for a whole
+surface, 18px for a view inside a panel that is staying put. Entrances are
+0.22–0.28s and exits 0.13–0.16s, so the arriving view never waits on the
+leaving one. The one exception is the bench's record, which rises 4px with no
+exit at all: the reader walking the ledger with the arrow keys is moving on
+purpose, and an outgoing record would put a queue in front of them.
+
 Everything else is 150–220ms state feedback (`--dur-fast`, `--dur-med`).
 `--ease-standard` is `cubic-bezier(0.32, 0.72, 0, 1)`: fast departure, long
-settle. The softness lives in the tail, which is what reads as composure.
+settle. The softness lives in the tail, which is what reads as composure. Every
+one of these collapses to a cut under reduce-motion, which is read from both
+the OS and Maia's own preference.
 
 Reduce-motion is honoured from both the OS and Maia's own preference — read from
 `documentElement.dataset.reduceMotion` before React mounts, then combined
@@ -556,7 +635,7 @@ Recorded so the next contributor does not read them as defects to "fix".
 9. **The separator's focus indicator is its own rule, not an outline.** A 14px
    invisible strip outlined at `outline-offset: 2px` draws two full-height
    lines around something that is not a visible object. On `:focus-visible` the
-   strip suppresses the outline and paints `.deck__resizer-line` at
+   strip suppresses the outline and paints `.resizer-line` at
    `var(--ring-active)`, full height — still 2px, still the ring token, and it
    marks exactly what moves. The only control in the app with a custom focus
    treatment.
@@ -566,6 +645,33 @@ Recorded so the next contributor does not read them as defects to "fix".
    that failed rather than rewriting one that succeeded, and it is the only
    resend left. `PRODUCT.md` still lists regenerate under the message lifecycle
    — product truth on that point is now ahead of the build, deliberately.
+
+---
+
+13. **The face is continuous — no frame, no gutter.** §1 originally held a
+   10px inset around every panel and an 8px gutter between them, on the
+   reasoning that a radius means nothing without ground behind it. Closing
+   both was asked for directly: the bands read as gaps rather than as a frame.
+   The consequences were taken rather than dodged. Panels flush to the window
+   have nothing to round against, so `--r-frame` is 0 and their outer corners
+   are square. Panels flush to each other have no ground to separate them, so
+   separation moved to tone and to a 1px seam drawn *inside* the lower panel.
+   This is close to the hard-panel world this design softened away from, which
+   is worth saying plainly rather than discovering later. Two tokens —
+   `--frame-pad` and `--panel-gap` — walk the whole thing back, and nothing
+   that lays out against them assumes their value.
+
+12. **Investigate ships seeded, and says so per record.** §6's "no fabricated
+   data anywhere" is why nothing else on the face needs disclaiming; the bench
+   is the exception, taken deliberately because the backend writes these logs
+   to a volume it does not serve yet. The exception is paid for at the
+   granularity it was taken: the origin rides on the record envelope, not on
+   the event, so a seeded row is marked `seed` in the ledger, counted apart
+   from captured ones in the ledger head, and carries a line of its own when
+   opened. Captured records are the container's real lines, refreshed by
+   `scripts/snapshot-logs.mjs`. The `Seed data` flag in the head is dashed, the
+   provisional edge, and the whole exception retires when
+   `GET /api/logs/{stream}` exists.
 
 ---
 
@@ -619,3 +725,60 @@ Two defects found and fixed during that pass, both pre-existing: `.search-result
 stacked its icon above the title instead of beside it, and
 `.search-result--cursor` had **no CSS at all**, so keyboard navigation through
 search results was invisible.
+
+---
+
+## 13. Investigate — the bench
+
+A third surface, mounted where the deck is: the control column does not know
+which one is up, and `Surface` in `App.tsx` is one union rather than a pair of
+booleans, so no two of them can be open at once. The column row toggles it the
+way Conversation toggles the expanded chat.
+
+**The bench is the same object in a cooler material.** The face is warm ABS;
+this is the grey of the chassis under it. `investigate.css` re-declares a
+scoped set of semantic tokens on `.bench` per theme — the four planes, the
+three borders, the surface washes, the text ramp, and the sheen — at the same
+luminance in a cooler hue. Nothing structural changes: frame, elevation, radii,
+type scale, accent rationing, and §2.2's ban on filled status chips all hold.
+Three things do:
+
+| | The face | The bench |
+|---|---|---|
+| Material | warm neutral ABS | cool grey chassis |
+| Data | one sans everywhere | `--mono` for clocks, ids, counts, payloads |
+| Grouping | panel boundary and tone; stacked hairlines avoided | ruled rows, because it is a ledger |
+
+Mono is not a costume here: a log record is measurement, which is the same
+justification §3 gives code. It is confined to recorded values and never used
+for prose or labels.
+
+**Two speeds.** A ledger column scans (336px, grouped by `invocation_id`,
+because a turn can hold a tool round-trip and three gate passes and they only
+read stacked together) and an inspector opens one record in full. Below 900px
+the two stack, ledger over record. The channel selector in the head is the
+segmented control from Preferences, wearing `role="tablist"` with arrow keys;
+the filter pills carry their own counts, so a filter that would empty the
+ledger says so before it is pressed.
+
+**States are the log's, not the reader's.** An outcome is a word plus a mark in
+one tone — `--success`, `--danger`, or neutral, on text and icon only. A field
+the log did not record renders its reason (`structure` mode keeps decisions and
+drops text), because an empty block would read as a defect in the surface
+rather than as the logger working correctly. Row selection is the lowest claim
+on the accent and demotes under `data-busy` and `data-armed`, the same rule the
+column's open conversation follows.
+
+**The split is the reader's**, the same `Separator` the dashboard uses, on
+the same terms: floored at 232px of ledger and 380px of record, stored in
+pixels under `harness.investigate.ledgerWidth`, arrow keys at 16px, Home and
+End to the two floors, double-click or Enter to clear. The record takes
+whatever the ledger is not using and carries no measure cap — only its one
+prose line does — because a payload reads better wide than wrapped early. Below
+900px the panes stack and the separator unmounts rather than sitting in the
+`aria-hidden` stack.
+
+**Adding a log** is one entry in `components/log-registry.ts` — label, file,
+summary, filters — plus a body case in `LogRecordView`. The records arrive
+through `ReadLogStream` → `LogStreamPort`, so the seed adapter is the only file
+that changes when the backend starts serving what it writes.

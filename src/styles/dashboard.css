@@ -26,7 +26,7 @@
   min-height: 0;
   background-color: var(--bg-workspace);
   background-image: var(--sheen);
-  border-radius: var(--r-panel);
+  border-radius: var(--r-frame);
   box-shadow: var(--elev-panel);
   overflow: hidden;
 }
@@ -72,8 +72,13 @@
 }
 
 /* Every region on the face carries the same engraved legend, including the
-   primary one. The conversation title is a separate, unengraved element. */
+   primary one. The conversation title is a separate, unengraved element.
+
+   It stands well off the legend — far enough that the eye reads two things
+   rather than one line that changed size. The gap belongs to the title, not to
+   the head, so the controls at the other end keep their tighter rhythm. */
 .region__title {
+  margin-left: 22px;
   font-size: var(--t-title);
   font-weight: var(--w-title);
   color: var(--text-primary);
@@ -112,10 +117,42 @@
   gap: 6px;
 }
 
+/* The chat region is two columns, not one: the head, the thread and the
+   composer are the first, and the conversation's own readouts are the second.
+   On the dashboard the second has no width, so the region reads exactly as it
+   did — one column filling the panel. */
+.region--chat {
+  flex-direction: row;
+}
+
+.region__main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* The same mechanic the readout stack collapses with: an animated width
+   clipping a block that keeps its own, so the head's controls end at the
+   rail's edge and travel with it rather than jumping to meet it. */
+.region__aside {
+  flex: 0 0 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.region__aside-inner {
+  display: flex;
+  height: 100%;
+  border-left: var(--seam) solid var(--border-faint);
+}
+
 .region__body {
   display: flex;
   flex-direction: column;
   flex: 1;
+  min-width: 0;
   min-height: 0;
 }
 
@@ -142,97 +179,6 @@
   padding: 0 var(--thread-pad-x) var(--composer-bottom-space);
 }
 
-/* ── The separator ────────────────────────────────── */
-
-/* A separator occupies the gutter it moves, and draws nothing there: between
-   two floating panels the ground already is the line. The rule appears under
-   the pointer or on focus, so the affordance is where the hand already is.
-   One vocabulary, two axes — the vertical one splits the conversation from the
-   readouts, the horizontal one splits the readouts from each other. */
-.deck__resizer {
-  position: absolute;
-  display: grid;
-  place-items: center;
-  touch-action: none;
-  z-index: 1;
-}
-
-.deck__resizer--x {
-  top: 0;
-  bottom: 0;
-  cursor: col-resize;
-}
-
-.deck__resizer--y {
-  left: 0;
-  right: 0;
-  cursor: row-resize;
-}
-
-.deck__resizer-line {
-  border-radius: var(--r-pill);
-  background: var(--border-strong);
-  opacity: 0;
-  transition:
-    opacity var(--dur-fast) var(--ease-standard),
-    width var(--dur-med) var(--ease-standard),
-    height var(--dur-med) var(--ease-standard);
-}
-
-.deck__resizer--x .deck__resizer-line {
-  width: 2px;
-  height: 44px;
-}
-
-.deck__resizer--y .deck__resizer-line {
-  height: 2px;
-  width: 44px;
-}
-
-.deck__resizer:hover .deck__resizer-line,
-.deck__resizer--dragging .deck__resizer-line {
-  opacity: 1;
-}
-
-/* The strip is a hit area, not an object, so an outline would draw a ring
-   around something that is not there. The rule carries the focus instead —
-   still 2px, still the ring token, and it marks exactly what will move. */
-.deck__resizer:focus-visible {
-  outline: none;
-}
-
-.deck__resizer:focus-visible .deck__resizer-line {
-  opacity: 1;
-  background: var(--ring-active, var(--ring));
-}
-
-/* Held, the rule runs the whole gutter: the split is the only thing
-   happening, so it reads as one edge moving rather than a handle sliding. */
-.deck__resizer--x.deck__resizer--dragging .deck__resizer-line,
-.deck__resizer--x:focus-visible .deck__resizer-line {
-  height: 100%;
-  border-radius: 0;
-}
-
-.deck__resizer--y.deck__resizer--dragging .deck__resizer-line,
-.deck__resizer--y:focus-visible .deck__resizer-line {
-  width: 100%;
-  border-radius: 0;
-}
-
-/* The pointer leaves the strip constantly mid-drag; the cursor must not. */
-body[data-resizing] {
-  user-select: none;
-}
-
-body[data-resizing='x'] {
-  cursor: col-resize;
-}
-
-body[data-resizing='y'] {
-  cursor: row-resize;
-}
-
 /* ── Secondary stack ────────────────────────────────────────── */
 
 .deck__stack {
@@ -243,7 +189,8 @@ body[data-resizing='y'] {
 
 /* The gutter lives on the inner block. The animated outer width carries it,
    so panel and gutter collapse together and the chat panel's right edge lands
-   flush against the frame in the expanded state.
+   flush against the frame in the expanded state — which it does at a gutter of
+   zero as well, since the mechanic is measured rather than assumed.
 
    Width is set from Deck.tsx, because the reader owns it: it is the resting
    width the separator writes, held while the outer collapses so the readouts
@@ -262,6 +209,14 @@ body[data-resizing='y'] {
 .region--dormant {
   flex: 1;
   background-color: var(--surface-1);
+}
+
+/* With the gutter closed, two readouts of the same tone meet with nothing
+   between them. A seam is what divides a continuous face — the same 1px rule
+   that divides a panel from its own head — and it is drawn inside the lower
+   panel so no layout moves to make room for it. */
+.deck__stack-inner > .region--dormant + .region--dormant {
+  box-shadow: var(--elev-panel), inset 0 var(--seam) 0 var(--border-soft);
 }
 
 .region--dormant .region__head {
@@ -344,101 +299,60 @@ body[data-resizing='y'] {
   background: var(--border-strong);
 }
 
-/* ── Recents, on the dashboard ──────────────────────────────── */
+/* ── The landing, the history view, the stored conversation ── */
 
-.recents {
+/* Three views, one card, one axis. The composer sits under all of them, so
+   anything that can stand above it is measured on the thread's axis rather
+   than the region's — otherwise switching views moved the input under the
+   reader's hands. */
+.landing,
+.history-view,
+.thread-view__head {
+  width: var(--thread-slot);
+  margin: 0 auto;
+  padding-left: var(--thread-pad-x);
+  padding-right: var(--thread-pad-x);
+}
+
+/* The landing is the quick starts and nothing else: history has a view of its
+   own. They sit on the shelf above the composer, so the two read as one block
+   under the reader's hands rather than as a list stranded mid-card. */
+.landing {
+  position: relative;
+  display: flex;
+  flex-direction: column;
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: 6px var(--thread-pad-x) 0;
-  /* The reading axis, on the quick starts' terms: history is the other thing
-     the composer can sit under, so it is measured the same way rather than on
-     the region's own padding. Otherwise toggling temporary mode — which only
-     swaps one empty state for the other — moved the composer. */
-  width: var(--thread-slot);
-  margin: 0 auto;
-}
-
-.recents__list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-/* Rows are separated by rhythm and a hover fill, not by a rule under each
-   one: a stack of hairlines is the thing that reads as a ledger. */
-.recents__row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 10px 10px;
-  border-radius: var(--r-md);
-  color: var(--text-secondary);
-  font-size: var(--t-body);
-  text-align: left;
-  transition:
-    background-color var(--dur-fast) var(--ease-standard),
-    color var(--dur-fast) var(--ease-standard);
-}
-
-.recents__row:hover {
-  background: var(--surface-hover);
-  color: var(--text-primary);
-}
-
-.recents__title {
-  flex: 1;
-  min-width: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.recents--empty {
-  display: flex;
-  flex-direction: column;
   justify-content: flex-end;
-  gap: 3px;
-  padding-bottom: 14px;
+  padding-bottom: 8px;
 }
 
-.recents__empty-line {
-  margin: 0;
-  font-size: var(--t-body);
-  color: var(--text-secondary);
+/* Large, and quiet enough that it reads as the card's own surface rather than
+   as something printed on it. The petals already carry 0.55 opacity each and
+   compound where they overlap, so the value here is roughly half again as
+   faint as it looks — the bloom is legible, the edges are barely there.
+
+   Its own square rather than a background-image: the mark is drawn, not
+   tiled, and it must not scroll with the quick starts above it. */
+.landing__mark {
+  position: absolute;
+  top: 44%;
+  left: 50%;
+  width: min(62%, 460px);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  opacity: var(--watermark);
+  pointer-events: none;
 }
 
-.recents__empty-hint {
-  margin: 0;
-  font-size: var(--t-meta);
-  color: var(--text-tertiary);
-}
-
-/* ── Chat empty state: rows in the panel vocabulary, not cards ── */
-
-.chat-empty {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  padding: 0 var(--thread-pad-x) 8px;
-  width: var(--thread-slot);
-  margin: 0 auto;
-}
-
-.chat-empty__lead {
+.landing__lead {
   margin: 0 0 12px;
   font-size: var(--t-body);
   color: var(--text-secondary);
 }
 
-.chat-empty__list {
+.landing__suggestions {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -447,7 +361,7 @@ body[data-resizing='y'] {
   gap: 2px;
 }
 
-.chat-empty__row {
+.landing__start {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -463,9 +377,154 @@ body[data-resizing='y'] {
     color var(--dur-fast) var(--ease-standard);
 }
 
-.chat-empty__row:hover {
+.landing__start:hover {
   background: var(--surface-hover);
   color: var(--text-primary);
+}
+
+/* The history view is the same list at full height, opened over whatever the
+   card was holding. */
+.history-view,
+.thread-view {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Both read-only views state their own way out. The head's controls act on the
+   card; this one acts on what is in it, so it travels with the view. */
+.history-view__head,
+.thread-view__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex: 0 0 auto;
+  padding-top: 8px;
+  padding-bottom: 6px;
+}
+
+.history-view__head h3,
+.thread-view__head h3 {
+  margin: 0;
+}
+
+/* The field that turns the history into a search. It is the only input on
+   this card besides the composer, so it borrows the composer's material — a
+   raised face, no border — rather than inventing a second input style. */
+.history-view__search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  margin: 0 4px 8px;
+  padding: 0 10px;
+  height: 34px;
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  box-shadow: var(--highlight-inner);
+  color: var(--text-tertiary);
+}
+
+.history-view__search:focus-within {
+  outline: 2px solid var(--ring-active, var(--ring));
+  outline-offset: 2px;
+}
+
+.history-view__search input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: none;
+  outline: none;
+  font: inherit;
+  font-size: var(--t-body);
+  color: var(--text-primary);
+}
+
+.history-view__search input::placeholder {
+  color: var(--text-tertiary);
+}
+
+/* The reader's own bucket label, on the row rather than as a group header:
+   a filtered list is not in day order, so the day travels with the row. */
+.history__when {
+  flex: 0 0 auto;
+  font-size: var(--t-meta);
+  color: var(--text-tertiary);
+}
+
+/* ── The stored conversations ─────────────────────── */
+
+.history {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.history__inner {
+  flex: 0 0 auto;
+}
+
+.history__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Rows are separated by rhythm and a hover fill, not by a rule under each
+   one: a stack of hairlines is the thing that reads as a ledger. */
+.history__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 10px;
+  border-radius: var(--r-md);
+  color: var(--text-secondary);
+  font-size: var(--t-body);
+  text-align: left;
+  transition:
+    background-color var(--dur-fast) var(--ease-standard),
+    color var(--dur-fast) var(--ease-standard);
+}
+
+.history__row:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+.history__title {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The page boundary the observer watches. The next page is asked for before
+   the reader arrives at this one's end, so the list is already longer by the
+   time they get there. */
+.history__sentinel {
+  flex: 0 0 auto;
+  height: 1px;
+}
+
+.history__note {
+  margin: 0;
+  padding: 10px 10px;
+  font-size: var(--t-meta);
+  color: var(--text-tertiary);
+}
+
+.history__note--foot {
+  text-align: center;
 }
 
 /* ── Responsive ─────────────────────────────────────────────── */
@@ -479,7 +538,7 @@ body[data-resizing='y'] {
    becomes the chat region alone. */
 @media (max-width: 680px) {
   .deck__stack,
-  .deck__resizer {
+  .deck .resizer {
     display: none;
   }
 }
@@ -488,8 +547,9 @@ body[data-resizing='y'] {
    switch with it or the two axes part by 10px. */
 @media (max-width: 720px) {
   .region__composer,
-  .chat-empty,
-  .recents {
+  .landing,
+  .history-view,
+  .thread-view__head {
     padding-left: var(--thread-mobile-pad-x);
     padding-right: var(--thread-mobile-pad-x);
   }

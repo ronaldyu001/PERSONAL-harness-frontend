@@ -16,9 +16,19 @@
   overflow: hidden;
 }
 
+/* The slot the deck and the bench take turns in. It holds the frame open
+   while one surface leaves and the next arrives, so neither the column nor
+   the ground moves during the swap. */
+.surface {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+}
+
 /* ── Control column ─────────────────────────────────────────── */
 
-/* Elevation is declared once: a shadow, and therefore no border. */
+/* Elevation is declared once: a shadow, and therefore no border. Square
+   where it meets the window, since there is no ground behind that corner. */
 .column {
   display: flex;
   flex-direction: column;
@@ -26,8 +36,12 @@
   min-width: 0;
   background-color: var(--surface-1);
   background-image: var(--sheen);
-  border-radius: var(--r-panel);
-  box-shadow: var(--elev-panel);
+  border-radius: var(--r-frame);
+  /* The column and the face meet edge to edge now. They are two tones, so the
+     boundary already reads; the seam on the inner right edge is what carries
+     it in the theme where the two tones are nearly one. An inset shadow, not a
+     border: nothing may move to make room for a line. */
+  box-shadow: var(--elev-panel), inset calc(var(--seam) * -1) 0 0 var(--border-soft);
   padding: 10px 8px 8px;
   gap: 12px;
   overflow: hidden;
@@ -40,11 +54,15 @@
   min-height: 30px;
 }
 
+/* The head's control is a row like the rows under it, and it has to measure
+   like one: the same 9px inset, the same 18px icon box, the same 10px to the
+   label. Collapsed, that puts its icon on the rail's icon axis rather than
+   4px inside it; expanded, it puts the wordmark on the labels' axis. */
 .column__mark {
   display: flex;
   align-items: center;
-  gap: 9px;
-  padding: 4px;
+  gap: 10px;
+  padding: 4px 9px;
   border-radius: var(--r-md);
   min-width: 0;
   flex: 1;
@@ -68,6 +86,17 @@
 
 .column:not(.column--expanded) .column__toggle {
   display: none;
+}
+
+/* Collapsed, the rail is a column of icons and nothing else, so the icons owe
+   their alignment to the rail rather than to labels that are not there: 11px
+   either side puts an 18px icon on the rail's own centre. Expanded, the 9px
+   inset returns, because there the row is a whole line and the label sets the
+   axis. */
+.column:not(.column--expanded) .column__row,
+.column:not(.column--expanded) .column__mark {
+  padding-left: 11px;
+  padding-right: 11px;
 }
 
 .column__actions {
@@ -239,6 +268,100 @@
   color: var(--text-secondary);
 }
 
+/* ── The separator ────────────────────────────────── */
+
+/* Shared, because the split is: the dashboard's two axes and the bench's
+   ledger all move the same edge with the same control. */
+
+/* A separator occupies the gutter it moves, and draws nothing there: between
+   two floating panels the ground already is the line. The rule appears under
+   the pointer or on focus, so the affordance is where the hand already is.
+   One vocabulary, two axes — the vertical one splits the conversation from the
+   readouts, the horizontal one splits the readouts from each other. */
+.resizer {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  touch-action: none;
+  z-index: 1;
+}
+
+.resizer--x {
+  top: 0;
+  bottom: 0;
+  cursor: col-resize;
+}
+
+.resizer--y {
+  left: 0;
+  right: 0;
+  cursor: row-resize;
+}
+
+.resizer-line {
+  border-radius: var(--r-pill);
+  background: var(--border-strong);
+  opacity: 0;
+  transition:
+    opacity var(--dur-fast) var(--ease-standard),
+    width var(--dur-med) var(--ease-standard),
+    height var(--dur-med) var(--ease-standard);
+}
+
+.resizer--x .resizer-line {
+  width: 2px;
+  height: 44px;
+}
+
+.resizer--y .resizer-line {
+  height: 2px;
+  width: 44px;
+}
+
+.resizer:hover .resizer-line,
+.resizer--dragging .resizer-line {
+  opacity: 1;
+}
+
+/* The strip is a hit area, not an object, so an outline would draw a ring
+   around something that is not there. The rule carries the focus instead —
+   still 2px, still the ring token, and it marks exactly what will move. */
+.resizer:focus-visible {
+  outline: none;
+}
+
+.resizer:focus-visible .resizer-line {
+  opacity: 1;
+  background: var(--ring-active, var(--ring));
+}
+
+/* Held, the rule runs the whole gutter: the split is the only thing
+   happening, so it reads as one edge moving rather than a handle sliding. */
+.resizer--x.resizer--dragging .resizer-line,
+.resizer--x:focus-visible .resizer-line {
+  height: 100%;
+  border-radius: 0;
+}
+
+.resizer--y.resizer--dragging .resizer-line,
+.resizer--y:focus-visible .resizer-line {
+  width: 100%;
+  border-radius: 0;
+}
+
+/* The pointer leaves the strip constantly mid-drag; the cursor must not. */
+body[data-resizing] {
+  user-select: none;
+}
+
+body[data-resizing='x'] {
+  cursor: col-resize;
+}
+
+body[data-resizing='y'] {
+  cursor: row-resize;
+}
+
 /* ── Shared controls ────────────────────────────────────────── */
 
 .icon-btn {
@@ -363,13 +486,6 @@
 @media (max-width: 900px) {
   .column {
     padding: 8px 6px 6px;
-  }
-}
-
-/* Below the frame's usefulness the panels give their inset back to content. */
-@media (max-width: 680px) {
-  .app {
-    padding: var(--panel-gap);
   }
 }
 

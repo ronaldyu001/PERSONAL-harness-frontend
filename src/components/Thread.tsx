@@ -127,6 +127,8 @@ function UserBlock({
 
   return (
     <motion.div
+      /* The anchor the expanded conversation's turn list scrolls to. */
+      id={`turn-${msg.id}`}
       className="turn turn--user"
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
@@ -159,7 +161,6 @@ function AssistantBlock({
 }) {
   const { copied, copy } = useCopyAction(msg.md, 'Response copied', onToast)
   const thinking = msg.status === 'thinking'
-  const modelName = MODELS.find((m) => m.id === msg.model)?.name ?? 'Maia'
 
   return (
     <motion.div
@@ -201,7 +202,6 @@ function AssistantBlock({
           <div className={buttonsClass(current)}>
             <CopyAction copied={copied} onCopy={copy} />
           </div>
-          <span className="turn__model">{modelName}</span>
         </div>
       )}
     </motion.div>

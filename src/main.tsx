@@ -7,6 +7,7 @@ import './styles/theme-dark.css'
 import './styles/theme-light.css'
 import './styles/shell.css'
 import './styles/dashboard.css'
+import './styles/investigate.css'
 import './styles/chat.css'
 import './styles/composer.css'
 import './styles/overlays.css'
@@ -15,9 +16,11 @@ import App from './App.tsx'
 import { StartupGate } from './components/StartupGate'
 import { SendChat } from './application/chat/send_chat'
 import { LoadConversations } from './application/conversation/load_conversations'
+import { ReadLogStream } from './application/observability/read_log_stream'
 import { HttpChatAdapter } from './infrastructure/chat/http_chat_adapter'
 import { HttpConversationHistoryAdapter } from './infrastructure/conversation/http_conversation_history_adapter'
 import { LocalStorageUserIdentityAdapter } from './infrastructure/identity/local_storage_user_identity_adapter'
+import { SeedLogStreamAdapter } from './infrastructure/observability/seed_log_stream_adapter'
 
 const apiBaseUrl = import.meta.env.DEV
   ? ''
@@ -35,6 +38,9 @@ const historyAdapter = new HttpConversationHistoryAdapter(apiBaseUrl)
 const identityAdapter = new LocalStorageUserIdentityAdapter()
 const sendChat = new SendChat(chatAdapter, identityAdapter)
 const loadConversations = new LoadConversations(historyAdapter, identityAdapter)
+/* Seeded until the backend serves the log files it already writes; the
+   adapter is the only line that changes when it does. */
+const readLogStream = new ReadLogStream(new SeedLogStreamAdapter())
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -45,7 +51,11 @@ createRoot(document.getElementById('root')!).render(
       orchestratorCancelUrl={orchestratorCancelUrl}
       orchestratorRetryUrl={orchestratorRetryUrl}
     >
-      <App sendChat={sendChat} loadConversations={loadConversations} />
+      <App
+        sendChat={sendChat}
+        loadConversations={loadConversations}
+        readLogStream={readLogStream}
+      />
     </StartupGate>
   </StrictMode>,
 )

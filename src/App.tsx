@@ -1,16 +1,25 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { MotionConfig } from 'motion/react'
+import { AnimatePresence, MotionConfig, motion } from 'motion/react'
 import { ControlColumn } from './components/ControlColumn'
 import { Deck } from './components/Deck'
-import { SearchOverlay } from './components/SearchOverlay'
+import { Investigate } from './components/Investigate'
 import { Toast } from './components/Toast'
 import type { Prefs } from './components/SettingsPanel'
 import type { SendChat } from './application/chat/send_chat'
 import type { LoadConversations } from './application/conversation/load_conversations'
+import type { ReadLogStream } from './application/observability/read_log_stream'
 import type { ConversationDetail } from './application/conversation/schemas'
+import { surfaceSlide } from './lib/motion'
+import { readUsage } from './lib/usage'
 import type { AssistantMessage, Conversation, Message, UserMessage } from './types'
 
 const HISTORY_LOAD_FAILED = 'Could not load your conversations.'
+
+/* The store pages by window size rather than by cursor, so "more" is the same
+   listing asked for again one page wider. Stored conversations already in
+   hand keep their identity through the merge, so re-reading the head of the
+   list costs nothing the reader can see. */
+const HISTORY_PAGE_SIZE = 25
 
 let seq = 0
 const uid = (prefix: string) => `${prefix}-${Date.now()}-${seq++}`
@@ -54,7 +63,18 @@ interface PendingChat {
 interface AppProps {
   sendChat: SendChat
   loadConversations: LoadConversations
+  readLogStream: ReadLogStream
 }
+
+/**
+ * What is mounted beside the control column.
+ *
+ * The three are mutually exclusive by construction rather than by convention:
+ * the dashboard and the expanded conversation are two states of the deck, and
+ * the bench replaces it. One union means no pair of booleans can disagree
+ * about which surface is up.
+ */
+type Surface = 'dashboard' | 'conversation' | 'investigate'
 
 /** Map one stored conversation onto the shape the thread renders. */
 function toConversation(detail: ConversationDetail, title: string): Conversation {
@@ -86,13 +106,14 @@ function toConversation(detail: ConversationDetail, title: string): Conversation
 const isAbortError = (error: unknown) =>
   error instanceof DOMException && error.name === 'AbortError'
 
-export default function App({ sendChat, loadConversations }: AppProps) {
+export default function App({ sendChat, loadConversations, readLogStream }: AppProps) {
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [activeId, setActiveId] = useState<string | null>(null)
-  const [chatOpen, setChatOpen] = useState(false)
+  const [surface, setSurface] = useState<Surface>('dashboard')
+  const [inspectedSession, setInspectedSession] = useState<string | null>(null)
   const [convoLoading, setConvoLoading] = useState(false)
   const [columnExpanded, setColumnExpanded] = useState(false)
-  const [searchOpen, setSearchOpen] = useState(false)
+  const [historyOpen, setHistoryOpen] = useState(false)
   const [tempMode, setTempMode] = useState(false)
   const [model, setModel] = useState('qwen')
   const [toast, setToast] = useState<{ id: number; text: string } | null>(null)
@@ -100,9 +121,13 @@ export default function App({ sendChat, loadConversations }: AppProps) {
   const [armed, setArmed] = useState(false)
   const [historyLoading, setHistoryLoading] = useState(true)
   const [historyError, setHistoryError] = useState<string | null>(null)
+  const [historyLimit, setHistoryLimit] = useState(HISTORY_PAGE_SIZE)
+  const [historyLoadingMore, setHistoryLoadingMore] = useState(false)
+  const [historyHasMore, setHistoryHasMore] = useState(true)
 
   const pendingChatRef = useRef<PendingChat | null>(null)
   const historyRequestRef = useRef<AbortController | null>(null)
+  const historyListRef = useRef<AbortController | null>(null)
   const toastTimer = useRef<number | undefined>(undefined)
 
   const active = conversations.find((c) => c.id === activeId) ?? null
@@ -151,9 +176,9 @@ export default function App({ sendChat, loadConversations }: AppProps) {
   /* No synchronous setState here: the effect below calls this on mount, and
      historyLoading already starts true. Only the retry path resets it. */
   const fetchHistory = useCallback(
-    async (signal?: AbortSignal) => {
+    async (limit: number, signal?: AbortSignal) => {
       try {
-        const listing = await loadConversations.list({ signal })
+        const listing = await loadConversations.list({ limit, signal })
         if (signal?.aborted) return
         setConversations((prev) => {
           /* Merge rather than replace: a conversation started before the list
@@ -171,12 +196,18 @@ export default function App({ sendChat, loadConversations }: AppProps) {
             }))
           return [...prev, ...stored]
         })
+        /* A short page is the end of the history: the store had fewer than the
+           window asked for, and asking wider would return the same listing. */
+        setHistoryHasMore(listing.length >= limit)
         setHistoryError(null)
       } catch (error) {
         if (isAbortError(error)) return
         setHistoryError(HISTORY_LOAD_FAILED)
       } finally {
-        if (!signal?.aborted) setHistoryLoading(false)
+        if (!signal?.aborted) {
+          setHistoryLoading(false)
+          setHistoryLoadingMore(false)
+        }
       }
     },
     [loadConversations],
@@ -188,15 +219,31 @@ export default function App({ sendChat, loadConversations }: AppProps) {
        fetching library or a Suspense boundary there is no version of this the
        rule accepts, and every write here is guarded by the abort signal. */
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    void fetchHistory(controller.signal)
+    void fetchHistory(HISTORY_PAGE_SIZE, controller.signal)
     return () => controller.abort()
   }, [fetchHistory])
 
   const retryHistory = useCallback(() => {
     setHistoryLoading(true)
     setHistoryError(null)
-    void fetchHistory()
-  }, [fetchHistory])
+    void fetchHistory(historyLimit)
+  }, [fetchHistory, historyLimit])
+
+  /* The dashboard asks for the next page when the reader scrolls past what is
+     loaded. One request at a time: a listing already in flight is the answer
+     to the next ask as well. */
+  const loadMoreHistory = useCallback(() => {
+    if (historyLoading || historyLoadingMore || !historyHasMore || historyError) return
+    const next = historyLimit + HISTORY_PAGE_SIZE
+    const controller = new AbortController()
+    historyListRef.current?.abort()
+    historyListRef.current = controller
+    setHistoryLimit(next)
+    setHistoryLoadingMore(true)
+    void fetchHistory(next, controller.signal).finally(() => {
+      if (historyListRef.current === controller) historyListRef.current = null
+    })
+  }, [fetchHistory, historyError, historyHasMore, historyLimit, historyLoading, historyLoadingMore])
 
   /* Conversation state helpers */
 
@@ -258,6 +305,10 @@ export default function App({ sendChat, loadConversations }: AppProps) {
 
         if (pendingChatRef.current?.controller !== controller) return
 
+        /* What the turn cost is kept rather than dropped: the expanded
+           conversation reads it back, and the wall clock is measured here
+           because nothing on the wire reports it. */
+        const usage = readUsage(result.usage)
         setConversations((prev) =>
           prev.map((conversation) =>
             conversation.id !== convoId
@@ -267,7 +318,14 @@ export default function App({ sendChat, loadConversations }: AppProps) {
                   lastUpdated: new Date().toISOString(),
                   messages: conversation.messages.map((item) =>
                     item.id === msgId && item.role === 'assistant'
-                      ? { ...item, md: result.content, status: 'complete' }
+                      ? {
+                          ...item,
+                          md: result.content,
+                          status: 'complete',
+                          usage,
+                          finishReason: result.finishReason,
+                          durationMs: item.startedAt ? Date.now() - item.startedAt : undefined,
+                        }
                       : item,
                   ),
                 },
@@ -375,13 +433,18 @@ export default function App({ sendChat, loadConversations }: AppProps) {
     [active, model, requestChat, updateMessage],
   )
 
-  /* Opening a conversation loads it; it does not move the reader. The
-     dashboard's conversation panel shows whatever is loaded, so history can be
-     opened without leaving the dashboard. */
+  /* Opening a conversation loads it; it does not move the reader, and it does
+     not disarm temporary mode. Temporary is a standing arm on the next new
+     chat, not a property of whatever is being read: looking something up in
+     history is not a decision to start keeping the next one. */
   const openConversation = useCallback(
     (id: string) => {
       setActiveId(id)
-      setTempMode(false)
+      /* The bench has no conversation on it, so opening one from the column
+         while it is up would load a conversation the reader cannot see. The
+         dashboard is where it lands; which of the two conversation surfaces
+         they were last on is not remembered, and never was. */
+      setSurface((current) => (current === 'investigate' ? 'dashboard' : current))
 
       const conversation = conversations.find((item) => item.id === id)
       /* Only a stored conversation has messages still to fetch, and an empty
@@ -422,9 +485,37 @@ export default function App({ sendChat, loadConversations }: AppProps) {
     [conversations, loadConversations, showToast],
   )
 
+  /* Putting a stored conversation down, which is all closing it is: nothing
+     was in flight and nothing is being ended, so the mode the reader armed is
+     none of this action's business. New chat is the other way out, and it is a
+     different act — it starts something. */
+  const closeConversation = useCallback(() => {
+    historyRequestRef.current?.abort()
+    historyRequestRef.current = null
+    setConvoLoading(false)
+    setActiveId(null)
+  }, [])
+
   /* The conversation surface is a toggle, like temporary mode: the same
-     control that opens it puts the reader back on the dashboard. */
-  const toggleChat = useCallback(() => setChatOpen((open) => !open), [])
+     control that opens it puts the reader back on the dashboard. Investigate
+     toggles the same way, and either one leaves whatever was up. */
+  const toggleChat = useCallback(
+    () => setSurface((current) => (current === 'conversation' ? 'dashboard' : 'conversation')),
+    [],
+  )
+
+  const toggleInvestigate = useCallback(() => {
+    setInspectedSession(null)
+    setSurface((current) => (current === 'investigate' ? 'dashboard' : 'investigate'))
+  }, [])
+
+  /* The bench, opened on one conversation's records: the session id the
+     turns were logged under is the conversation's own id, so the two
+     surfaces are looking at the same thing from either side. */
+  const inspectConversation = useCallback((sessionId: string) => {
+    setInspectedSession(sessionId)
+    setSurface('investigate')
+  }, [])
 
   const newChat = useCallback(() => {
     cancelCurrentChat(true)
@@ -436,19 +527,7 @@ export default function App({ sendChat, loadConversations }: AppProps) {
     cancelCurrentChat(true)
     setActiveId(null)
     setTempMode(true)
-    setChatOpen(true)
-  }, [cancelCurrentChat])
-
-  /* Toggles the mode in place. It never navigates, so arming a temporary chat
-     from the control column leaves you where you are. */
-  const toggleTemporaryMode = useCallback(() => {
-    setTempMode((current) => {
-      if (!current) {
-        cancelCurrentChat(true)
-        setActiveId(null)
-      }
-      return !current
-    })
+    setSurface('conversation')
   }, [cancelCurrentChat])
 
   const toggleTemporary = useCallback(() => {
@@ -466,24 +545,28 @@ export default function App({ sendChat, loadConversations }: AppProps) {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      /* Search is the conversation's history, so the shortcut goes where the
+         history is rather than opening a surface of its own. */
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault()
-        setSearchOpen((v) => !v)
+        setSurface('conversation')
+        setHistoryOpen(true)
       }
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'b') {
         e.preventDefault()
         setColumnExpanded((v) => !v)
       }
       /* Esc leaves the state users most want out of, from anywhere. */
-      if (e.key === 'Escape' && !searchOpen && isStreaming) {
+      if (e.key === 'Escape' && isStreaming) {
         e.preventDefault()
         cancelCurrentChat(true)
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [cancelCurrentChat, isStreaming, searchOpen])
+  }, [cancelCurrentChat, isStreaming])
 
+  const surfaceDirection = surface === 'investigate' ? 1 : -1
   const historyConversations = conversations.filter((c) => !c.temporary)
   const temporaryActive = tempMode || (active?.temporary ?? false)
 
@@ -506,31 +589,67 @@ export default function App({ sendChat, loadConversations }: AppProps) {
           onToggle={setColumnExpanded}
           conversations={historyConversations}
           activeId={activeId}
-          chatOpen={chatOpen}
+          chatOpen={surface === 'conversation'}
+          investigateOpen={surface === 'investigate'}
           onSelect={openConversation}
           historyLoading={historyLoading}
           historyError={historyError}
           onRetryHistory={retryHistory}
           onToggleChat={toggleChat}
-          onGoDashboard={() => setChatOpen(false)}
-          onTemporaryChat={toggleTemporaryMode}
-          onOpenSearch={() => setSearchOpen(true)}
-          temporaryActive={temporaryActive}
+          onToggleInvestigate={toggleInvestigate}
+          onGoDashboard={() => setSurface('dashboard')}
           prefs={prefs}
           onPrefsChange={updatePreferences}
           reduceMotion={prefs.reduceMotion}
         />
 
+        {/* The deck and the bench are two positions on one rail, so the swap
+            travels: the bench arrives from the right and the deck leaves to
+            the left, and the way back reverses both. Direction is derived
+            rather than remembered — there is one other place to come from —
+            and it rides on the presence boundary so the surface on its way
+            out leaves against the one arriving. Keyed on the surface and not
+            on the state within it: expanding the conversation is the deck's
+            own authored moment and must not be interrupted by a remount. */}
+        <AnimatePresence mode="wait" initial={false} custom={surfaceDirection}>
+          <motion.div
+            key={surface === 'investigate' ? 'bench' : 'deck'}
+            className="surface"
+            custom={surfaceDirection}
+            variants={surfaceSlide(prefs.reduceMotion)}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+          >
+            {surface === 'investigate' ? (
+              <Investigate
+                readLogStream={readLogStream}
+                onToast={showToast}
+                reduceMotion={prefs.reduceMotion}
+                session={inspectedSession}
+                onClearSession={() => setInspectedSession(null)}
+              />
+            ) : (
         <Deck
-          expanded={chatOpen}
+          expanded={surface === 'conversation'}
           active={active}
           temporaryActive={temporaryActive}
           conversations={historyConversations}
           convoLoading={convoLoading}
+          historyLoading={historyLoading}
+          historyError={historyError}
+          historyHasMore={historyHasMore}
+          historyLoadingMore={historyLoadingMore}
+          onLoadMoreHistory={loadMoreHistory}
+          onRetryHistory={retryHistory}
+          historyOpen={historyOpen}
+          onHistoryOpenChange={setHistoryOpen}
           onOpenConversation={openConversation}
+          onCloseConversation={closeConversation}
+          onInspectConversation={inspectConversation}
           onNewChat={newChat}
-          onExpand={() => setChatOpen(true)}
-          onCollapse={() => setChatOpen(false)}
+          onExpand={() => setSurface('conversation')}
+          onCollapse={() => setSurface('dashboard')}
           onSend={handleSend}
           onRetry={handleRetry}
           onToast={showToast}
@@ -549,14 +668,9 @@ export default function App({ sendChat, loadConversations }: AppProps) {
             onArmedChange: setArmed,
           }}
         />
-
-        <SearchOverlay
-          open={searchOpen}
-          onClose={() => setSearchOpen(false)}
-          conversations={historyConversations}
-          onSelect={openConversation}
-          showHints={prefs.showHints}
-        />
+            )}
+          </motion.div>
+        </AnimatePresence>
 
         <Toast toast={toast} />
       </div>

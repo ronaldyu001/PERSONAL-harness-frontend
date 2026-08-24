@@ -1,14 +1,6 @@
 import { useRef, useState } from 'react'
 import { motion } from 'motion/react'
-import {
-  MessagesSquare,
-  MessageSquareDashed,
-  PanelLeftClose,
-  PanelLeft,
-  Search,
-  Settings2,
-} from 'lucide-react'
-import { MaiaMark } from './MaiaMark'
+import { Home, MessagesSquare, PanelLeft, PanelLeftClose, Radar, Settings2 } from 'lucide-react'
 import { Tooltip } from './Tooltip'
 import { Popover } from './Popover'
 import { SettingsPanel, type Prefs } from './SettingsPanel'
@@ -29,10 +21,9 @@ export interface ControlColumnProps {
   historyError: string | null
   onRetryHistory: () => void
   onToggleChat: () => void
+  onToggleInvestigate: () => void
   onGoDashboard: () => void
-  onTemporaryChat: () => void
-  onOpenSearch: () => void
-  temporaryActive: boolean
+  investigateOpen: boolean
   prefs: Prefs
   onPrefsChange: (p: Prefs) => void
   reduceMotion: boolean
@@ -62,9 +53,15 @@ export function ControlColumn(props: ControlColumnProps) {
             type="button"
             className="column__mark"
             onClick={props.onGoDashboard}
-            aria-label="Maia, go to the dashboard"
+            aria-label="Go to the dashboard"
           >
-            <MaiaMark size={20} />
+            {/* The mark used to stand here and do two jobs: name the product
+                and act as the way home. It keeps the first — on the window,
+                in the tab, and behind an empty conversation — and this row
+                keeps the second, which is all a reader ever asked of it. */}
+            <span className="column__row-icon" aria-hidden="true">
+              <Home size={18} strokeWidth={1.8} />
+            </span>
             {expanded && <span className="column__wordmark">Maia</span>}
           </button>
         </Tooltip>
@@ -85,9 +82,13 @@ export function ControlColumn(props: ControlColumnProps) {
         </Tooltip>
       </div>
 
+      {/* Two surfaces, and nothing else: searching belongs to the
+          conversation that holds the history, and temporary mode belongs to
+          the composer that will send the turn. A row here would be a second
+          place to reach either. */}
       <div className="column__actions">
-        {/* Toggles the surface in place, the way temporary mode toggles the
-            mode: pressing it again returns the reader to the dashboard. */}
+        {/* Toggles the surface in place: pressing it again returns the reader
+            to the dashboard. */}
         <ColumnRow
           expanded={expanded}
           label="Conversation"
@@ -95,20 +96,14 @@ export function ControlColumn(props: ControlColumnProps) {
           onClick={props.onToggleChat}
           active={chatOpen}
         />
+        {/* The bench, beside the face it services: what Maia did on a turn is
+            read here, from the logs the backend writes as it runs. */}
         <ColumnRow
           expanded={expanded}
-          label="Search"
-          shortcut="Ctrl+K"
-          icon={<Search size={16} strokeWidth={1.8} />}
-          onClick={props.onOpenSearch}
-          hint={prefs.showHints ? 'Ctrl K' : undefined}
-        />
-        <ColumnRow
-          expanded={expanded}
-          label="Temporary chat"
-          icon={<MessageSquareDashed size={16} strokeWidth={1.8} />}
-          onClick={props.onTemporaryChat}
-          active={props.temporaryActive}
+          label="Investigate"
+          icon={<Radar size={16} strokeWidth={1.8} />}
+          onClick={props.onToggleInvestigate}
+          active={props.investigateOpen}
         />
       </div>
 

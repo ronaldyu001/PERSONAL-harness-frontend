@@ -84,6 +84,7 @@
     0 16px 40px -12px rgba(46, 41, 30, 0.26);
 
   --mark-mid: #4a4a43;
+  --watermark: 0.07;
   --mark-core: #f6f4ef;
 
   /* Code is a recessed display window, dark in both themes. */

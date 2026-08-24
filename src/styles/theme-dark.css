@@ -78,6 +78,7 @@
     0 16px 40px -12px rgba(0, 0, 0, 0.66);
 
   --mark-mid: #a8a69d;
+  --watermark: 0.1;
   --mark-core: #1e1e1c;
 
   --code-bg: #131312;
