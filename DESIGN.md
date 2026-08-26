@@ -661,17 +661,18 @@ Recorded so the next contributor does not read them as defects to "fix".
    `--frame-pad` and `--panel-gap` — walk the whole thing back, and nothing
    that lays out against them assumes their value.
 
-12. **Investigate ships seeded, and says so per record.** §6's "no fabricated
-   data anywhere" is why nothing else on the face needs disclaiming; the bench
-   is the exception, taken deliberately because the backend writes these logs
-   to a volume it does not serve yet. The exception is paid for at the
-   granularity it was taken: the origin rides on the record envelope, not on
-   the event, so a seeded row is marked `seed` in the ledger, counted apart
-   from captured ones in the ledger head, and carries a line of its own when
-   opened. Captured records are the container's real lines, refreshed by
-   `scripts/snapshot-logs.mjs`. The `Seed data` flag in the head is dashed, the
-   provisional edge, and the whole exception retires when
-   `GET /api/logs/{stream}` exists.
+12. **Investigate shipped seeded; it no longer does.** §6's "no fabricated
+   data anywhere" held everywhere but the bench, which stood on captured
+   snapshots and hand-written records because the backend wrote its logs to a
+   volume it did not serve. That exception is closed. `GET /api/traces` serves
+   both streams, `HttpLogStreamAdapter` reads them, and the seed adapter, its
+   fixtures and `scripts/snapshot-logs.mjs` are gone — with the `seed` row
+   mark, the split count in the ledger head, and the `Seed data` flag. The
+   record envelope no longer carries an origin either: a field whose only
+   value is `captured` says nothing. The head reports what the response
+   reports instead — where the records were read from, when they were read,
+   and whether the ledger is the whole stream or its most recent window. §6's
+   sentence now holds without an exception.
 
 ---
 
@@ -778,7 +779,19 @@ prose line does — because a payload reads better wide than wrapped early. Belo
 900px the panes stack and the separator unmounts rather than sitting in the
 `aria-hidden` stack.
 
-**Adding a log** is one entry in `components/log-registry.ts` — label, file,
+**A read, not a feed.** The bench asks for one window of one stream, scoped by
+the backend to this reader and — when they arrived from a conversation — to
+that session, so the filter counts describe what was actually asked for rather
+than what a client-side filter kept. `Read again` asks again and leaves the
+ledger up while it does; a read that fails reports itself over records that are
+still good rather than in place of them, because what is on the ledger was
+recorded and was read. When the window comes back full the head says so, since
+a ledger that is only the most recent 200 records should not read as the whole
+stream.
+
+**Adding a stream** is one entry in `components/log-registry.ts` — label,
 summary, filters — plus a body case in `LogRecordView`. The records arrive
-through `ReadLogStream` → `LogStreamPort`, so the seed adapter is the only file
-that changes when the backend starts serving what it writes.
+through `ReadLogStream` → `LogStreamPort` → `HttpLogStreamAdapter`, which is
+the only file that knows the transport is `GET /api/traces`; which sink they
+were recorded to — the `.logs` files or Postgres — is the response's to name,
+not the registry's.

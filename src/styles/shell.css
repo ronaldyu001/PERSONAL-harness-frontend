@@ -430,12 +430,12 @@ body[data-resizing='y'] {
     color var(--dur-fast) var(--ease-standard);
 }
 
-.ghost-btn:hover {
+.ghost-btn:hover:not(:disabled) {
   background: var(--surface-hover);
   color: var(--text-primary);
 }
 
-.ghost-btn:active {
+.ghost-btn:active:not(:disabled) {
   background: var(--surface-pressed);
   transform: translateY(1px);
 }

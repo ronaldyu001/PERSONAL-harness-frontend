@@ -66,13 +66,6 @@ export function LogRecordView({
         </Fact>
       </dl>
 
-      {record.origin === 'synthesized' && (
-        <p className="record__seed" role="note">
-          Seed record. Written by hand to cover a state your logs have not reached — it is
-          not traffic that happened.
-        </p>
-      )}
-
       {event.event === 'response_gate' ? (
         <GateBody event={event} />
       ) : (

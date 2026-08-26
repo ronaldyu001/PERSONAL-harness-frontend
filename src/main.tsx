@@ -20,7 +20,7 @@ import { ReadLogStream } from './application/observability/read_log_stream'
 import { HttpChatAdapter } from './infrastructure/chat/http_chat_adapter'
 import { HttpConversationHistoryAdapter } from './infrastructure/conversation/http_conversation_history_adapter'
 import { LocalStorageUserIdentityAdapter } from './infrastructure/identity/local_storage_user_identity_adapter'
-import { SeedLogStreamAdapter } from './infrastructure/observability/seed_log_stream_adapter'
+import { HttpLogStreamAdapter } from './infrastructure/observability/http_log_stream_adapter'
 
 const apiBaseUrl = import.meta.env.DEV
   ? ''
@@ -35,12 +35,14 @@ const orchestratorCancelUrl = import.meta.env.DEV ? '/orchestrator/cancel' : und
 const orchestratorRetryUrl = import.meta.env.DEV ? '/orchestrator/retry' : undefined
 const chatAdapter = new HttpChatAdapter(apiBaseUrl)
 const historyAdapter = new HttpConversationHistoryAdapter(apiBaseUrl)
+const traceAdapter = new HttpLogStreamAdapter(apiBaseUrl)
 const identityAdapter = new LocalStorageUserIdentityAdapter()
 const sendChat = new SendChat(chatAdapter, identityAdapter)
 const loadConversations = new LoadConversations(historyAdapter, identityAdapter)
-/* Seeded until the backend serves the log files it already writes; the
-   adapter is the only line that changes when it does. */
-const readLogStream = new ReadLogStream(new SeedLogStreamAdapter())
+/* The same identity the chat turns were recorded under: a trace read is
+   scoped to its owner, so the bench reads back exactly what this browser
+   wrote. */
+const readLogStream = new ReadLogStream(traceAdapter, identityAdapter)
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

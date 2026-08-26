@@ -1,5 +1,6 @@
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
+import { RotateCw } from 'lucide-react'
 import { OutcomeMark } from './OutcomeMark'
 import { LogRecordView } from './LogRecordView'
 import { LOG_STREAMS, streamById, type LogStreamDef } from './log-registry'
@@ -22,8 +23,8 @@ import type { LogRecord, LogStreamId } from '../application/observability/schema
    the width below which it stops being readable and everything between those
    floors belongs to whoever is dragging.
 
-   LEDGER_MIN is where a row's clock, outcome and seed mark stop fitting on one
-   line; RECORD_MIN is where a payload stops being worth reading in a column. */
+   LEDGER_MIN is where a row's clock and outcome stop fitting on one line;
+   RECORD_MIN is where a payload stops being worth reading in a column. */
 const LEDGER_DEFAULT = 336
 const LEDGER_MIN = 232
 const RECORD_MIN = 380
@@ -32,6 +33,15 @@ const LEDGER_STORAGE_KEY = 'harness.investigate.ledgerWidth'
 /* Matches the media query in investigate.css: below this the two panes stack
    and there is no vertical edge left to drag. */
 const STACK_BELOW = 900
+
+/* One window of records, asked for explicitly rather than left to the
+   backend's default, so the ledger can say when it is showing a window and
+   not the whole stream. Well under the API's own ceiling of 500. */
+const TRACE_WINDOW = 200
+
+/* One identity for "nothing read yet", so the ledger's own grouping is not
+   rebuilt by a render that changed something else. */
+const NO_RECORDS: LogRecord[] = []
 
 export interface InvestigateProps {
   readLogStream: ReadLogStream
@@ -46,14 +56,14 @@ export interface InvestigateProps {
  * Investigate — the service side of the instrument.
  *
  * Maia's dashboard is the face; this is the bench it is opened on. The
- * backend already writes its reasoning to JSONL files, one per concern, and
+ * backend records its reasoning as two trace streams, one per concern, and
  * this surface reads them at the two speeds a log is read at: a dense ledger
  * to scan and one record opened in full. The channel selector in the head
- * picks the log, exactly as the registry lists them.
+ * picks the stream, exactly as the registry lists them.
  *
  * The bench is the same object in a cooler material — see investigate.css.
- * Nothing here reaches the network: the records come from the seed adapter
- * behind the log port until the backend serves the files it writes.
+ * Every record here is one the backend actually recorded: nothing on this
+ * surface is fabricated, and nothing needs disclaiming.
  */
 export function Investigate({
   readLogStream,
@@ -71,7 +81,12 @@ export function Investigate({
      that row. Set where both ends are known rather than inferred from the
      last render. */
   const [streamDirection, setStreamDirection] = useState<1 | -1>(1)
-  const { data, error, loading, retry } = useLogStream(readLogStream, streamId)
+  const { data, error, loading, reload } = useLogStream(
+    readLogStream,
+    streamId,
+    session,
+    TRACE_WINDOW,
+  )
   const {
     max: ledgerMax,
     measure: measureBody,
@@ -85,17 +100,23 @@ export function Investigate({
 
   /* A session narrows the whole bench, filters and counts included: the
      reader arrived from one conversation and every reading should be about
-     it until they say otherwise. */
-  const records = useMemo(() => {
-    const all = data?.records ?? []
-    return session ? all.filter((record) => record.event.session_id === session) : all
-  }, [data, session])
+     it until they say otherwise. The narrowing is part of the read rather
+     than a filter over it, so the counts describe the conversation and the
+     window is spent on its records. */
+  const records = data?.records ?? NO_RECORDS
   const facet = stream.facets.find((item) => item.id === facetId) ?? stream.facets[0]
   const visible = useMemo(
     () => (facet.match ? records.filter((record) => facet.match!(record.event)) : records),
     [facet, records],
   )
-  const seeded = visible.filter((record) => record.origin === 'synthesized').length
+  /* A full window is the window, not the stream: what is older than the last
+     row may or may not exist, and the head says so rather than implying the
+     ledger is everything. */
+  const windowed = records.length >= TRACE_WINDOW
+  /* The first read has nothing to hold the ledger open, so it is the only one
+     that replaces it. A re-read leaves the records up and reports itself on
+     the control that asked for it. */
+  const opening = loading && data === null
 
   /* The bench opens on a record rather than on an empty pane, and a filter
      that hides the open one moves the reading to the first row it kept. The
@@ -122,7 +143,20 @@ export function Investigate({
           </h2>
           <StreamTabs active={streamId} onChange={changeStream} />
           <div className="region__head-end">
-            <span className="region__flag">Seed data</span>
+            {/* The ledger is a read, not a feed: it is whatever was recorded
+                when it was asked for, and this is how the reader asks again.
+                Named by the words on it rather than by an aria-label that
+                reads differently — those are the words that work it. */}
+            <button
+              type="button"
+              className="ghost-btn ghost-btn--icon bench__reread"
+              onClick={reload}
+              disabled={loading}
+              aria-busy={loading}
+            >
+              <RotateCw size={13} strokeWidth={1.8} aria-hidden="true" />
+              {loading ? 'Reading' : 'Read again'}
+            </button>
           </div>
         </header>
 
@@ -157,50 +191,67 @@ export function Investigate({
                   </button>
                 </p>
               )}
-              <p className="bench__source">
-                <span className="bench__mono">{stream.file}</span>
-                {seeded > 0 && (
-                  <span className="bench__seed-note">
-                    {formatCount(visible.length - seeded)} captured ·{' '}
-                    {formatCount(seeded)} seeded
-                  </span>
-                )}
-              </p>
+              {/* Where the records came from and when they were read: both
+                  are facts about this response, so neither is stated until
+                  there is one. */}
+              {data && (
+                <p className="bench__source">
+                  <span className="bench__mono">{data.source}</span>
+                  {data.capturedAt && <span>read at {formatClock(data.capturedAt)}</span>}
+                  {windowed && <span>most recent {formatCount(TRACE_WINDOW)}</span>}
+                </p>
+              )}
               <Facets
                 stream={stream}
                 active={facet.id}
                 counts={records}
                 onChange={(next) => setFacetId(next)}
               />
+              {/* A read that fails does not take the last one's records with
+                  it: what is on the ledger was recorded and was read, and
+                  hiding it would cost the reader more than the failure
+                  did. */}
+              {error && data && (
+                <p className="bench__stale" role="status">
+                  {error}{' '}
+                  <button type="button" className="link-btn" onClick={reload}>
+                    Try again
+                  </button>
+                </p>
+              )}
             </div>
 
-            {loading ? (
+            {opening ? (
               <p className="bench__note" role="status">
-                Reading {stream.file}&#8230;
+                Reading {stream.unit[1]}&#8230;
               </p>
-            ) : error ? (
+            ) : error && !data ? (
               <p className="bench__note" role="status">
                 {error}{' '}
-                <button type="button" className="link-btn" onClick={retry}>
+                <button type="button" className="link-btn" onClick={reload}>
                   Try again
                 </button>
               </p>
             ) : visible.length === 0 ? (
               <p className="bench__note">
-                {session && facet.id === 'all' ? (
+                {records.length > 0 ? (
                   <>
-                    Nothing was logged under this conversation. The files hold what the backend
-                    has written since it last started.{' '}
+                    No {stream.unit[1]} match this filter.{' '}
+                    <button type="button" className="link-btn" onClick={() => setFacetId('all')}>
+                      Show all
+                    </button>
+                  </>
+                ) : session ? (
+                  <>
+                    Nothing was recorded under this conversation.{' '}
                     <button type="button" className="link-btn" onClick={onClearSession}>
                       Show every session
                     </button>
                   </>
                 ) : (
                   <>
-                    No {stream.unit[1]} match this filter.{' '}
-                    <button type="button" className="link-btn" onClick={() => setFacetId('all')}>
-                      Show all
-                    </button>
+                    No {stream.unit[1]} have been recorded yet. They appear here as soon as
+                    Maia answers something.
                   </>
                 )}
               </p>
@@ -252,7 +303,7 @@ export function Investigate({
               </motion.div>
             ) : (
               <p className="bench__note">
-                {loading ? 'Nothing open yet.' : 'Select a record to read it in full.'}
+                {opening ? 'Nothing open yet.' : 'Select a record to read it in full.'}
               </p>
             )}
           </div>
@@ -499,11 +550,6 @@ function LedgerRow({
       <span className="ledger__line">
         <span className="ledger__clock">{formatClock(event.timestamp)}</span>
         <OutcomeMark outcome={outcomeOf(event)} />
-        {record.origin === 'synthesized' && (
-          <span className="ledger__seed" title="Seed record, not captured traffic">
-            seed
-          </span>
-        )}
       </span>
       <span className="ledger__detail">
         {event.event === 'response_gate'

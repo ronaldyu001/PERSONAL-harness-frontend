@@ -1,11 +1,10 @@
 /**
- * The shapes Maia's local JSONL logs are written in.
+ * The shapes Maia's agent traces are served in.
  *
- * These mirror `infrastructure/agent/logging/schemas.py` on the backend field
- * for field, snake_case included: a log line is the wire, and the wire is not
- * translated here the way the chat contract is. Investigate reads records, and
- * a record that has been renamed on the way in is no longer the thing that was
- * written to disk.
+ * These mirror `presentation/api/schemas.py` on the backend field for field,
+ * snake_case included: a trace is the wire, and the wire is not translated
+ * here the way the chat contract is. Investigate reads records, and a record
+ * that has been renamed on the way in is no longer the thing the agent wrote.
  */
 
 export type LogMode = 'structure' | 'full'
@@ -46,6 +45,7 @@ export interface ModelContextEvent {
   timestamp: string
   invocation_id: string
   session_id: string | null
+  user_id: string | null
   model: string
   mode: LogMode
   model_call: number
@@ -64,6 +64,7 @@ export interface ResponseGateEvent {
   timestamp: string
   invocation_id: string
   session_id: string | null
+  user_id: string | null
   model: string
   mode: LogMode
   evaluation_call: number
@@ -84,38 +85,33 @@ export interface ResponseGateEvent {
 
 export type LogEvent = ModelContextEvent | ResponseGateEvent
 
-/**
- * Where a record came from.
- *
- * The envelope carries this, not the event: a synthesized record has to be
- * exactly the shape the backend writes, or it is not covering anything. Maia
- * shows no fabricated data anywhere else, so the one place that does says so
- * per record rather than in a footnote.
- */
-export type RecordOrigin = 'captured' | 'synthesized'
-
 export interface LogRecord<T extends LogEvent = LogEvent> {
-  /** Stable within a stream: the log has no id of its own to key a list on. */
+  /** The sink's own id for the line, which is what a list keys on. */
   id: string
-  origin: RecordOrigin
   event: T
 }
 
 export interface LogStream {
   id: LogStreamId
-  /** The file the backend writes, named so a reader can go find it. */
-  file: string
+  /** Where the backend read the records from, named so a reader can go find them. */
+  source: string
   records: LogRecord[]
-  /** Absent until a records endpoint exists; the seed adapter reports null. */
+  /** When the response was produced, which is a fact about the response. */
   capturedAt: string | null
 }
 
 export interface ReadLogStreamCommand {
   stream: LogStreamId
+  /** Narrows the read to one conversation's turns. */
+  sessionId?: string
+  limit?: number
   signal?: AbortSignal
 }
 
 export interface ReadLogStreamRequest {
   stream: LogStreamId
+  userId: string
+  sessionId?: string
+  limit?: number
   signal?: AbortSignal
 }

@@ -2,12 +2,14 @@ import { Braces, ScrollText, type LucideIcon } from 'lucide-react'
 import type { LogEvent, LogStreamId } from '../application/observability/schemas'
 
 /**
- * The log registry.
+ * The trace registry.
  *
  * Adding a stream to Investigate means adding an entry here and a case in
  * `LogRecordView`. Everything else — the tabs, the filters, the ledger, the
  * counts — is driven off this list, the same way the dashboard's regions are
- * driven off the panel registry.
+ * driven off the panel registry. Where the records were read from is not
+ * here: the response names its own source, because the sink behind it is a
+ * deployment choice rather than a property of the stream.
  */
 export interface LogFacet {
   id: string
@@ -20,10 +22,8 @@ export interface LogStreamDef {
   id: LogStreamId
   /** Tab label. Short: it sits in a segmented control. */
   label: string
-  /** What this log records, in the reader's terms. */
+  /** What this stream records, in the reader's terms. */
   summary: string
-  /** The file the backend appends to, inside its container. */
-  file: string
   icon: LucideIcon
   /** What the ledger counts in its head, singular and plural. */
   unit: [string, string]
@@ -35,7 +35,6 @@ export const LOG_STREAMS: LogStreamDef[] = [
     id: 'model-context',
     label: 'Model context',
     summary: 'Every request as the model actually received it, with what came back.',
-    file: 'agent-context.jsonl',
     icon: Braces,
     unit: ['call', 'calls'],
     facets: [
@@ -58,7 +57,6 @@ export const LOG_STREAMS: LogStreamDef[] = [
     id: 'response-gate',
     label: 'Response gate',
     summary: 'Every evaluation of a candidate answer, and what the gate did about it.',
-    file: 'response-gate.jsonl',
     icon: ScrollText,
     unit: ['evaluation', 'evaluations'],
     facets: [

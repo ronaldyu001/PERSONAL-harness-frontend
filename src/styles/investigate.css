@@ -140,14 +140,31 @@
   color: var(--text-tertiary);
 }
 
-.bench__seed-note {
+/* Holds the width of its longer label, so saying "Reading" does not narrow
+   the control under the cursor that just pressed it. */
+.bench__reread {
+  min-width: 108px;
+  justify-content: center;
+}
+
+/* While a read is in flight the control says so and takes no second press;
+   the ledger under it keeps the records it already has. */
+.bench__reread:disabled {
+  color: var(--text-tertiary);
+}
+
+/* The failed re-read, reported over records that are still good rather than
+   in place of them. Sits in the ledger head, which owns its own padding. */
+.bench__stale {
+  margin: 0;
+  font-size: var(--t-meta);
+  line-height: 1.5;
   color: var(--text-tertiary);
 }
 
 /* Identifiers, clocks, counts, payloads: the record's measurements. */
 .bench__mono,
 .ledger__clock,
-.ledger__seed,
 .record__mono,
 .record__payload {
   font-family: var(--mono);
@@ -289,17 +306,6 @@
   color: var(--text-secondary);
 }
 
-/* A seeded row is marked on the row, not disclaimed in a footnote. */
-.ledger__seed {
-  margin-left: auto;
-  padding: 1px 6px;
-  border: var(--seam) dashed var(--border-strong);
-  border-radius: var(--r-pill);
-  font-size: 10px;
-  letter-spacing: 0.02em;
-  color: var(--text-tertiary);
-}
-
 .ledger__detail {
   font-size: var(--t-meta);
   color: var(--text-tertiary);
@@ -409,18 +415,6 @@
 .record__fact dd {
   margin: 0;
   color: var(--text-primary);
-}
-
-/* The one line on this surface that would be a lie if it were quiet. */
-.record__seed {
-  margin: 0;
-  max-width: 74ch;
-  padding: 9px 12px;
-  border: var(--seam) dashed var(--border-strong);
-  border-radius: var(--r-md);
-  font-size: var(--t-meta);
-  line-height: 1.5;
-  color: var(--text-secondary);
 }
 
 .record__section {
