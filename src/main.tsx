@@ -21,6 +21,7 @@ import { HttpChatAdapter } from './infrastructure/chat/http_chat_adapter'
 import { HttpConversationHistoryAdapter } from './infrastructure/conversation/http_conversation_history_adapter'
 import { LocalStorageUserIdentityAdapter } from './infrastructure/identity/local_storage_user_identity_adapter'
 import { HttpLogStreamAdapter } from './infrastructure/observability/http_log_stream_adapter'
+import { installExternalLinkHandler } from './lib/external_links'
 
 const apiBaseUrl = import.meta.env.DEV
   ? ''
@@ -43,6 +44,8 @@ const loadConversations = new LoadConversations(historyAdapter, identityAdapter)
    scoped to its owner, so the bench reads back exactly what this browser
    wrote. */
 const readLogStream = new ReadLogStream(traceAdapter, identityAdapter)
+
+installExternalLinkHandler()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

@@ -22,7 +22,7 @@ export class SendChat {
       sessionId: command.sessionId,
       temporary: command.temporary,
       temperature: command.temperature ?? 0.7,
-      maxTokens: command.maxTokens ?? 1024,
+      maxTokens: command.maxTokens ?? 2048,
       signal: command.signal,
     })
   }
