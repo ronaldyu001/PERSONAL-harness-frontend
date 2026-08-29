@@ -1,3 +1,4 @@
+import { historyGroup } from './history_groups'
 import type { GateDecision, LogEvent, TokenUsage } from '../application/observability/schemas'
 
 /**
@@ -8,14 +9,18 @@ import type { GateDecision, LogEvent, TokenUsage } from '../application/observab
  * a column of them reads as a column rather than as ragged prose.
  */
 
-const CLOCK = new Intl.DateTimeFormat(undefined, {
-  hour: '2-digit',
-  minute: '2-digit',
-  second: '2-digit',
-  hour12: false,
-})
+/* The reader's own clock convention, not the log's. Seconds stay: a repair
+   chain lands three records inside one minute, and without them those rows
+   read as the same instant three times. */
+const CLOCK = new Intl.DateTimeFormat(undefined, { timeStyle: 'medium' })
 
 const DAY = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' })
+
+const DAY_WITH_YEAR = new Intl.DateTimeFormat(undefined, {
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
+})
 
 const STAMP = new Intl.DateTimeFormat(undefined, {
   dateStyle: 'medium',
@@ -24,9 +29,42 @@ const STAMP = new Intl.DateTimeFormat(undefined, {
 
 export const formatClock = (timestamp: string) => CLOCK.format(new Date(timestamp))
 
-export const formatDay = (timestamp: string) => DAY.format(new Date(timestamp))
+/**
+ * When something happened, in the words the reader would use.
+ *
+ * Today and Yesterday come from `historyGroup`, the same buckets the
+ * conversation history groups by, so the bench and the sidebar cannot drift
+ * on what counts as yesterday. Everything older is the month and the day —
+ * a weekday names one of seven and has to be counted back from; a date is
+ * the thing itself. Past the year the year joins it.
+ */
+export function formatDayLabel(timestamp: string, now = new Date()): string {
+  const when = new Date(timestamp)
+  if (Number.isNaN(when.getTime())) return 'Unknown date'
+
+  const bucket = historyGroup(timestamp, now)
+  if (bucket === 'today') return 'Today'
+  if (bucket === 'yesterday') return 'Yesterday'
+  return when.getFullYear() === now.getFullYear()
+    ? DAY.format(when)
+    : DAY_WITH_YEAR.format(when)
+}
 
 export const formatStamp = (timestamp: string) => STAMP.format(new Date(timestamp))
+
+/**
+ * How far back a piece of evidence sits, in the turn's own terms.
+ *
+ * The gate records this as a number because the evaluator needs to arithmetic
+ * on it; a reader needs to know whether the lookup is the one behind the
+ * answer in front of them or something carried in from earlier.
+ */
+export const turnsAgoLabel = (turnsAgo: number) =>
+  turnsAgo <= 0
+    ? 'this turn'
+    : turnsAgo === 1
+      ? '1 turn back'
+      : `${turnsAgo} turns back`
 
 /** Enough of a UUID to tell two apart, which is all a ledger needs. */
 export const shortId = (id: string | null) => (id ? id.slice(0, 8) : '—')

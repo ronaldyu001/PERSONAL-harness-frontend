@@ -223,7 +223,7 @@
   color: var(--text-tertiary);
 }
 
-/* ── Rows ───────────────────────────────────────────────────── */
+/* ── The ledger ─────────────────────────────────────────────── */
 
 .ledger {
   flex: 1;
@@ -231,13 +231,14 @@
   overflow-y: auto;
 }
 
-.ledger__group {
-  padding-bottom: 2px;
+/* One conversation. This is the grouping the reader came looking for and the
+   only one a row could never show on its own, so it is the band — the one
+   heading in the column that is allowed to be a heading. */
+.ledger__band {
+  padding-bottom: 4px;
 }
 
-/* The turn a record belongs to. Not a legend: uppercase tracking belongs to
-   panel faces, so the group speaks in the label step, quietly. */
-.ledger__group-label {
+.ledger__band-head {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
@@ -246,10 +247,79 @@
   top: 0;
   z-index: 1;
   margin: 0;
-  padding: 8px var(--panel-pad) 6px;
+  padding: 11px var(--panel-pad) 8px;
   background: var(--bg-workspace);
+  border-bottom: var(--seam) solid var(--border-faint);
   font-size: var(--t-meta);
+  font-weight: var(--w-label);
+  color: var(--text-secondary);
+}
+
+.ledger__band-note {
   font-weight: var(--w-meta);
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+
+/* One turn. Its records are a chain and sit unruled together; the rule falls
+   between turns, which is the boundary that means something. */
+.ledger__turn + .ledger__turn {
+  border-top: var(--seam) solid var(--border-faint);
+}
+
+/* A chain is one reading, so it is drawn as one thing rather than left to be
+   inferred from a missing rule. The spine runs the height of the rows and the
+   pass number sits at its head, so both halves of the question — which rows
+   are one turn, and which way the turn runs — are answered without reading
+   the seconds off the clocks.
+
+   It sits inside the row's selection seam rather than over it: the accent bar
+   marks the open record at the very edge, the spine marks the chain a step
+   in, and the two never occupy the same pixels. */
+.ledger__turn--chain .ledger__list {
+  position: relative;
+}
+
+.ledger__turn--chain .ledger__list::before {
+  content: '';
+  position: absolute;
+  top: 5px;
+  bottom: 5px;
+  left: calc(var(--panel-pad) + 5px);
+  width: var(--seam);
+  background: var(--border-strong);
+  /* Above the rows, so a selected or hovered row does not break the line. */
+  z-index: 1;
+  pointer-events: none;
+}
+
+.ledger__turn--chain .ledger__row {
+  padding-left: calc(var(--panel-pad) + 18px);
+}
+
+/* Tertiary rather than faint: the faint step measures 4.34:1 on the light
+   chassis, and this is a number the reader is meant to read. */
+.ledger__step {
+  font-family: var(--mono);
+  font-variant-ligatures: none;
+  font-size: var(--t-meta);
+  color: var(--text-tertiary);
+}
+
+.ledger__row--on .ledger__step {
+  color: var(--text-secondary);
+}
+
+/* Only a chain gets a label — a turn holding one record is its own row, and
+   labelling it would put a heading above every line in the column. */
+.ledger__turn-label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0;
+  padding: 9px var(--panel-pad) 3px;
+  font-size: var(--t-meta);
   color: var(--text-tertiary);
 }
 
@@ -259,16 +329,17 @@
   padding: 0;
 }
 
-.ledger__list li + li .ledger__row {
-  border-top: var(--seam) solid var(--border-faint);
-}
-
+/* One line: when it happened, what happened, and a note only where there is
+   something the outcome does not already say. Everything the row used to
+   spell out on a second line is in the record, which is where it can be read
+   rather than scanned past. */
 .ledger__row {
   display: flex;
-  flex-direction: column;
-  gap: 3px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 3px 10px;
   width: 100%;
-  padding: 9px var(--panel-pad);
+  padding: 8px var(--panel-pad);
   text-align: left;
   color: var(--text-secondary);
   transition: background-color var(--dur-fast) var(--ease-standard);
@@ -291,12 +362,6 @@
   box-shadow: inset 2px 0 0 var(--border-strong);
 }
 
-.ledger__line {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
 .ledger__clock {
   font-size: var(--t-meta);
   color: var(--text-tertiary);
@@ -306,9 +371,13 @@
   color: var(--text-secondary);
 }
 
-.ledger__detail {
+/* Pushed to the far edge, so the rows that carry a note line up as a column
+   and the rows that do not read as empty rather than as ragged. */
+.ledger__note {
+  margin-left: auto;
   font-size: var(--t-meta);
   color: var(--text-tertiary);
+  white-space: nowrap;
 }
 
 /* ── The outcome mark ───────────────────────────────────────── */
@@ -363,8 +432,7 @@
 
   display: flex;
   flex-direction: column;
-  gap: 18px;
-  padding: 18px var(--record-pad-x) 30px;
+  padding: 18px var(--record-pad-x) 40px;
 }
 
 .record__head {
@@ -394,49 +462,196 @@
   color: var(--text-secondary);
 }
 
-.record__facts {
+/* ── The meta line ──────────────────────────────────────────── */
+
+/* Where the record sits: the time, the model, the pass, and the two ids that
+   join it to everything else. One wrapping line under the heading it locates,
+   rather than a grid between that heading and the reading — these are
+   coordinates, and coordinates are read once. */
+.record__meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px 22px;
+  align-items: baseline;
+  gap: 4px 18px;
   margin: 0;
 }
 
-.record__fact {
+.record__meta-pair {
   display: flex;
   align-items: baseline;
   gap: 7px;
   font-size: var(--t-meta);
 }
 
-.record__fact dt {
+.record__meta-pair dt {
   color: var(--text-tertiary);
 }
 
-.record__fact dd {
+.record__meta-pair dd {
   margin: 0;
   color: var(--text-primary);
 }
 
+.record__head + .record__meta {
+  margin-top: 10px;
+  padding-bottom: 16px;
+}
+
+/* ── Sections ───────────────────────────────────────────────── */
+
+/* Bulk is folded, not dropped. A record can carry a system prompt, a window
+   of conversation, and every tool result behind it; opened flat that is a
+   scroll the reader has to survive before the verdict makes sense. Each head
+   says what is inside, so nothing has to be opened to be counted. */
 .record__section {
+  border-top: var(--seam) solid var(--border-faint);
+}
+
+.record__section-head,
+.record__fold-head {
   display: flex;
-  flex-direction: column;
+  align-items: baseline;
   gap: 8px;
+  /* A disclosure is a control, and controls in this app are pointer. */
+  cursor: pointer;
+  list-style: none;
+  transition: color var(--dur-fast) var(--ease-standard);
+}
+
+/* The marker Safari draws comes from a pseudo-element the standard property
+   does not reach. */
+.record__section-head::-webkit-details-marker,
+.record__fold-head::-webkit-details-marker {
+  display: none;
+}
+
+.record__section-head {
+  padding: 14px 0 4px;
+  color: var(--text-secondary);
+}
+
+.record__section-head:hover,
+.record__fold-head:hover {
+  color: var(--text-primary);
+}
+
+.record__section-head:focus-visible,
+.record__fold-head:focus-visible {
+  outline: 2px solid var(--ring-active);
+  outline-offset: 3px;
+  border-radius: var(--r-xs);
 }
 
 .record__section-title {
   margin: 0;
   font-size: var(--t-label);
   font-weight: var(--w-label);
-  color: var(--text-secondary);
+  color: inherit;
+}
+
+.record__section-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 6px 0 18px;
+}
+
+/* ── Folds inside a section ─────────────────────────────────── */
+
+.record__fold-head {
+  padding: 7px 0;
+  color: var(--text-tertiary);
+}
+
+.record__fold-title {
+  font-size: var(--t-meta);
+  font-weight: var(--w-label);
+  color: inherit;
+}
+
+.record__fold-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 2px 0 12px 20px;
+}
+
+/* An open fold hangs its contents off the chevron above them, so the indent
+   needs a line to hang from rather than empty space. */
+.record__fold[open] > .record__fold-body {
+  margin-left: 1px;
+  padding-left: 19px;
+  border-left: var(--seam) solid var(--border-faint);
+}
+
+.record__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.record__field-label {
+  font-size: var(--t-meta);
+  color: var(--text-tertiary);
+}
+
+/* ── Recorded text ───────────────────────── */
+
+/* Every recorded payload lifts out on its own, so the control lives in the
+   corner of the block it copies — the grain the text is actually wanted at.
+   The block is its positioning context, so the control stays put while the
+   text inside scrolls under it. */
+.record__payload-block {
+  position: relative;
+}
+
+.record__copy {
+  position: absolute;
+  /* Clear of the scrollbar lane the payload reserves below, so a scrolling
+     block can still be dragged from the top of its track. */
+  top: 6px;
+  right: calc(var(--scrollbar-size) + 5px);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* A 12px glyph on a 24px target. */
+  padding: 6px;
+  border-radius: var(--r-xs);
+  background: var(--surface-3);
+  color: var(--text-tertiary);
+  transition:
+    background-color var(--dur-fast) var(--ease-standard),
+    color var(--dur-fast) var(--ease-standard);
+}
+
+.record__copy:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+.record__copy:active {
+  background: var(--surface-pressed);
+}
+
+.record__copy:focus-visible {
+  outline: 2px solid var(--ring-active);
+  outline-offset: 2px;
 }
 
 /* Recorded text is pressed into the panel, the way a code block is: it is
-   the material the record is about, not the panel's own voice. */
+   the material the record is about, not the panel's own voice. A long one
+   scrolls in place, so a section stays the height of its heading and the
+   record does not grow by the length of whatever it happens to carry.
+
+   The gutter is reserved whether it scrolls or not, so the control above it
+   sits at one position rather than moving with the scrollbar; the right
+   padding is what keeps the first line from running under that control. */
 .record__payload {
   margin: 0;
   max-height: 260px;
   overflow: auto;
-  padding: 10px 12px;
+  scrollbar-gutter: stable;
+  padding: 10px 44px 10px 12px;
   border-radius: var(--r-sm);
   background: var(--surface-3);
   box-shadow: var(--recess);
@@ -458,6 +673,16 @@
   line-height: 1.5;
   color: var(--text-tertiary);
 }
+
+/* A reading beside a value, never a value of its own: how many characters a
+   message carried, how far back a lookup sits, what a tool is for. */
+.record__note {
+  font-size: var(--t-meta);
+  font-weight: var(--w-meta);
+  color: var(--text-tertiary);
+}
+
+/* ── Lists inside a record ──────────────────────────────────── */
 
 .record__violations,
 .record__tools,
@@ -489,6 +714,13 @@
   background: var(--border-strong);
 }
 
+.record__tools li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+}
+
 .record__error {
   margin: 0;
   font-size: var(--t-meta);
@@ -500,35 +732,36 @@
   font-family: var(--mono);
 }
 
-.record__tool-note {
-  margin-left: 8px;
-  color: var(--text-tertiary);
-}
-
-.record__messages {
+.record__messages,
+.record__turns,
+.record__traces {
   list-style: none;
   margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  counter-reset: message;
+  gap: 14px;
 }
 
-.record__message {
+.record__message,
+.record__turn,
+.record__trace {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding-top: 12px;
+  padding-top: 14px;
   border-top: var(--seam) solid var(--border-faint);
 }
 
-.record__message:first-child {
+.record__message:first-child,
+.record__turn:first-child,
+.record__trace:first-child {
   padding-top: 0;
   border-top: none;
 }
 
-.record__message-head {
+.record__message-head,
+.record__trace-head {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
@@ -539,17 +772,6 @@
   font-size: var(--t-label);
   font-weight: var(--w-label);
   color: var(--text-primary);
-}
-
-.record__chars {
-  font-size: var(--t-meta);
-  color: var(--text-tertiary);
-}
-
-.record__aside {
-  margin: 0;
-  font-size: var(--t-meta);
-  color: var(--text-tertiary);
 }
 
 /* ── Responsive ─────────────────────────────────────────────── */

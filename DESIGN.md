@@ -754,13 +754,127 @@ Mono is not a costume here: a log record is measurement, which is the same
 justification §3 gives code. It is confined to recorded values and never used
 for prose or labels.
 
-**Two speeds.** A ledger column scans (336px, grouped by `invocation_id`,
-because a turn can hold a tool round-trip and three gate passes and they only
-read stacked together) and an inspector opens one record in full. Below 900px
-the two stack, ledger over record. The channel selector in the head is the
-segmented control from Preferences, wearing `role="tablist"` with arrow keys;
-the filter pills carry their own counts, so a filter that would empty the
-ledger says so before it is pressed.
+**Two speeds.** A ledger column scans (336px) and an inspector opens one
+record in full. Below 900px the two stack, ledger over record. The channel
+selector in the head is the segmented control from Preferences, wearing
+`role="tablist"` with arrow keys; the filter pills carry their own counts, so
+a filter that would empty the ledger says so before it is pressed.
+
+**The ledger has three levels, and only the ones that carry information are
+drawn.** It used to have one — a turn heading over two-line rows — which put
+the same four figures on every line and left the grouping a reader actually
+came for undrawn.
+
+| Level | Device | Why |
+|---|---|---|
+| Conversation | a sticky band: the session's short id, the day, the turn count | The grouping a row could never show on its own, and the one a reader arrives with in mind. Suppressed when the bench is already narrowed to one conversation, since the head names it and a band per turn would repeat it |
+| Turn | a rule between turns; a chain of more than one record also gets a spine, numbered rows, and an indent | One question can hold a tool round-trip and three gate passes. Absence of a rule was too weak a signal that those belong together, so a chain is drawn as an object: an `<ol>`, a spine down its rows, each row carrying the pass the agent recorded, all of it indented under a label. A turn holding one record is its own row — no spine, no number, no heading over every line in the column |
+| Record | one line | When, what, and a note only where there is something the outcome does not already say |
+
+Bands are cut where the session changes rather than by collecting every
+record of a session together, so the ledger stays in the order it was read: a
+conversation returned to after another one opens a second band, which is what
+happened.
+
+**Inside a turn the records climb while turns and bands descend.** The reader
+came looking for the last turn, but a repair chain is a sequence and a sequence
+read backwards is not the same story. That is a direction change mid-column,
+and it is only affordable if the chain is unmistakably one object — otherwise
+`Retry` above `Fallback` reads as the list being out of order rather than as a
+turn being told forwards. So the chain is drawn rather than implied:
+
+- a **spine** at `--border-strong`, running the height of the rows, `z-index`
+  above them so a selected or hovered row does not break the line
+- the **pass number** at its head — the number the agent recorded, not the
+  row's index, so a window that clips the front of a long chain still says
+  which pass each row was
+- an **indent**: chain rows sit 34px in against a standalone row's 16px
+
+The spine is placed 21px from the edge and the selection seam is the row's
+first 2px, so the accent bar marking the open record and the rule marking the
+chain never occupy the same pixels.
+
+**The routine row carries no text at all.** `eval 1 · repair 0 · 1,234 ch ·
+2,937 tok` was four figures on every line, three of them constant down the
+column, and a count that never varies is not a reading. What is left is the
+exception — how many violations the gate named, whether a call came back
+through a tool — pushed to the far edge so the rows that have one line up and
+the rows that do not read as clean. Rows are 32px and one line at every width
+down to the 232px floor, where nothing wraps or overflows. Everything the
+second line used to spell out is on the record, one click away, where it can
+be read rather than scanned past.
+
+**Time is told the way the reader tells it.** `formatClock` follows the
+reader's own locale rather than forcing 24-hour, and keeps seconds, because a
+repair chain lands three records inside one minute and without them those rows
+read as the same instant three times. `formatDayLabel` gives the band Today
+and Yesterday off the same `historyGroup` the conversation history groups by,
+so the bench and the sidebar cannot drift on what counts as yesterday, and the
+month and day for everything older — a weekday names one of seven and has to
+be counted back from, where a date is the thing itself. Past the year the year
+joins it. A band takes its day
+from its newest record, so a conversation carried across midnight is filed
+under the day it was last active.
+
+**The record folds rather than unrolls.** Every section used to render open,
+so a record with a system prompt, a window of conversation, and every tool
+result behind it buried the answer under the material it was reached from.
+The payloads still scroll in place — that is what keeps a section the height
+of its heading — but what is open is now the reader's:
+
+| Device | What it does |
+|---|---|
+| Reading order | verdict, then the answer it judged, then what the gate read. Each one explains the one above it, and the short one is first because it is the answer |
+| `<details>` sections | the browser's disclosure, so keyboard behaviour and the accessible name arrive already right. `open` is a starting position, not a controlled value; the record remounts per selection, so each opens as it should and stays where the reader left it. Every head names what is inside, so nothing has to be opened to be counted |
+| A copy control per payload | every recorded payload lifts out on its own, from a control in the corner of the block it copies. `Copy JSON` in the head is the whole record at the wrong grain for the actual job — pasting one prompt into a diff, one piece of evidence into an issue — so the JSON stays there and the text carries its own |
+| A payload that scrolls in place | a recorded payload keeps its own 260px scroll (140px for a quiet one), so a section stays the height of its heading and the record does not grow by the length of whatever it happens to carry. A `line-clamp` with a *Show all* control was tried in its place and walked back at the owner's request: the click it added to reach text that was already there cost more than the nested scroll does |
+
+**The copy control sits on the text, not on the section.** The block is the
+grain the text is actually wanted at — one prompt, one tool result, one
+answer — and a section can hold several of them, so a single control per
+section would copy more than was asked for. It was built on the section heads
+first and moved: the section is how the record is *organised*, the payload is
+what gets *taken*.
+
+The block is the control's positioning context, so it stays in the corner
+while the text scrolls under it. Three measurements hold it clear of
+everything: the payload reserves its scrollbar lane whether it scrolls or not
+(`scrollbar-gutter: stable`), the control sits 15px in from the block's right
+edge — 5px clear of that 10px lane, so a scrolling block can still be dragged
+from the top of its track — and the payload's 44px right padding keeps the
+first line from running under it. Verified on every payload of a gate record:
+each one copies exactly its own block's text, on a 24px target, and no control
+is left in a section head.
+
+It rests in the tertiary step rather than hidden until hover. This is the one
+place the bench parts with §5's turn actions, and deliberately: a reader
+arrives at a log to take something away, and a control that has to be
+discovered is one they will not know is there. It measures 4.19:1 dark and
+4.93:1 light against the recessed block it sits on, where a control needs 3.
+
+The pane returns to the top on every selection. It is one scroller holding
+records of different heights, so keeping the offset dropped the reader into
+the middle of a record they had not started — the deeper they were in the last
+one, the further in they landed.
+
+**What the gate read.** The gate is a second model with a context of its own,
+and until now that context was assembled, sent, and thrown away. The
+model-context stream does not hold it: that stream is the request *Maia* was
+given, not the window the gate judged against, the evidence as budgeted for
+the evaluator, or the memories that were in force. So the middleware now
+records it beside the verdict — `gate_context` on `ResponseGateTrace`, written
+from the same object the evaluator was handed, on the error path as well,
+where a reader needs it most. The record shows it as folds inside one section:
+the conversation window and the tool evidence open, because they are what a
+verdict is usually checked against; the system prompt and the evaluator's own
+rubric closed, because they are long and rarely the thing being checked. The
+rubric is recorded at all because it is edited between runs, and a verdict
+read against the wrong one explains nothing.
+
+It follows the same rule as the candidate and the feedback: structure mode
+keeps the decision and drops the text, so the section says which of the two
+reasons it is absent for — structure mode, or a record written before the gate
+kept what it read.
 
 **States are the log's, not the reader's.** An outcome is a word plus a mark in
 one tone — `--success`, `--danger`, or neutral, on text and icon only. A field

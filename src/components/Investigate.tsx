@@ -11,13 +11,12 @@ import { readingSwap, viewSlide } from '../lib/motion'
 import {
   formatClock,
   formatCount,
-  formatDay,
+  formatDayLabel,
   outcomeOf,
   shortId,
-  totalTokens,
 } from '../lib/log_format'
 import type { ReadLogStream } from '../application/observability/read_log_stream'
-import type { LogRecord, LogStreamId } from '../application/observability/schemas'
+import type { LogEvent, LogRecord, LogStreamId } from '../application/observability/schemas'
 
 /* Floored, never capped, the way both dashboard splits are: each side names
    the width below which it stops being readable and everything between those
@@ -97,6 +96,7 @@ export function Investigate({
   } = useLedgerSplit()
   const [dragging, setDragging] = useState(false)
   const dragStart = useRef(0)
+  const inspector = useRef<HTMLDivElement>(null)
 
   /* A session narrows the whole bench, filters and counts included: the
      reader arrived from one conversation and every reading should be about
@@ -124,6 +124,14 @@ export function Investigate({
      only thing state holds, so nothing has to be re-synced when the list under
      it changes. */
   const selected = visible.find((record) => record.id === selectedId) ?? visible[0] ?? null
+
+  /* A record is opened at its top. The pane is one scroller and the records
+     in it are different heights, so keeping the offset across a selection
+     drops the reader into the middle of a record they have not started —
+     and the deeper they were in the last one, the further in they land. */
+  useLayoutEffect(() => {
+    if (inspector.current) inspector.current.scrollTop = 0
+  }, [selected?.id])
 
   const changeStream = (next: LogStreamId) => {
     const from = LOG_STREAMS.findIndex((item) => item.id === streamId)
@@ -259,6 +267,7 @@ export function Investigate({
               <Ledger
                 records={visible}
                 selectedId={selected?.id ?? null}
+                showConversations={session === null}
                 onSelect={setSelectedId}
               />
             )}
@@ -293,7 +302,7 @@ export function Investigate({
             />
           )}
 
-          <div className="bench__inspector">
+          <div className="bench__inspector" ref={inspector}>
             {selected ? (
               /* No exit: the reader walking the ledger with the arrow keys is
                  moving on purpose, and an outgoing record would put a queue in
@@ -448,34 +457,80 @@ function Facets({
 /**
  * The ledger.
  *
- * Records are grouped by invocation because that is the unit a turn is
- * written in: one question can hold a tool round-trip and three gate passes,
- * and they only read correctly stacked together. Rules between rows are the
- * bench's own device — the face avoids them, a ledger is made of them.
+ * Three levels, and only the ones that carry information are drawn.
+ *
+ * A **conversation** is the band: it is what a reader actually came looking
+ * for, and it is the one grouping the records could not show before. It is
+ * cut where the session changes rather than by collecting every record of a
+ * session together, so the ledger stays in the order it was read — a
+ * conversation returned to after another one opens a second band, which is
+ * what happened.
+ *
+ * A **turn** is a rule, not a heading. One question can hold a tool
+ * round-trip and three gate passes, and those only read stacked together, so
+ * they sit unruled inside their turn and the rule falls between turns. A turn
+ * that holds one record needs no label at all — the row is the turn — so only
+ * a chain announces itself.
+ *
+ * A **record** is one line: when it happened, what happened, and a note only
+ * when there is something the outcome does not already say. Everything else
+ * about it — the pass number, the repair count, the characters, the tokens —
+ * is in the record itself, one click away, where it can be read rather than
+ * scanned past on every row.
  */
 function Ledger({
   records,
   selectedId,
+  showConversations,
   onSelect,
 }: {
   records: LogRecord[]
   selectedId: string | null
+  /* Suppressed when the bench is already narrowed to one conversation: the
+     head says which one, and a band per turn repeating it is the clutter
+     this grouping exists to remove. */
+  showConversations: boolean
   onSelect: (id: string) => void
 }) {
   const listRef = useRef<HTMLDivElement>(null)
 
-  const groups = useMemo(() => {
-    const order: string[] = []
-    const byInvocation = new Map<string, LogRecord[]>()
+  const bands = useMemo(() => {
+    const bands: LedgerBand[] = []
+
     for (const record of records) {
-      const key = record.event.invocation_id
-      if (!byInvocation.has(key)) {
-        byInvocation.set(key, [])
-        order.push(key)
+      const { invocation_id: invocation, session_id: session } = record.event
+      let band = bands[bands.length - 1]
+      if (!band || band.session !== session) {
+        band = {
+          key: `${session ?? 'temporary'}-${bands.length}`,
+          session,
+          /* Taken from the band's newest record. A conversation carried
+             across midnight is labelled by the day it was last active, which
+             is the day the reader is looking for it under. */
+          day: formatDayLabel(record.event.timestamp),
+          turns: [],
+          total: 0,
+        }
+        bands.push(band)
       }
-      byInvocation.get(key)!.push(record)
+
+      let turn = band.turns[band.turns.length - 1]
+      if (!turn || turn.key !== invocation) {
+        turn = { key: invocation, records: [] }
+        band.turns.push(turn)
+      }
+      turn.records.push(record)
+      band.total += 1
     }
-    return order.map((key) => ({ key, records: byInvocation.get(key)! }))
+
+    /* The read arrives newest first, which is right for conversations and
+       for turns — the reader came looking for the last one — and wrong
+       inside a turn, where a repair chain is a sequence and a sequence read
+       backwards is not the same story. */
+    for (const band of bands) {
+      for (const turn of band.turns) turn.records.reverse()
+    }
+    return bands
   }, [records])
 
   /* Arrows walk the ledger the way they walk any list of rows; Tab still
@@ -501,44 +556,108 @@ function Ledger({
 
   return (
     <div className="ledger" ref={listRef} onKeyDown={onKeyDown}>
-      {groups.map((group) => (
+      {bands.map((band) => (
         <section
-          key={group.key}
-          className="ledger__group"
-          aria-label={`Invocation ${shortId(group.key)}`}
+          key={band.key}
+          className="ledger__band"
+          aria-label={bandLabel(band)}
         >
-          <h3 className="ledger__group-label">
-            <span>{formatDay(group.records[0].event.timestamp)}</span>
-            <span className="bench__mono">{shortId(group.key)}</span>
-          </h3>
-          <ul className="ledger__list">
-            {group.records.map((record) => (
-              <li key={record.id}>
-                <LedgerRow
-                  record={record}
-                  selected={record.id === selectedId}
-                  onSelect={onSelect}
-                />
-              </li>
-            ))}
-          </ul>
+          {showConversations && (
+            <h3 className="ledger__band-head">
+              <span className={band.session ? 'bench__mono' : undefined}>
+                {band.session ? shortId(band.session) : 'Temporary chat'}
+              </span>
+              <span className="ledger__band-note">
+                {band.day} · {countOf(band.turns.length, 'turn', 'turns')}
+              </span>
+            </h3>
+          )}
+          {band.turns.map((turn) => {
+            /* A turn holding more than one record is a chain: the passes ran
+               in order and only read as one thing if they are drawn as one.
+               A turn holding a single record is just a row. */
+            const chain = turn.records.length > 1
+            const List = chain ? 'ol' : 'ul'
+            return (
+              <div
+                key={turn.key}
+                className={`ledger__turn${chain ? ' ledger__turn--chain' : ''}`}
+              >
+                {/* Only a chain announces itself. A single-record turn is its
+                    own row, and labelling it would put a heading above every
+                    line in the column. */}
+                {chain && (
+                  <p className="ledger__turn-label">
+                    <span>{turnShape(turn)}</span>
+                    <span className="bench__mono">{shortId(turn.key)}</span>
+                  </p>
+                )}
+                <List className="ledger__list">
+                  {turn.records.map((record) => (
+                    <li key={record.id}>
+                      <LedgerRow
+                        record={record}
+                        selected={record.id === selectedId}
+                        step={chain ? passNumber(record.event) : undefined}
+                        onSelect={onSelect}
+                      />
+                    </li>
+                  ))}
+                </List>
+              </div>
+            )
+          })}
         </section>
       ))}
     </div>
   )
 }
 
+interface LedgerTurn {
+  key: string
+  records: LogRecord[]
+}
+
+interface LedgerBand {
+  key: string
+  /** Absent on a temporary turn, which writes no conversation to belong to. */
+  session: string | null
+  day: string
+  turns: LedgerTurn[]
+  total: number
+}
+
+const bandLabel = (band: LedgerBand) =>
+  band.session ? `Conversation ${shortId(band.session)}` : 'Temporary chat'
+
+const countOf = (total: number, one: string, many: string) =>
+  `${formatCount(total)} ${total === 1 ? one : many}`
+
+/* The pass the agent recorded, not this row's position: a window that clips
+   the front of a long chain should still say which pass each row was. */
+const passNumber = (event: LogEvent) =>
+  event.event === 'response_gate' ? event.evaluation_call : event.model_call
+
+/** How long a chain ran, in the word its stream counts in. */
+function turnShape(turn: LedgerTurn): string {
+  const gate = turn.records[0].event.event === 'response_gate'
+  return countOf(turn.records.length, gate ? 'pass' : 'call', gate ? 'passes' : 'calls')
+}
+
 function LedgerRow({
   record,
   selected,
+  step,
   onSelect,
 }: {
   record: LogRecord
   selected: boolean
+  /** Its place in the chain, on the rows that are part of one. */
+  step?: number
   onSelect: (id: string) => void
 }) {
   const { event } = record
-  const tokens = totalTokens(event.usage)
+  const note = rowNote(event)
 
   return (
     <button
@@ -547,18 +666,29 @@ function LedgerRow({
       aria-current={selected ? 'true' : undefined}
       onClick={() => onSelect(record.id)}
     >
-      <span className="ledger__line">
-        <span className="ledger__clock">{formatClock(event.timestamp)}</span>
-        <OutcomeMark outcome={outcomeOf(event)} />
-      </span>
-      <span className="ledger__detail">
-        {event.event === 'response_gate'
-          ? `eval ${event.evaluation_call} · repair ${event.repair_attempt} · ${formatCount(
-              event.candidate_characters,
-            )} ch`
-          : `call ${event.model_call} · ${event.messages.length} messages`}
-        {tokens !== null && ` · ${formatCount(tokens)} tok`}
-      </span>
+      {step !== undefined && <span className="ledger__step">{step}</span>}
+      <span className="ledger__clock">{formatClock(event.timestamp)}</span>
+      <OutcomeMark outcome={outcomeOf(event)} />
+      {note && <span className="ledger__note">{note}</span>}
     </button>
   )
+}
+
+/**
+ * The one thing a row adds to its outcome, or nothing.
+ *
+ * The routine row carries no text at all: `eval 1 · repair 0` on every
+ * allowed pass is a column to look past rather than read, and a count that is
+ * the same on every line is not a reading. What is left is the exception —
+ * how many violations the gate named, and whether a call came back through a
+ * tool — which is the only part a scan is actually looking for.
+ */
+function rowNote(event: LogEvent): string | null {
+  if (event.event === 'response_gate') {
+    return event.violations.length > 0
+      ? countOf(event.violations.length, 'violation', 'violations')
+      : null
+  }
+  const results = event.messages.filter((message) => message.type === 'tool').length
+  return results > 0 ? countOf(results, 'tool result', 'tool results') : null
 }

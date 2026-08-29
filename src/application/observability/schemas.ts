@@ -58,6 +58,43 @@ export interface ModelContextEvent {
 
 export type GateDecision = 'allow' | 'retry' | 'fallback' | 'allow_on_error'
 
+/** One completed tool call and the evidence the gate was given for it. */
+export interface GateToolTrace {
+  tool_call_id?: string | null
+  name?: string | null
+  evidence?: string | null
+  /** Turns back from the one being answered; 0 is this turn. */
+  turns_ago?: number
+}
+
+/** One message of the window the gate read, minus the tool activity. */
+export interface GateTurn {
+  role?: string
+  content?: string
+}
+
+/**
+ * What the evaluator was given about the turn.
+ *
+ * Not recoverable from anywhere else: the model-context stream holds the
+ * request Maia was given, not the window the gate judged against, the
+ * evidence as budgeted for it, or the memories that were in force. Every
+ * field is optional because a record written before the gate kept its context
+ * carries none of them, and a partial line should still read.
+ */
+export interface GateContext {
+  /** The evaluator's own instruction, which is edited between runs. */
+  evaluator_prompt?: string | null
+  /** The system prompt Maia was actually running under. */
+  system_prompt?: string | null
+  user_memories?: string[]
+  time_context?: { current_time?: string; timezone?: string } | null
+  conversation?: GateTurn[]
+  tool_traces?: GateToolTrace[]
+  /** How many user turns back the window was allowed to reach. */
+  evidence_turns?: number
+}
+
 /** One response-gate evaluation and routing decision. */
 export interface ResponseGateEvent {
   event: 'response_gate'
@@ -78,6 +115,8 @@ export interface ResponseGateEvent {
   candidate: string | null
   available_tools: string[]
   tools_used: string[]
+  /** Full mode only, and absent on records written before it was kept. */
+  gate_context: GateContext | null
   usage: TokenUsage | null
   error_type: string | null
   error_message: string | null
