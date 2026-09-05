@@ -1,5 +1,34 @@
 # Design — Maia
 
+> **Current visual layer (September 2026): The Observatory.** The interface has
+> moved beyond both the Braun-instrument world and the rounded Private Study
+> iteration documented below. Product contracts remain useful; current visual
+> authority lives in `src/styles/premium.css` and the updated dashboard/startup
+> components.
+
+## Current direction — The Observatory
+
+Maia is staged like an editorial title sequence rather than assembled from
+cards: one continuous field, oversized serif typography, off-axis orbital
+drawings, fine registration lines, small technical captions, and a single warm
+signal colour. Conversation is the primary field. Tasks and weather remain
+clearly dormant as quiet marginalia, never as live-looking widgets.
+
+Light and dark are equal, independently tuned themes. The shell is full bleed:
+navigation and dormant sources are divided by hairlines, not floating surfaces.
+Body copy remains Archivo; identity and high-level headings use a restrained
+system serif stack. The default 800×600 window keeps the complete prompt set in
+view through a shorter hero cut rather than collapsing back into cards.
+
+Motion has four jobs only: startup communicates active local preparation,
+the dashboard arrival establishes hierarchy, dashboard-to-conversation expansion
+preserves spatial context, and 140ms press feedback confirms input. The startup
+screen is a full-bleed sequence with a masked exit, never a card. Routine
+navigation stays nearly still. System and Maia-level reduced-motion preferences
+replace spatial movement with a short fade and stop continuous orbiting.
+
+---
+
 The visual and interaction system as **built**. Product truth lives in
 [PRODUCT.md](PRODUCT.md); the brief that drove this build is
 [DIRECTION.md](DIRECTION.md). Where the two disagree, this file describes the

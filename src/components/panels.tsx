@@ -9,11 +9,14 @@ import type { JSX } from 'react'
 
 export function TasksPanelBody(): JSX.Element {
   return (
-    <div className="readout">
-      <div className="readout__ledger" aria-hidden="true">
-        <span className="readout__rule" />
-        <span className="readout__rule" />
-        <span className="readout__rule" />
+    <div className="readout readout--tasks">
+      <div className="readout__task-list" aria-hidden="true">
+        {[0, 1, 2].map((item) => (
+          <span className="readout__task" key={item}>
+            <i />
+            <b />
+          </span>
+        ))}
       </div>
     </div>
   )
@@ -23,13 +26,15 @@ const TICKS = 13
 
 export function WeatherPanelBody(): JSX.Element {
   return (
-    <div className="readout">
+    <div className="readout readout--weather">
+      <div className="readout__weather-orbit" aria-hidden="true">
+        <span className="readout__weather-sun" />
+        <span className="readout__weather-ring" />
+        <span className="readout__weather-horizon" />
+      </div>
       <div className="readout__scale" aria-hidden="true">
         {Array.from({ length: TICKS }, (_, i) => (
-          <span
-            key={i}
-            className={`readout__tick${i % 4 === 0 ? ' readout__tick--major' : ''}`}
-          />
+          <span key={i} className={`readout__tick${i % 4 === 0 ? ' readout__tick--major' : ''}`} />
         ))}
       </div>
     </div>

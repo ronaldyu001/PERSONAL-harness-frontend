@@ -127,7 +127,7 @@
 
 .startup-screen__step--active span {
   background: var(--accent-fill);
-  animation: soft-pulse 1.5s ease-in-out infinite;
+  animation: soft-pulse 1.5s var(--ease-in-out) infinite;
 }
 
 .startup-screen__step--error {

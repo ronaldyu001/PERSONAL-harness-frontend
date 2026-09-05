@@ -248,7 +248,7 @@
 
 .thread-skeleton__user,
 .thread-skeleton__row {
-  animation: soft-pulse 1.6s ease-in-out infinite;
+  animation: soft-pulse 1.6s var(--ease-in-out) infinite;
 }
 
 /* ── Markdown inside the panel world ────────────────────────── */

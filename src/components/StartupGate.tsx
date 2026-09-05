@@ -39,8 +39,8 @@ export function StartupGate({
         <motion.div
           key="application"
           className="startup-ready"
-          initial={reduceMotion ? false : { opacity: 0, scale: 0.994 }}
-          animate={{ opacity: 1, scale: 1 }}
+          initial={reduceMotion ? false : { opacity: 0, transform: 'scale(0.994)' }}
+          animate={{ opacity: 1, transform: 'scale(1)' }}
           transition={{
             duration: reduceMotion ? 0.01 : 0.38,
             ease: [0.22, 1, 0.36, 1],

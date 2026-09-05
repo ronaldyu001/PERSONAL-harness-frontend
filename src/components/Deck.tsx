@@ -1,6 +1,6 @@
 import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { ChevronRight, History, Maximize2, PanelRight, Search, SquarePen, X } from 'lucide-react'
+import { ChevronRight, History, LockKeyhole, Maximize2, PanelRight, Search, SquarePen, X } from 'lucide-react'
 import { Thread } from './Thread'
 import { ConversationAside } from './ConversationAside'
 import { MaiaMark } from './MaiaMark'
@@ -326,7 +326,7 @@ export function Deck(props: DeckProps) {
     : { type: 'spring' as const, stiffness: 320, damping: 38 }
 
   return (
-    <main className="deck" ref={deckRef}>
+    <main className={`deck${expanded ? ' deck--expanded' : ''}`} ref={deckRef}>
       {/* The chat region's left edge is structurally fixed: it is the flex
           child that absorbs remaining width, so only its right edge travels. */}
       <section className="region region--chat" aria-labelledby="region-chat-legend">
@@ -734,16 +734,35 @@ function HistoryList({
 function Landing({ onSend }: { onSend: (text: string) => void }) {
   return (
     <div className="landing">
-      {/* The mark, at the size an empty card can afford it. It is the one
-          place identity is spent at scale, and it is spent where there is
-          nothing to read: a conversation displaces it, and it never competes
-          with the quick starts sitting over it. */}
-      <MaiaMark fill className="landing__mark" />
-      <p className="landing__lead">Ask Maia anything. Nothing leaves this machine.</p>
+      <div className="landing__hero">
+        <div className="landing__visual" aria-hidden="true">
+          <span className="landing__visual-label">LOCAL / PRIVATE / YOURS</span>
+          <span className="landing__orbit landing__orbit--outer" />
+          <span className="landing__orbit landing__orbit--inner" />
+          <MaiaMark fill className="landing__mark" />
+          <span className="landing__visual-number">01</span>
+        </div>
+        <div className="landing__copy">
+          <span className="landing__eyebrow">
+            <LockKeyhole size={12} strokeWidth={1.8} aria-hidden="true" />
+            An intelligence that stays home
+          </span>
+          <h1>
+            <span>Think in</span>
+            <span><em>private.</em></span>
+          </h1>
+          <p>Ask, explore, and make with a model that lives entirely on your machine.</p>
+        </div>
+      </div>
+      <p className="landing__lead">
+        <span>Four ways into the blank page</span>
+        <span>Choose a thought</span>
+      </p>
       <ul className="landing__suggestions">
-        {SUGGESTIONS.map((suggestion) => (
+        {SUGGESTIONS.map((suggestion, index) => (
           <li key={suggestion}>
             <button type="button" className="landing__start" onClick={() => onSend(suggestion)}>
+              <span className="landing__index">{String(index + 1).padStart(2, '0')}</span>
               <span>{suggestion}</span>
               <ChevronRight size={13} strokeWidth={1.8} aria-hidden="true" />
             </button>

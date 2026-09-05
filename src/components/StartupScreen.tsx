@@ -73,39 +73,75 @@ export function StartupScreen({
       animate={{ opacity: 1 }}
       exit={reduceMotion
         ? { opacity: 0 }
-        : { opacity: 0, scale: 1.008 }}
-      transition={{ duration: reduceMotion ? 0.01 : 0.34, ease: [0.22, 1, 0.36, 1] }}
+        : { clipPath: 'inset(0 0 100% 0)', opacity: 0.98 }}
+      transition={{ duration: reduceMotion ? 0.01 : 0.72, ease: [0.77, 0, 0.175, 1] }}
     >
-      <div className="startup-screen__ambient" aria-hidden="true" />
+      <div className="startup-screen__ambient" aria-hidden="true">
+        <span />
+        <span />
+        <span />
+      </div>
 
-      <div className="startup-screen__content">
+      <header className="startup-screen__masthead">
+        <span className="startup-screen__brand">Maia</span>
+        <span>Private local runtime</span>
+        <span>Local / {String(activeStep + 1).padStart(2, '0')}</span>
+      </header>
+
+      <div className="startup-screen__stage" aria-hidden="true">
         <motion.div
           className="startup-screen__mark"
-          initial={reduceMotion ? false : { opacity: 0, y: 8, scale: 0.96 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
+          initial={reduceMotion ? false : { opacity: 0, transform: 'translateY(18px) scale(0.94)' }}
+          animate={{ opacity: 1, transform: 'translateY(0) scale(1)' }}
           transition={{
-            duration: reduceMotion ? 0.01 : 0.55,
-            delay: reduceMotion ? 0 : 0.06,
-            ease: [0.22, 1, 0.36, 1],
+            duration: reduceMotion ? 0.01 : 0.86,
+            delay: reduceMotion ? 0 : 0.12,
+            ease: [0.23, 1, 0.32, 1],
           }}
         >
           <span className="startup-screen__halo" aria-hidden="true" />
-          <MaiaMark size={56} thinking={phase !== 'error'} />
+          <span className="startup-screen__orbit startup-screen__orbit--one" aria-hidden="true" />
+          <span className="startup-screen__orbit startup-screen__orbit--two" aria-hidden="true" />
+          <MaiaMark size={92} thinking={phase !== 'error'} />
         </motion.div>
+      </div>
 
+      <div className="startup-screen__content">
         <motion.div
           className="startup-screen__identity"
-          initial={reduceMotion ? false : { opacity: 0, y: 7 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={reduceMotion ? false : { opacity: 0, transform: 'translateY(16px)' }}
+          animate={{ opacity: 1, transform: 'translateY(0)' }}
           transition={{
-            duration: reduceMotion ? 0.01 : 0.42,
-            delay: reduceMotion ? 0 : 0.14,
-            ease: [0.22, 1, 0.36, 1],
+            duration: reduceMotion ? 0.01 : 0.78,
+            delay: reduceMotion ? 0 : 0.2,
+            ease: [0.23, 1, 0.32, 1],
           }}
         >
-          <h1>Maia</h1>
-          <p>Local intelligence, thoughtfully prepared.</p>
+          <span className="startup-screen__eyebrow">Local intelligence / waking</span>
+          <h1>
+            <span>Preparing a quieter</span>
+            <span>place to think.</span>
+          </h1>
         </motion.div>
+      </div>
+
+      <footer className="startup-screen__footer">
+        <div className="startup-screen__status" role="status" aria-live="polite">
+          <span className="startup-screen__status-index">
+            {String(activeStep + 1).padStart(2, '0')}
+          </span>
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.p
+              key={`${phase}-${statusMessage}`}
+              initial={reduceMotion ? false : { opacity: 0, transform: 'translateY(4px)' }}
+              animate={{ opacity: 1, transform: 'translateY(0)' }}
+              exit={reduceMotion ? { opacity: 0 } : { opacity: 0, transform: 'translateY(-4px)' }}
+              transition={{ duration: reduceMotion ? 0.01 : 0.2 }}
+            >
+              {statusMessage}
+            </motion.p>
+          </AnimatePresence>
+        </div>
 
         <ol className="startup-screen__steps" aria-label="Startup progress">
           {STARTUP_STEPS.map((label, index) => {
@@ -116,26 +152,14 @@ export function StartupScreen({
                 : 'pending'
             return (
               <li key={label} className={`startup-screen__step startup-screen__step--${state}`}>
-                <span aria-hidden="true" />
-                {label}
+                <span className="startup-screen__step-index" aria-hidden="true">
+                  {String(index + 1).padStart(2, '0')}
+                </span>
+                <span className="startup-screen__step-label">{label}</span>
               </li>
             )
           })}
         </ol>
-
-        <div className="startup-screen__status" role="status" aria-live="polite">
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.p
-              key={`${phase}-${statusMessage}`}
-              initial={reduceMotion ? false : { opacity: 0, y: 4 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -4 }}
-              transition={{ duration: reduceMotion ? 0.01 : 0.2 }}
-            >
-              {statusMessage}
-            </motion.p>
-          </AnimatePresence>
-        </div>
 
         {phase === 'error' ? (
           <div className="startup-screen__actions">
@@ -155,9 +179,8 @@ export function StartupScreen({
         ) : (
           <div className="startup-screen__progress" aria-hidden="true" />
         )}
-      </div>
-
-      <p className="startup-screen__footnote">Private by design · Running locally</p>
+        <p className="startup-screen__footnote">Private by design<br />Running locally</p>
+      </footer>
     </motion.section>
   )
 }

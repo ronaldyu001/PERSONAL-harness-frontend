@@ -1,15 +1,18 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, MotionConfig, motion } from 'motion/react'
-import { ControlColumn } from './components/ControlColumn'
-import { Deck } from './components/Deck'
+import { AppearancePopover } from './components/AppearancePopover'
+import { FloatingComposer } from './components/FloatingComposer'
 import { Investigate } from './components/Investigate'
+import { MaiaHistory } from './components/MaiaHistory'
+import { MaiaRail, type MaiaRailArea } from './components/MaiaRail'
+import { MaiaRoom } from './components/MaiaRoom'
+import type { ParticleSphereState } from './components/ParticleSphere'
 import { Toast } from './components/Toast'
 import type { Prefs } from './components/SettingsPanel'
 import type { SendChat } from './application/chat/send_chat'
 import type { LoadConversations } from './application/conversation/load_conversations'
 import type { ReadLogStream } from './application/observability/read_log_stream'
 import type { ConversationDetail } from './application/conversation/schemas'
-import { surfaceSlide } from './lib/motion'
 import { readUsage } from './lib/usage'
 import type { AssistantMessage, Conversation, Message, UserMessage } from './types'
 
@@ -20,6 +23,14 @@ const HISTORY_LOAD_FAILED = 'Could not load your conversations.'
    hand keep their identity through the merge, so re-reading the head of the
    list costs nothing the reader can see. */
 const HISTORY_PAGE_SIZE = 25
+const ROOM_TRANSITION_MS = 720
+const THREAD_REVEAL_MS = Math.round(ROOM_TRANSITION_MS * 0.72)
+
+const THEME_COLORS: Record<Prefs['palette'], Record<Prefs['theme'], string>> = {
+  salon: { dark: '#241f1a', light: '#f1eadf' },
+  'print-room': { dark: '#101114', light: '#f4efe6' },
+  'day-office': { dark: '#24323e', light: '#f4f0e8' },
+}
 
 let seq = 0
 const uid = (prefix: string) => `${prefix}-${Date.now()}-${seq++}`
@@ -27,6 +38,7 @@ const uid = (prefix: string) => `${prefix}-${Date.now()}-${seq++}`
 const PREFS_STORAGE_KEY = 'harness.preferences'
 const DEFAULT_PREFS: Prefs = {
   theme: 'dark',
+  palette: 'salon',
   reduceMotion: false,
   showHints: true,
   style: 'default',
@@ -41,6 +53,12 @@ const readPreferences = (): Prefs => {
       stored.textSize === 'sm' ? 'snug' : stored.textSize === 'lg' ? 'roomy' : 'default'
     return {
       theme: stored.theme === 'light' || stored.theme === 'dark' ? stored.theme : DEFAULT_PREFS.theme,
+      palette:
+        stored.palette === 'salon' ||
+        stored.palette === 'print-room' ||
+        stored.palette === 'day-office'
+          ? stored.palette
+          : DEFAULT_PREFS.palette,
       reduceMotion:
         typeof stored.reduceMotion === 'boolean' ? stored.reduceMotion : DEFAULT_PREFS.reduceMotion,
       showHints: typeof stored.showHints === 'boolean' ? stored.showHints : DEFAULT_PREFS.showHints,
@@ -66,14 +84,7 @@ interface AppProps {
   readLogStream: ReadLogStream
 }
 
-/**
- * What is mounted beside the control column.
- *
- * The three are mutually exclusive by construction rather than by convention:
- * the dashboard and the expanded conversation are two states of the deck, and
- * the bench replaces it. One union means no pair of booleans can disagree
- * about which surface is up.
- */
+/** The room and trace view are mutually exclusive by construction. */
 type Surface = 'dashboard' | 'conversation' | 'investigate'
 
 /** Map one stored conversation onto the shape the thread renders. */
@@ -112,10 +123,10 @@ export default function App({ sendChat, loadConversations, readLogStream }: AppP
   const [surface, setSurface] = useState<Surface>('dashboard')
   const [inspectedSession, setInspectedSession] = useState<string | null>(null)
   const [convoLoading, setConvoLoading] = useState(false)
-  const [columnExpanded, setColumnExpanded] = useState(false)
   const [historyOpen, setHistoryOpen] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const [tempMode, setTempMode] = useState(false)
-  const [model, setModel] = useState('qwen')
+  const [model, setModel] = useState('llama')
   const [toast, setToast] = useState<{ id: number; text: string } | null>(null)
   const [prefs, setPrefs] = useState<Prefs>(readPreferences)
   const [armed, setArmed] = useState(false)
@@ -124,11 +135,16 @@ export default function App({ sendChat, loadConversations, readLogStream }: AppP
   const [historyLimit, setHistoryLimit] = useState(HISTORY_PAGE_SIZE)
   const [historyLoadingMore, setHistoryLoadingMore] = useState(false)
   const [historyHasMore, setHistoryHasMore] = useState(true)
+  const [roomState, setRoomState] = useState<ParticleSphereState>('landing')
+  const [threadVisible, setThreadVisible] = useState(false)
 
   const pendingChatRef = useRef<PendingChat | null>(null)
   const historyRequestRef = useRef<AbortController | null>(null)
   const historyListRef = useRef<AbortController | null>(null)
   const toastTimer = useRef<number | undefined>(undefined)
+  const roomRevealTimer = useRef<number | undefined>(undefined)
+  const roomSettleTimer = useRef<number | undefined>(undefined)
+  const settingsButtonRef = useRef<HTMLButtonElement>(null)
 
   const active = conversations.find((c) => c.id === activeId) ?? null
   const isStreaming = useMemo(
@@ -147,6 +163,7 @@ export default function App({ sendChat, loadConversations, readLogStream }: AppP
 
   const updatePreferences = useCallback((next: Prefs) => {
     document.documentElement.dataset.theme = next.theme
+    document.documentElement.dataset.palette = next.palette
     if (next.reduceMotion) {
       document.documentElement.dataset.reduceMotion = 'true'
     } else {
@@ -157,6 +174,7 @@ export default function App({ sendChat, loadConversations, readLogStream }: AppP
 
   useEffect(() => {
     document.documentElement.dataset.theme = prefs.theme
+    document.documentElement.dataset.palette = prefs.palette
     if (prefs.reduceMotion) {
       document.documentElement.dataset.reduceMotion = 'true'
     } else {
@@ -170,8 +188,58 @@ export default function App({ sendChat, loadConversations, readLogStream }: AppP
     }
     document
       .querySelector('meta[name="theme-color"]')
-      ?.setAttribute('content', prefs.theme === 'light' ? '#cfccc3' : '#262624')
+      ?.setAttribute('content', THEME_COLORS[prefs.palette][prefs.theme])
   }, [prefs])
+
+  const clearRoomTimers = useCallback(() => {
+    window.clearTimeout(roomRevealTimer.current)
+    window.clearTimeout(roomSettleTimer.current)
+    roomRevealTimer.current = undefined
+    roomSettleTimer.current = undefined
+  }, [])
+
+  useEffect(() => clearRoomTimers, [clearRoomTimers])
+
+  const enterConversationRoom = useCallback(
+    (animate = true) => {
+      clearRoomTimers()
+      if (!animate || prefs.reduceMotion) {
+        setRoomState('conversation')
+        setThreadVisible(true)
+        return
+      }
+
+      setRoomState('entering')
+      setThreadVisible(false)
+      roomRevealTimer.current = window.setTimeout(
+        () => setThreadVisible(true),
+        THREAD_REVEAL_MS,
+      )
+      roomSettleTimer.current = window.setTimeout(() => {
+        setRoomState('conversation')
+        roomSettleTimer.current = undefined
+      }, ROOM_TRANSITION_MS)
+    },
+    [clearRoomTimers, prefs.reduceMotion],
+  )
+
+  const returnToLandingRoom = useCallback(
+    (animate = true) => {
+      clearRoomTimers()
+      setThreadVisible(false)
+      if (!animate || prefs.reduceMotion) {
+        setRoomState('landing')
+        return
+      }
+
+      setRoomState('leaving')
+      roomSettleTimer.current = window.setTimeout(() => {
+        setRoomState('landing')
+        roomSettleTimer.current = undefined
+      }, ROOM_TRANSITION_MS)
+    },
+    [clearRoomTimers, prefs.reduceMotion],
+  )
 
   /* No synchronous setState here: the effect below calls this on mount, and
      historyLoading already starts true. Only the retry path resets it. */
@@ -353,6 +421,11 @@ export default function App({ sendChat, loadConversations, readLogStream }: AppP
          continued. The composer is disabled; this is the guard behind it. */
       if (active?.origin === 'history') return
 
+      setHistoryOpen(false)
+      setSettingsOpen(false)
+      setSurface('conversation')
+      if (!active) enterConversationRoom(true)
+
       const userMsg: Message = { id: uid('u'), role: 'user', text, attachments: [] }
       const assistantMsg: AssistantMessage = {
         id: uid('a'),
@@ -396,7 +469,7 @@ export default function App({ sendChat, loadConversations, readLogStream }: AppP
         currentConversation?.temporary ?? tempMode,
       )
     },
-    [active, model, requestChat, tempMode],
+    [active, enterConversationRoom, model, requestChat, tempMode],
   )
 
   const handleStop = useCallback(() => cancelCurrentChat(true), [cancelCurrentChat])
@@ -440,11 +513,14 @@ export default function App({ sendChat, loadConversations, readLogStream }: AppP
   const openConversation = useCallback(
     (id: string) => {
       setActiveId(id)
+      setHistoryOpen(false)
+      setSettingsOpen(false)
+      enterConversationRoom(false)
       /* The bench has no conversation on it, so opening one from the column
          while it is up would load a conversation the reader cannot see. The
          dashboard is where it lands; which of the two conversation surfaces
          they were last on is not remembered, and never was. */
-      setSurface((current) => (current === 'investigate' ? 'dashboard' : current))
+      setSurface('conversation')
 
       const conversation = conversations.find((item) => item.id === id)
       /* Only a stored conversation has messages still to fetch, and an empty
@@ -482,53 +558,41 @@ export default function App({ sendChat, loadConversations, readLogStream }: AppP
           }
         })
     },
-    [conversations, loadConversations, showToast],
+    [conversations, enterConversationRoom, loadConversations, showToast],
   )
-
-  /* Putting a stored conversation down, which is all closing it is: nothing
-     was in flight and nothing is being ended, so the mode the reader armed is
-     none of this action's business. New chat is the other way out, and it is a
-     different act — it starts something. */
-  const closeConversation = useCallback(() => {
-    historyRequestRef.current?.abort()
-    historyRequestRef.current = null
-    setConvoLoading(false)
-    setActiveId(null)
-  }, [])
-
-  /* The conversation surface is a toggle, like temporary mode: the same
-     control that opens it puts the reader back on the dashboard. Investigate
-     toggles the same way, and either one leaves whatever was up. */
-  const toggleChat = useCallback(
-    () => setSurface((current) => (current === 'conversation' ? 'dashboard' : 'conversation')),
-    [],
-  )
-
-  const toggleInvestigate = useCallback(() => {
-    setInspectedSession(null)
-    setSurface((current) => (current === 'investigate' ? 'dashboard' : 'investigate'))
-  }, [])
 
   /* The bench, opened on one conversation's records: the session id the
      turns were logged under is the conversation's own id, so the two
      surfaces are looking at the same thing from either side. */
   const inspectConversation = useCallback((sessionId: string) => {
     setInspectedSession(sessionId)
+    setHistoryOpen(false)
+    setSettingsOpen(false)
     setSurface('investigate')
   }, [])
 
   const newChat = useCallback(() => {
     cancelCurrentChat(true)
+    historyRequestRef.current?.abort()
+    historyRequestRef.current = null
+    setConvoLoading(false)
     setActiveId(null)
     setTempMode(false)
-  }, [cancelCurrentChat])
+    setHistoryOpen(false)
+    setSettingsOpen(false)
+    setSurface('dashboard')
+    returnToLandingRoom(Boolean(active))
+  }, [active, cancelCurrentChat, returnToLandingRoom])
 
   const temporaryChat = useCallback(() => {
     cancelCurrentChat(true)
     setActiveId(null)
     setTempMode(true)
     setSurface('conversation')
-  }, [cancelCurrentChat])
+    setHistoryOpen(false)
+    setSettingsOpen(false)
+    returnToLandingRoom(false)
+  }, [cancelCurrentChat, returnToLandingRoom])
 
   const toggleTemporary = useCallback(() => {
     if (!active) {
@@ -541,6 +605,23 @@ export default function App({ sendChat, loadConversations, readLogStream }: AppP
     }
   }, [active, newChat, temporaryChat, showToast])
 
+  const navigate = useCallback((area: MaiaRailArea) => {
+    setSettingsOpen(false)
+    if (area === 'history') {
+      setSurface((current) => (current === 'investigate' ? 'dashboard' : current))
+      setHistoryOpen(true)
+      return
+    }
+
+    setHistoryOpen(false)
+    if (area === 'investigate') {
+      setInspectedSession(null)
+      setSurface('investigate')
+    } else {
+      setSurface(activeId ? 'conversation' : 'dashboard')
+    }
+  }, [activeId])
+
   /* Global keys */
 
   useEffect(() => {
@@ -549,32 +630,36 @@ export default function App({ sendChat, loadConversations, readLogStream }: AppP
          history is rather than opening a surface of its own. */
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault()
-        setSurface('conversation')
+        setSurface((current) => (current === 'investigate' ? 'dashboard' : current))
         setHistoryOpen(true)
-      }
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'b') {
-        e.preventDefault()
-        setColumnExpanded((v) => !v)
       }
       /* Esc leaves the state users most want out of, from anywhere. */
       if (e.key === 'Escape' && isStreaming) {
         e.preventDefault()
         cancelCurrentChat(true)
+      } else if (e.key === 'Escape' && historyOpen) {
+        e.preventDefault()
+        setHistoryOpen(false)
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [cancelCurrentChat, isStreaming])
+  }, [cancelCurrentChat, historyOpen, isStreaming])
 
-  const surfaceDirection = surface === 'investigate' ? 1 : -1
   const historyConversations = conversations.filter((c) => !c.temporary)
   const temporaryActive = tempMode || (active?.temporary ?? false)
+  const activeArea: MaiaRailArea = historyOpen
+    ? 'history'
+    : surface === 'investigate'
+      ? 'investigate'
+      : 'conversation'
 
   return (
     <MotionConfig reducedMotion={prefs.reduceMotion ? 'always' : 'user'}>
       <div
-        className="app"
+        className="app maia-app"
         data-theme={prefs.theme}
+        data-palette={prefs.palette}
         data-reduce-motion={prefs.reduceMotion || undefined}
         data-style={prefs.style}
         /* Drives the signal precedence rule: while a turn is in flight the
@@ -584,93 +669,89 @@ export default function App({ sendChat, loadConversations, readLogStream }: AppP
            exists the send button is the one lit element. */
         data-armed={(!isStreaming && armed) || undefined}
       >
-        <ControlColumn
-          expanded={columnExpanded}
-          onToggle={setColumnExpanded}
-          conversations={historyConversations}
-          activeId={activeId}
-          chatOpen={surface === 'conversation'}
-          investigateOpen={surface === 'investigate'}
-          onSelect={openConversation}
-          historyLoading={historyLoading}
-          historyError={historyError}
-          onRetryHistory={retryHistory}
-          onToggleChat={toggleChat}
-          onToggleInvestigate={toggleInvestigate}
-          onGoDashboard={() => setSurface('dashboard')}
-          prefs={prefs}
-          onPrefsChange={updatePreferences}
+        <MaiaRail
+          activeArea={activeArea}
+          onNavigate={navigate}
+          settingsOpen={settingsOpen}
+          onSettingsToggle={() => setSettingsOpen((open) => !open)}
+          settingsButtonRef={settingsButtonRef}
+        />
+
+        <div className="maia-stage">
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={surface === 'investigate' ? 'investigate' : 'room'}
+              className="maia-stage__surface"
+              initial={prefs.reduceMotion ? false : { opacity: 0, x: 12 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={prefs.reduceMotion ? { opacity: 0 } : { opacity: 0, x: -10 }}
+              transition={{ duration: prefs.reduceMotion ? 0 : 0.2, ease: [0.23, 1, 0.32, 1] }}
+            >
+              {surface === 'investigate' ? (
+                <Investigate
+                  readLogStream={readLogStream}
+                  onToast={showToast}
+                  reduceMotion={prefs.reduceMotion}
+                  session={inspectedSession}
+                  onClearSession={() => setInspectedSession(null)}
+                />
+              ) : (
+                <MaiaRoom
+                  active={active}
+                  conversationLoading={convoLoading}
+                  state={roomState}
+                  threadVisible={threadVisible}
+                  reduceMotion={prefs.reduceMotion}
+                  onSend={handleSend}
+                  onRetry={handleRetry}
+                  onToast={showToast}
+                  onNewConversation={newChat}
+                  onInspectConversation={inspectConversation}
+                />
+              )}
+            </motion.div>
+          </AnimatePresence>
+        </div>
+
+        <FloatingComposer
+          onSend={handleSend}
+          streaming={isStreaming}
+          onStop={handleStop}
+          model={model}
+          onModelChange={setModel}
+          temporary={temporaryActive}
+          onToggleTemporary={toggleTemporary}
+          showHints={prefs.showHints}
+          interfaceStyle={prefs.style}
+          readOnly={active?.origin === 'history'}
+          autoFocus
+          onArmedChange={setArmed}
           reduceMotion={prefs.reduceMotion}
         />
 
-        {/* The deck and the bench are two positions on one rail, so the swap
-            travels: the bench arrives from the right and the deck leaves to
-            the left, and the way back reverses both. Direction is derived
-            rather than remembered — there is one other place to come from —
-            and it rides on the presence boundary so the surface on its way
-            out leaves against the one arriving. Keyed on the surface and not
-            on the state within it: expanding the conversation is the deck's
-            own authored moment and must not be interrupted by a remount. */}
-        <AnimatePresence mode="wait" initial={false} custom={surfaceDirection}>
-          <motion.div
-            key={surface === 'investigate' ? 'bench' : 'deck'}
-            className="surface"
-            custom={surfaceDirection}
-            variants={surfaceSlide(prefs.reduceMotion)}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-          >
-            {surface === 'investigate' ? (
-              <Investigate
-                readLogStream={readLogStream}
-                onToast={showToast}
-                reduceMotion={prefs.reduceMotion}
-                session={inspectedSession}
-                onClearSession={() => setInspectedSession(null)}
-              />
-            ) : (
-        <Deck
-          expanded={surface === 'conversation'}
-          active={active}
-          temporaryActive={temporaryActive}
+        <MaiaHistory
+          open={historyOpen}
           conversations={historyConversations}
-          convoLoading={convoLoading}
-          historyLoading={historyLoading}
-          historyError={historyError}
-          historyHasMore={historyHasMore}
-          historyLoadingMore={historyLoadingMore}
-          onLoadMoreHistory={loadMoreHistory}
-          onRetryHistory={retryHistory}
-          historyOpen={historyOpen}
-          onHistoryOpenChange={setHistoryOpen}
-          onOpenConversation={openConversation}
-          onCloseConversation={closeConversation}
-          onInspectConversation={inspectConversation}
-          onNewChat={newChat}
-          onExpand={() => setSurface('conversation')}
-          onCollapse={() => setSurface('dashboard')}
-          onSend={handleSend}
-          onRetry={handleRetry}
-          onToast={showToast}
+          activeId={activeId}
+          loading={historyLoading}
+          error={historyError}
+          hasMore={historyHasMore}
+          loadingMore={historyLoadingMore}
           reduceMotion={prefs.reduceMotion}
-          composer={{
-            streaming: isStreaming,
-            onStop: handleStop,
-            model,
-            onModelChange: setModel,
-            temporary: temporaryActive,
-            onToggleTemporary: toggleTemporary,
-            showHints: prefs.showHints,
-            interfaceStyle: prefs.style,
-            readOnly: active?.origin === 'history',
-            autoFocus: true,
-            onArmedChange: setArmed,
-          }}
+          onOpen={openConversation}
+          onClose={() => setHistoryOpen(false)}
+          onLoadMore={loadMoreHistory}
+          onRetry={retryHistory}
         />
-            )}
-          </motion.div>
-        </AnimatePresence>
+
+        <AppearancePopover
+          open={settingsOpen}
+          anchorRef={settingsButtonRef}
+          prefs={prefs}
+          reduceMotion={prefs.reduceMotion}
+          onChange={updatePreferences}
+          onClose={() => setSettingsOpen(false)}
+        />
 
         <Toast toast={toast} />
       </div>

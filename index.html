@@ -4,44 +4,52 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#262624" />
+    <meta name="theme-color" content="#151211" />
     <meta name="color-scheme" content="dark light" />
     <title>Maia</title>
     <style>
-      html[data-theme='dark'] { background: #262624; color-scheme: dark; }
-      html[data-theme='light'] { background: #cfccc3; color-scheme: light; }
+      html[data-theme='dark'] { background: #241f1a; color-scheme: dark; }
+      html[data-theme='light'] { background: #f1eadf; color-scheme: light; }
     </style>
     <script>
       (() => {
         let theme = 'dark'
+        let palette = 'salon'
         try {
           const stored = JSON.parse(localStorage.getItem('harness.preferences') || '{}')
           if (stored.theme === 'light' || stored.theme === 'dark') theme = stored.theme
+          if (stored.palette === 'salon' || stored.palette === 'print-room' || stored.palette === 'day-office') {
+            palette = stored.palette
+          }
           if (stored.reduceMotion === true) {
             document.documentElement.dataset.reduceMotion = 'true'
           }
         } catch {}
         document.documentElement.dataset.theme = theme
+        document.documentElement.dataset.palette = palette
+        const colors = {
+          salon: { dark: '#241f1a', light: '#f1eadf' },
+          'print-room': { dark: '#101114', light: '#f4efe6' },
+          'day-office': { dark: '#24323e', light: '#f4f0e8' },
+        }
         document.querySelector('meta[name="theme-color"]')?.setAttribute(
           'content',
-          theme === 'light' ? '#cfccc3' : '#262624',
+          colors[palette][theme],
         )
       })()
     </script>
   </head>
   <body>
     <!--
-      DIRECTION CONTRACT - Maia (seed 4bbaadd2)
+      DIRECTION CONTRACT - Maia
 
-      THESIS: Maia is a domestic instrument, not a chat website. One panel face
-      carries a large display window and smaller readouts. It refuses the
-      card-grid dashboard and the floating-bubble thread.
+      THESIS: Maia is a private study for local intelligence: calm, tactile,
+      softly lit, and free of cloud-software noise. Conversation is the room;
+      supporting readouts are quiet objects at its edge.
 
-      OWN-WORLD: Braun domestic instruments (SK4, T3, ET66). Pale ABS #CFCCC3 /
-      charcoal ABS #262624 as two real objects, not an inversion. Archivo
-      Variable throughout, six-step scale, weight promotes before size. Flat
-      tones, 1px seams, radii 2-5px. No blur, no gradients, no ambient washes.
-      One signal orange, rationed to the single lit thing on screen.
+      OWN-WORLD: book cloth, smoked glass, warm paper, and the restrained
+      geometry of a well-made writing desk. Mineral neutrals, plum and copper
+      details, editorial display type, generous radii, and layered light.
 
       STORY: The owner lands on a face where conversation is the working
       instrument and the unwired inputs sit honestly at rest, then opens the
