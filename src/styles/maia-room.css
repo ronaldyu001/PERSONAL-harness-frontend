@@ -12,6 +12,7 @@
   --maia-rule: rgba(242, 232, 214, 0.17);
   --maia-rail-rule: rgba(43, 36, 30, 0.17);
   --maia-accent: #d2b16f;
+  --maia-clock: #4b3422;
   --maia-secondary: #7a7164;
   --maia-gold: #c4a15f;
   --maia-chat: #ccb995;
@@ -147,6 +148,8 @@
   --border-faint: color-mix(in srgb, var(--maia-text) 10%, transparent);
   --border-soft: color-mix(in srgb, var(--maia-text) 18%, transparent);
   --border-strong: color-mix(in srgb, var(--maia-text) 32%, transparent);
+  --maia-rail-icon: color-mix(in srgb, var(--maia-rail-text) 82%, transparent);
+  --maia-rail-icon-active: var(--maia-rail-text);
   --text-primary: var(--maia-text);
   --text-strong: var(--maia-text);
   --text-secondary: var(--maia-muted);
@@ -189,6 +192,14 @@ body {
 
 .maia-app {
   --maia-rail-width: clamp(260px, 30.5vw, 420px);
+  --maia-type-brand: calc(var(--t-display) + 3px);
+  --maia-type-clock: calc(var(--t-display) + 9px);
+  --maia-type-section: calc(var(--t-display) + 1px);
+  --maia-type-prose: calc(var(--prose-size) + 2px);
+  --maia-type-body: calc(var(--t-body) - 1px);
+  --maia-type-label: var(--t-label);
+  --maia-type-caption: max(9px, calc(var(--t-meta) - 2px));
+  --maia-type-micro: max(8px, calc(var(--t-meta) - 4px));
   position: relative;
   isolation: isolate;
   display: grid;
@@ -266,6 +277,10 @@ body {
   outline-offset: 2px;
 }
 
+.maia-app[data-palette='salon'] .maia-rail__mark-motion {
+  --mark-core: currentColor;
+}
+
 .maia-rail__mark-motion {
   display: block;
   width: 24px;
@@ -287,7 +302,7 @@ body {
 }
 
 .maia-rail__wordmark {
-  font: italic 700 24px/1 var(--display);
+  font: italic 700 var(--maia-type-brand)/1 var(--display);
   letter-spacing: -0.035em;
 }
 
@@ -297,11 +312,11 @@ body {
   align-items: baseline;
   gap: 10px;
   margin: 20px 0 11px;
-  color: var(--maia-accent);
+  color: var(--maia-clock, var(--maia-accent));
 }
 
 .maia-rail__time {
-  font: 400 30px/0.9 var(--display);
+  font: 400 var(--maia-type-clock)/0.9 var(--display);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.04em;
 }
@@ -309,7 +324,7 @@ body {
 .maia-rail__date {
   max-width: 15ch;
   color: var(--maia-rail-muted);
-  font-size: 8px;
+  font-size: var(--maia-type-micro);
   font-weight: 650;
   line-height: 1.4;
   letter-spacing: 0.1em;
@@ -334,13 +349,13 @@ body {
 .maia-rail__section-title {
   margin: 0;
   color: inherit;
-  font: 500 22px/1 var(--display);
+  font: 500 var(--maia-type-section)/1 var(--display);
   letter-spacing: -0.025em;
 }
 
 .maia-rail__source-state {
   color: var(--maia-rail-muted);
-  font-size: 8px;
+  font-size: var(--maia-type-micro);
   font-weight: 650;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -353,7 +368,7 @@ body {
   gap: 12px;
   margin: 19px 0 0;
   color: var(--maia-rail-muted);
-  font: 13px/1.42 var(--display);
+  font: var(--maia-type-label)/1.42 var(--display);
 }
 
 .maia-rail__empty-state::after {
@@ -375,7 +390,7 @@ body {
   min-height: 28px;
   padding: 4px 0;
   color: var(--maia-rail-muted);
-  font-size: 10px;
+  font-size: var(--maia-type-caption);
   letter-spacing: 0.02em;
   text-align: left;
   transition:
@@ -386,8 +401,9 @@ body {
 .maia-rail__nav-button::before {
   display: inline-block;
   width: 22px;
-  color: var(--maia-accent);
+  color: var(--maia-rail-icon);
   content: '\2726';
+  transition: color 150ms ease;
 }
 
 .maia-rail__nav-button:nth-child(2)::before {
@@ -400,6 +416,10 @@ body {
 
 .maia-rail__nav-button--active {
   color: var(--maia-rail-text);
+}
+
+.maia-rail__nav-button--active::before {
+  color: var(--maia-rail-icon-active);
 }
 
 .maia-rail__nav-button:active {
@@ -429,13 +449,19 @@ body {
   padding: 0 31px;
   color: var(--maia-muted);
   border-bottom: 1px solid var(--maia-rule);
-  font-size: 9px;
+  font-size: var(--maia-type-micro);
   font-weight: 620;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
 .maia-room__header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.maia-room__conversation-actions {
   display: flex;
   align-items: center;
   gap: 20px;
@@ -451,6 +477,39 @@ body {
 
 .maia-room__header button:active {
   transform: scale(0.97);
+}
+
+.maia-room__mode-switch {
+  display: grid;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  margin-right: -7px;
+  padding: 0;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--maia-text);
+}
+
+.maia-room__mode-switch:focus-visible {
+  outline: 2px solid var(--maia-text);
+  outline-offset: 1px;
+}
+
+.maia-room__mode-glyph {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border: 1px solid var(--maia-rule);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--maia-text) 4%, transparent);
+  transition:
+    color 150ms ease,
+    background-color 150ms ease,
+    border-color 150ms ease;
 }
 
 .maia-room__landing,
@@ -481,7 +540,7 @@ body {
 .maia-room__eyebrow {
   margin: 0;
   color: var(--maia-accent);
-  font-size: 9px;
+  font-size: var(--maia-type-micro);
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -518,7 +577,7 @@ body {
 
 .maia-room__intro p {
   margin: 0;
-  font: 14px/1.55 var(--display);
+  font: var(--maia-type-body)/1.55 var(--display);
 }
 
 .maia-room__art {
@@ -571,11 +630,11 @@ body {
 
 .maia-room__quick-starts small {
   color: var(--maia-accent);
-  font-size: 8px;
+  font-size: var(--maia-type-micro);
 }
 
 .maia-room__quick-starts span {
-  font: 13px/1.2 var(--display);
+  font: var(--maia-type-label)/1.2 var(--display);
 }
 
 .maia-room__quick-starts svg {
@@ -644,8 +703,8 @@ body {
 .maia-room__thread-shell .turn__field p,
 .maia-room__thread-shell .md {
   font-family: var(--display);
-  font-size: 17px;
-  line-height: 1.62;
+  font-size: var(--maia-type-prose);
+  line-height: var(--prose-line-height);
 }
 
 .maia-room__thread-shell .turn__head {
@@ -654,7 +713,7 @@ body {
 
 .maia-room__thread-shell .turn__who {
   color: var(--maia-accent);
-  font: italic 600 14px/1 var(--display);
+  font: italic 600 var(--maia-type-body)/1 var(--display);
 }
 
 /* Floating composer ----------------------------------------------------- */
@@ -663,7 +722,7 @@ body {
   --mark-mid: #302820;
   --mark-core: #87642d;
   display: block;
-  padding: 15px;
+  padding: 11px 13px;
   overflow: hidden;
   color: var(--maia-chat-text);
   background: color-mix(in srgb, var(--maia-chat) 95%, transparent);
@@ -693,7 +752,7 @@ body {
 
 .maia-floating-composer__content {
   display: grid;
-  gap: 9px;
+  gap: 5px;
 }
 
 .maia-floating-composer__header {
@@ -705,40 +764,31 @@ body {
 }
 
 .maia-floating-composer__identity {
-  display: grid;
-  grid-template-columns: 24px auto;
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
 }
 
 .maia-floating-composer__identity > .maia-mark {
-  grid-row: span 2;
-}
-
-.maia-floating-composer__identity > span:last-child {
-  display: grid;
-  gap: 3px;
+  flex: 0 0 auto;
 }
 
 .maia-floating-composer__identity strong {
-  font: italic 700 15px/1 var(--display);
-}
-
-.maia-floating-composer__identity small,
-.maia-floating-composer__drag-handle,
-.maia-floating-composer__footer {
-  color: color-mix(in srgb, var(--maia-chat-text) 64%, transparent);
-  font-size: 8px;
-  font-weight: 620;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font: italic 700 var(--t-body)/1 var(--display);
 }
 
 .maia-floating-composer__drag-handle {
-  min-width: 58px;
-  min-height: 34px;
-  margin: -6px -3px -6px 0;
-  padding: 6px;
+  color: color-mix(in srgb, var(--maia-chat-text) 64%, transparent);
+}
+
+.maia-floating-composer__drag-handle {
+  display: grid;
+  width: 34px;
+  min-width: 34px;
+  min-height: 28px;
+  margin: -3px -3px -3px 0;
+  padding: 4px;
+  place-items: center;
   border-radius: 12px;
   cursor: grab;
 }
@@ -767,19 +817,19 @@ body {
 }
 
 .maia-floating-composer__body .composer__input {
-  min-height: 25px;
+  min-height: 22px;
 }
 
 .maia-floating-composer__body .composer__input textarea,
 .maia-floating-composer__body .composer__replica {
   color: var(--maia-chat-text);
   font-family: var(--display);
-  font-size: 15px;
-  line-height: 22px;
+  font-size: var(--composer-input-size);
+  line-height: var(--composer-line-height);
 }
 
 .maia-floating-composer__body .composer__input textarea {
-  padding: 3px 7px 6px;
+  padding: 1px 7px 3px;
   caret-color: var(--maia-chat-text);
   cursor: text;
   user-select: text;
@@ -790,13 +840,17 @@ body {
 }
 
 .maia-floating-composer__body .composer__replica {
-  padding: 3px 7px 6px;
+  padding: 1px 7px 3px;
 }
 
 .maia-floating-composer__body .composer__row {
-  margin-top: 3px;
-  padding: 7px 3px 0;
-  border-top: 1px solid color-mix(in srgb, var(--maia-chat-text) 25%, transparent);
+  margin-top: 1px;
+  padding: 3px 3px 0;
+  border-top: 0;
+}
+
+.maia-floating-composer__body .composer__hint {
+  display: none;
 }
 
 .maia-floating-composer__body .model-chip,
@@ -805,8 +859,8 @@ body {
 }
 
 .maia-floating-composer__body .send-btn {
-  width: 37px;
-  height: 37px;
+  width: 34px;
+  height: 34px;
   color: var(--maia-chat);
   background: var(--maia-chat-text);
   box-shadow: none;
@@ -816,13 +870,6 @@ body {
 .maia-app[data-busy='true'] .maia-floating-composer .send-btn {
   color: var(--maia-chat);
   background: var(--maia-chat-text);
-}
-
-.maia-floating-composer__footer {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 0 7px 1px;
 }
 
 .maia-floating-composer__resize-handle::after {
@@ -900,7 +947,7 @@ body {
 
 .maia-appearance__header h2 {
   margin: 0;
-  font: 600 19px/1 var(--display);
+  font: 600 calc(var(--t-title) + 2px)/1 var(--display);
   letter-spacing: -0.02em;
 }
 
@@ -909,7 +956,7 @@ body {
   padding: 0 8px;
   border-radius: 9px;
   color: color-mix(in srgb, var(--maia-chat-text) 68%, transparent);
-  font-size: 10px;
+  font-size: var(--maia-type-caption);
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1042,12 +1089,12 @@ body {
 }
 
 .maia-settings__palette-copy strong {
-  font: 600 13px/1.15 var(--display);
+  font: 600 var(--t-label)/1.15 var(--display);
 }
 
 .maia-settings__palette-copy small {
   color: color-mix(in srgb, var(--maia-chat-text) 56%, transparent);
-  font-size: 9px;
+  font-size: var(--maia-type-caption);
   letter-spacing: 0.04em;
 }
 
@@ -1066,6 +1113,30 @@ body {
   box-shadow: 0 2px 7px color-mix(in srgb, var(--maia-chat-text) 18%, transparent);
 }
 
+.maia-settings__text-size .segmented__opt[data-size='small'] {
+  font-size: 11px;
+}
+
+.maia-settings__text-size .segmented__opt {
+  display: grid;
+  min-height: 34px;
+  place-items: center;
+  cursor: pointer;
+}
+
+.maia-settings__text-size .segmented__opt:has(input:focus-visible) {
+  outline: 2px solid var(--maia-chat-text);
+  outline-offset: 2px;
+}
+
+.maia-settings__text-size .segmented__opt[data-size='medium'] {
+  font-size: 13px;
+}
+
+.maia-settings__text-size .segmented__opt[data-size='large'] {
+  font-size: 15px;
+}
+
 .maia-settings .switch {
   background: color-mix(in srgb, var(--maia-chat-text) 15%, transparent);
 }
@@ -1078,7 +1149,7 @@ body {
 
 .maia-history__scrim {
   position: fixed;
-  z-index: 18;
+  z-index: 45;
   inset: 0;
   width: 100%;
   height: 100%;
@@ -1088,18 +1159,19 @@ body {
 
 .maia-history {
   position: fixed;
-  z-index: 20;
+  z-index: 50;
   top: 0;
+  right: 0;
   bottom: 0;
-  left: var(--maia-rail-width);
+  left: auto;
   display: flex;
   flex-direction: column;
-  width: min(430px, calc(100vw - var(--maia-rail-width)));
+  width: min(430px, 100vw);
   min-width: 0;
   color: var(--maia-chat-text);
   background: var(--maia-chat);
-  border-right: 1px solid color-mix(in srgb, var(--maia-chat-text) 18%, transparent);
-  box-shadow: 24px 0 60px rgba(20, 15, 16, 0.2);
+  border-left: 1px solid color-mix(in srgb, var(--maia-chat-text) 18%, transparent);
+  box-shadow: -24px 0 60px rgba(20, 15, 16, 0.2);
 }
 
 .maia-history__header {
@@ -1114,7 +1186,7 @@ body {
 .maia-history__eyebrow {
   margin: 0 0 8px;
   color: color-mix(in srgb, var(--maia-chat-text) 58%, transparent);
-  font-size: 8px;
+  font-size: var(--maia-type-micro);
   font-weight: 700;
   letter-spacing: 0.11em;
   text-transform: uppercase;
@@ -1122,7 +1194,7 @@ body {
 
 .maia-history h2 {
   margin: 0;
-  font: italic 600 24px/1 var(--display);
+  font: italic 600 var(--maia-type-brand)/1 var(--display);
   letter-spacing: -0.03em;
 }
 
@@ -1142,18 +1214,35 @@ body {
   margin: 18px 28px 8px;
   padding: 0 0 10px;
   color: color-mix(in srgb, var(--maia-chat-text) 58%, transparent);
+  background: transparent;
   border-bottom: 1px solid color-mix(in srgb, var(--maia-chat-text) 24%, transparent);
+  transition: border-color 180ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .maia-history__search:focus-within {
-  border-color: var(--maia-chat-text);
+  border-color: color-mix(in srgb, var(--maia-chat-text) 76%, transparent);
 }
 
 .maia-history__search input {
+  min-width: 0;
   width: 100%;
+  margin: 0;
+  padding: 0;
+  appearance: none;
   color: var(--maia-chat-text);
   background: transparent;
-  font: 14px/1.4 var(--display);
+  border: 0;
+  border-radius: 0;
+  outline: 0;
+  box-shadow: none;
+  font: var(--t-body)/1.4 var(--display);
+}
+
+.maia-history__search input::-webkit-search-decoration,
+.maia-history__search input::-webkit-search-cancel-button,
+.maia-history__search input::-webkit-search-results-button,
+.maia-history__search input::-webkit-search-results-decoration {
+  appearance: none;
 }
 
 .maia-history__search input::placeholder {
@@ -1175,7 +1264,7 @@ body {
 .maia-history__groups h3 {
   margin: 0 0 8px;
   color: color-mix(in srgb, var(--maia-chat-text) 54%, transparent);
-  font-size: 8px;
+  font-size: var(--maia-type-micro);
   font-weight: 700;
   letter-spacing: 0.11em;
   text-transform: uppercase;
@@ -1199,7 +1288,7 @@ body {
   width: 100%;
   min-height: 48px;
   color: color-mix(in srgb, var(--maia-chat-text) 78%, transparent);
-  font: 14px/1.3 var(--display);
+  font: var(--t-body)/1.3 var(--display);
   text-align: left;
 }
 
@@ -1211,7 +1300,7 @@ body {
 .maia-history__loading,
 .maia-history__source-note {
   color: color-mix(in srgb, var(--maia-chat-text) 62%, transparent);
-  font: 14px/1.5 var(--display);
+  font: var(--t-body)/1.5 var(--display);
 }
 
 .maia-history__empty button {
@@ -1223,7 +1312,7 @@ body {
 .maia-history__source-note {
   max-width: 28ch;
   margin-top: 18px;
-  font-size: 12px;
+  font-size: var(--t-meta);
 }
 
 .maia-history__sentinel {
@@ -1269,9 +1358,18 @@ body {
     color: var(--maia-rail-text);
   }
 
+  .maia-rail__nav-button:hover::before {
+    color: var(--maia-rail-icon-active);
+  }
+
   .maia-room__header button:hover,
   .maia-room__quick-starts button:hover {
     color: var(--maia-text);
+  }
+
+  .maia-room__mode-switch:hover .maia-room__mode-glyph {
+    background: color-mix(in srgb, var(--maia-text) 8%, transparent);
+    border-color: color-mix(in srgb, var(--maia-text) 34%, transparent);
   }
 
   .maia-appearance__header button:hover,
@@ -1409,12 +1507,12 @@ body {
     width: 34px;
     height: 44px;
     place-items: center;
-    color: var(--maia-rail-muted);
+    color: var(--maia-rail-icon);
     font-size: 14px;
   }
 
   .maia-rail__nav-button--active::before {
-    color: var(--maia-rail-text);
+    color: var(--maia-rail-icon-active);
   }
 
   .maia-stage {
@@ -1428,8 +1526,25 @@ body {
 
   .maia-history {
     top: 68px;
-    left: 0;
+    right: 0;
+    left: auto;
     width: min(430px, 100vw);
+  }
+
+  .maia-room__header {
+    padding-inline: 16px;
+  }
+
+  .maia-room__header-actions {
+    gap: 8px;
+  }
+
+  .maia-room__conversation-actions {
+    gap: 12px;
+  }
+
+  .maia-room__conversation-actions button:first-child {
+    display: none;
   }
 
   .maia-room__copy {

@@ -98,14 +98,21 @@ export function MaiaHistory({
             role="dialog"
             aria-modal="false"
             aria-labelledby="maia-history-title"
-            initial={reduceMotion ? false : { x: '-24px', opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={reduceMotion ? { opacity: 0 } : { x: '-18px', opacity: 0 }}
-            transition={
+            initial={
               reduceMotion
-                ? { duration: 0 }
-                : { type: 'spring', stiffness: 380, damping: 38, mass: 0.9 }
+                ? { transform: 'translateX(0)', opacity: 0 }
+                : { transform: 'translateX(100%)', opacity: 0 }
             }
+            animate={{ transform: 'translateX(0)', opacity: 1 }}
+            exit={
+              reduceMotion
+                ? { transform: 'translateX(0)', opacity: 0 }
+                : { transform: 'translateX(100%)', opacity: 0 }
+            }
+            transition={{
+              duration: reduceMotion ? 0.15 : 0.26,
+              ease: [0.32, 0.72, 0, 1],
+            }}
           >
             <header className="maia-history__header">
               <div>
@@ -124,6 +131,7 @@ export function MaiaHistory({
               <input
                 ref={searchRef}
                 type="search"
+                enterKeyHint="search"
                 value={query}
                 placeholder="Find a conversation"
                 onChange={(event) => setQuery(event.target.value)}

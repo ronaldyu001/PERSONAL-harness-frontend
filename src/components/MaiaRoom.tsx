@@ -1,6 +1,7 @@
-import { ArrowUpRight } from 'lucide-react'
+import { ArrowUpRight, Moon, Sun } from 'lucide-react'
 import { ParticleSphere, type ParticleSphereState } from './ParticleSphere'
 import { Thread } from './Thread'
+import { Tooltip } from './Tooltip'
 import type { Conversation } from '../types'
 
 const QUICK_STARTS = [
@@ -24,11 +25,13 @@ export interface MaiaRoomProps {
   state: ParticleSphereState
   threadVisible: boolean
   reduceMotion: boolean
+  theme: 'dark' | 'light'
   onSend: (text: string) => void
   onRetry: (assistantId: string) => void
   onToast: (text: string) => void
   onNewConversation: () => void
   onInspectConversation: (sessionId: string) => void
+  onThemeChange: (theme: 'dark' | 'light') => void
 }
 
 export function MaiaRoom({
@@ -37,29 +40,52 @@ export function MaiaRoom({
   state,
   threadVisible,
   reduceMotion,
+  theme,
   onSend,
   onRetry,
   onToast,
   onNewConversation,
   onInspectConversation,
+  onThemeChange,
 }: MaiaRoomProps) {
   const landingAccessible = state === 'landing' || state === 'leaving'
   const conversationAccessible = Boolean(active && threadVisible)
+  const nextTheme = theme === 'dark' ? 'light' : 'dark'
 
   return (
     <main className={`maia-room maia-room--${state}`}>
       <header className="maia-room__header">
         <span>{conversationAccessible ? 'With Maia' : 'Maia’s room'}</span>
-        {active && (
-          <div className="maia-room__header-actions">
-            <button type="button" onClick={() => onInspectConversation(active.id)}>
-              How Maia worked
+        <div className="maia-room__header-actions">
+          {active && (
+            <div className="maia-room__conversation-actions">
+              <button type="button" onClick={() => onInspectConversation(active.id)}>
+                How Maia worked
+              </button>
+              <button type="button" onClick={onNewConversation}>
+                New conversation
+              </button>
+            </div>
+          )}
+          <Tooltip label={`Switch to ${nextTheme} mode`} side="bottom">
+            <button
+              type="button"
+              role="switch"
+              aria-label="Dark mode"
+              aria-checked={theme === 'dark'}
+              className="maia-room__mode-switch"
+              onClick={() => onThemeChange(nextTheme)}
+            >
+              <span className="maia-room__mode-glyph" aria-hidden="true">
+                {theme === 'dark' ? (
+                  <Moon size={14} strokeWidth={1.8} />
+                ) : (
+                  <Sun size={15} strokeWidth={1.8} />
+                )}
+              </span>
             </button>
-            <button type="button" onClick={onNewConversation}>
-              New conversation
-            </button>
-          </div>
-        )}
+          </Tooltip>
+        </div>
       </header>
 
       <section

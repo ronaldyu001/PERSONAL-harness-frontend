@@ -1,3 +1,4 @@
+import type { KeyboardEvent } from 'react'
 import { Switch } from './Switch'
 
 export interface Prefs {
@@ -6,11 +7,18 @@ export interface Prefs {
   reduceMotion: boolean
   showHints: boolean
   style: 'snug' | 'default' | 'roomy'
+  textSize: 'small' | 'medium' | 'large'
 }
 
 const MODES: { id: Prefs['theme']; label: string }[] = [
   { id: 'dark', label: 'Dark' },
   { id: 'light', label: 'Light' },
+]
+
+const TEXT_SIZES: { id: Prefs['textSize']; label: string }[] = [
+  { id: 'small', label: 'Small' },
+  { id: 'medium', label: 'Medium' },
+  { id: 'large', label: 'Large' },
 ]
 
 const PALETTES: { id: Prefs['palette']; label: string; tone: string }[] = [
@@ -20,6 +28,27 @@ const PALETTES: { id: Prefs['palette']; label: string; tone: string }[] = [
 ]
 
 export function SettingsPanel({ prefs, onChange }: { prefs: Prefs; onChange: (p: Prefs) => void }) {
+  const selectTextSizeByKey = (event: KeyboardEvent<HTMLInputElement>, index: number) => {
+    let nextIndex: number | null = null
+    if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+      nextIndex = (index + 1) % TEXT_SIZES.length
+    } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+      nextIndex = (index - 1 + TEXT_SIZES.length) % TEXT_SIZES.length
+    } else if (event.key === 'Home') {
+      nextIndex = 0
+    } else if (event.key === 'End') {
+      nextIndex = TEXT_SIZES.length - 1
+    }
+    if (nextIndex === null) return
+
+    event.preventDefault()
+    const group = event.currentTarget.closest('[role="radiogroup"]')
+    const inputs = group?.querySelectorAll<HTMLInputElement>('input[type="radio"]')
+    const next = TEXT_SIZES[nextIndex]
+    inputs?.[nextIndex]?.focus({ preventScroll: true })
+    onChange({ ...prefs, textSize: next.id })
+  }
+
   return (
     <div className="settings maia-settings">
       <div className="settings__row">
@@ -64,6 +93,36 @@ export function SettingsPanel({ prefs, onChange }: { prefs: Prefs; onChange: (p:
             >
               {theme.label}
             </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="settings__row">
+        <div className="settings__label">
+          <span>Text size</span>
+        </div>
+        <div
+          className="segmented maia-settings__text-size"
+          role="radiogroup"
+          aria-label="Text size"
+        >
+          {TEXT_SIZES.map((size, index) => (
+            <label
+              key={size.id}
+              data-size={size.id}
+              className={`segmented__opt${prefs.textSize === size.id ? ' segmented__opt--on' : ''}`}
+            >
+              <input
+                className="visually-hidden"
+                type="radio"
+                name="maia-text-size"
+                value={size.id}
+                checked={prefs.textSize === size.id}
+                onChange={() => onChange({ ...prefs, textSize: size.id })}
+                onKeyDown={(event) => selectTextSizeByKey(event, index)}
+              />
+              <span>{size.label}</span>
+            </label>
           ))}
         </div>
       </div>

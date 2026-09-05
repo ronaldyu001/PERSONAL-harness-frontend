@@ -16,7 +16,7 @@ export interface MaiaRailProps {
 const NAV_ITEMS: ReadonlyArray<{ area: MaiaRailArea; label: string }> = [
   { area: 'conversation', label: 'Conversation' },
   { area: 'history', label: 'History' },
-  { area: 'investigate', label: 'How Maia worked' },
+  { area: 'investigate', label: 'Investigate' },
 ]
 
 const CLOCK_REFRESH_MS = 30_000

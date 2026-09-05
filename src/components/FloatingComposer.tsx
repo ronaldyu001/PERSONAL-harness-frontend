@@ -9,6 +9,7 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
 } from 'react'
+import { GripHorizontal } from 'lucide-react'
 import { Composer, type ComposerProps } from './Composer'
 import { MaiaMark } from './MaiaMark'
 
@@ -17,7 +18,7 @@ const MemoComposer = memo(Composer)
 const DEFAULT_WIDTH = 400
 const MIN_WIDTH = 300
 const MAX_WIDTH = 620
-const MIN_HEIGHT = 104
+const MIN_HEIGHT = 96
 const MAX_HEIGHT = 560
 const DEFAULT_MARGIN = 12
 const MOBILE_BREAKPOINT = 680
@@ -144,6 +145,48 @@ function clampGeometry(geometry: Geometry, limits: Limits): Geometry {
   }
 }
 
+/**
+ * Carry a floating panel's position between viewport sizes in normalized
+ * travel-space rather than screen pixels. A composer resting at the bottom
+ * stays at the bottom after maximizing the window, while a deliberately
+ * centered or offset placement keeps that same relationship to the canvas.
+ */
+function projectGeometryToViewport(
+  geometry: Geometry,
+  previousViewport: Viewport,
+  nextViewport: Viewport,
+  margin: number,
+  naturalHeight: number,
+): Geometry {
+  const previousLimits = readLimits(previousViewport, margin, naturalHeight)
+  const nextLimits = readLimits(nextViewport, margin, naturalHeight)
+  const width = clamp(geometry.width, nextLimits.minWidth, nextLimits.maxWidth)
+  const height = clamp(geometry.height, nextLimits.minHeight, nextLimits.maxHeight)
+
+  const previousMaxX = Math.max(previousLimits.minX, previousLimits.maxRight - geometry.width)
+  const previousMaxY = Math.max(previousLimits.minY, previousLimits.maxBottom - geometry.height)
+  const previousTravelX = previousMaxX - previousLimits.minX
+  const previousTravelY = previousMaxY - previousLimits.minY
+  const progressX = previousTravelX > 0
+    ? clamp((geometry.x - previousLimits.minX) / previousTravelX, 0, 1)
+    : 1
+  const progressY = previousTravelY > 0
+    ? clamp((geometry.y - previousLimits.minY) / previousTravelY, 0, 1)
+    : 1
+
+  const nextMaxX = Math.max(nextLimits.minX, nextLimits.maxRight - width)
+  const nextMaxY = Math.max(nextLimits.minY, nextLimits.maxBottom - height)
+  return clampGeometry(
+    {
+      x: nextLimits.minX + (nextMaxX - nextLimits.minX) * progressX,
+      y: nextLimits.minY + (nextMaxY - nextLimits.minY) * progressY,
+      width,
+      height,
+    },
+    nextLimits,
+  )
+}
+
 function sameGeometry(a: Geometry | null, b: Geometry) {
   return (
     a !== null &&
@@ -181,10 +224,13 @@ export function FloatingComposer({
   const interactionRef = useRef<Interaction | null>(null)
   const geometryRef = useRef<Geometry | null>(null)
   const desktopGeometryRef = useRef<Geometry | null>(null)
+  const viewportRef = useRef<Viewport | null>(null)
+  const desktopViewportRef = useRef<Viewport | null>(null)
   const naturalHeightRef = useRef(MIN_HEIGHT)
   const chromeHeightRef = useRef(0)
   const preferredHeightRef = useRef<number | null>(null)
   const resizeFrameRef = useRef(0)
+  const viewportFrameRef = useRef(0)
   const mobileRef = useRef(false)
 
   const [geometry, setGeometry] = useState<Geometry | null>(null)
@@ -233,13 +279,19 @@ export function FloatingComposer({
     const current = geometryRef.current
     if (!current) return
 
-    const nextMobile = readViewport().width <= MOBILE_BREAKPOINT
+    const nextViewport = readViewport()
+    const previousViewport = viewportRef.current ?? nextViewport
+    const nextMobile = nextViewport.width <= MOBILE_BREAKPOINT
     const wasMobile = mobileRef.current
     if (nextMobile !== wasMobile) {
-      if (nextMobile) desktopGeometryRef.current = current
+      if (nextMobile) {
+        desktopGeometryRef.current = current
+        desktopViewportRef.current = previousViewport
+      }
       mobileRef.current = nextMobile
       setMobile(nextMobile)
     }
+    viewportRef.current = nextViewport
 
     if (nextMobile) {
       commitGeometry(dockForMobile())
@@ -247,10 +299,20 @@ export function FloatingComposer({
     }
 
     const candidate = wasMobile ? (desktopGeometryRef.current ?? current) : current
-    const next = clampGeometry(candidate, limitsForViewport())
+    const candidateViewport = wasMobile
+      ? (desktopViewportRef.current ?? previousViewport)
+      : previousViewport
+    const next = projectGeometryToViewport(
+      candidate,
+      candidateViewport,
+      nextViewport,
+      viewportMargin,
+      naturalHeightRef.current,
+    )
     desktopGeometryRef.current = next
+    desktopViewportRef.current = nextViewport
     commitGeometry(next)
-  }, [commitGeometry, dockForMobile, limitsForViewport])
+  }, [commitGeometry, dockForMobile, viewportMargin])
 
   useLayoutEffect(() => {
     const panel = panelRef.current
@@ -258,6 +320,7 @@ export function FloatingComposer({
     if (!panel || !content || geometryRef.current) return
 
     const viewport = readViewport()
+    viewportRef.current = viewport
     const measuredPanel = panel.getBoundingClientRect()
     const measuredContent = content.getBoundingClientRect()
     chromeHeightRef.current = Math.max(0, measuredPanel.height - measuredContent.height)
@@ -287,7 +350,10 @@ export function FloatingComposer({
           },
           limits,
         )
-    if (!isMobile) desktopGeometryRef.current = next
+    if (!isMobile) {
+      desktopGeometryRef.current = next
+      desktopViewportRef.current = viewport
+    }
     commitGeometry(next)
   }, [commitGeometry, dockForMobile, initialWidth, viewportMargin])
 
@@ -357,18 +423,26 @@ export function FloatingComposer({
     const viewport = window.visualViewport
     const handleViewportChange = () => {
       finishInteraction()
-      syncToViewport()
+      window.cancelAnimationFrame(viewportFrameRef.current)
+      viewportFrameRef.current = window.requestAnimationFrame(() => {
+        viewportFrameRef.current = 0
+        syncToViewport()
+      })
     }
     const handleBlur = () => finishInteraction()
     window.addEventListener('resize', handleViewportChange)
     window.addEventListener('blur', handleBlur)
+    document.addEventListener('fullscreenchange', handleViewportChange)
     viewport?.addEventListener('resize', handleViewportChange)
     viewport?.addEventListener('scroll', handleViewportChange)
     return () => {
       window.removeEventListener('resize', handleViewportChange)
       window.removeEventListener('blur', handleBlur)
+      document.removeEventListener('fullscreenchange', handleViewportChange)
       viewport?.removeEventListener('resize', handleViewportChange)
       viewport?.removeEventListener('scroll', handleViewportChange)
+      window.cancelAnimationFrame(viewportFrameRef.current)
+      viewportFrameRef.current = 0
     }
   }, [finishInteraction, syncToViewport])
 
@@ -586,11 +660,8 @@ export function FloatingComposer({
       <div ref={contentRef} className="maia-floating-composer__content">
         <header className="maia-floating-composer__header">
           <span className="maia-floating-composer__identity">
-            <MaiaMark size={24} />
-            <span>
-              <strong>Maia</strong>
-              <small>Your friendly secretary</small>
-            </span>
+            <MaiaMark size={22} />
+            <strong>Maia</strong>
           </span>
           <button
             type="button"
@@ -602,16 +673,12 @@ export function FloatingComposer({
             onKeyDown={moveWithKeyboard}
             disabled={mobile}
           >
-            <span className="maia-floating-composer__drag-label">Move&nbsp; ⠿</span>
+            <GripHorizontal size={17} strokeWidth={1.6} aria-hidden="true" />
           </button>
         </header>
         <div className="maia-floating-composer__body">
-          <MemoComposer {...composerProps} />
+          <MemoComposer {...composerProps} showHints={false} />
         </div>
-        <footer className="maia-floating-composer__footer">
-          <span>{composerProps.temporary ? 'Temporary conversation' : 'Connected to Maia'}</span>
-          <span>{composerProps.streaming ? 'Maia is thinking' : 'Ready when you are'}</span>
-        </footer>
       </div>
 
       {RESIZE_EDGES.map((edge) => (

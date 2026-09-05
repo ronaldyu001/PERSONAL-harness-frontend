@@ -51,9 +51,9 @@ export type Message = UserMessage | AssistantMessage
 export type HistoryGroup = 'today' | 'yesterday' | 'week' | 'older'
 
 /**
- * Where a conversation came from. A conversation read back from storage is
- * read-only: the agent keeps no context for it once the API restarts, so
- * continuing it would answer with none.
+ * Where the frontend first encountered a conversation. This is provenance,
+ * not a permission: a conversation restored from history can become the live
+ * conversation again when its session id is reused.
  */
 export type ConversationOrigin = 'local' | 'history'
 

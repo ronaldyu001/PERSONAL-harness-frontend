@@ -25,8 +25,6 @@ export interface LogStreamDef {
   /** What this stream records, in the reader's terms. */
   summary: string
   icon: LucideIcon
-  /** What the ledger counts in its head, singular and plural. */
-  unit: [string, string]
   facets: LogFacet[]
 }
 
@@ -34,9 +32,8 @@ export const LOG_STREAMS: LogStreamDef[] = [
   {
     id: 'model-context',
     label: 'Model context',
-    summary: 'Every request as the model actually received it, with what came back.',
+    summary: 'Requests and model responses.',
     icon: Braces,
-    unit: ['call', 'calls'],
     facets: [
       { id: 'all', label: 'All' },
       {
@@ -56,9 +53,8 @@ export const LOG_STREAMS: LogStreamDef[] = [
   {
     id: 'response-gate',
     label: 'Response gate',
-    summary: 'Every evaluation of a candidate answer, and what the gate did about it.',
+    summary: 'Answer evaluations and outcomes.',
     icon: ScrollText,
-    unit: ['evaluation', 'evaluations'],
     facets: [
       { id: 'all', label: 'All' },
       {

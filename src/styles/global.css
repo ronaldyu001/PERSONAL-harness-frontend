@@ -260,6 +260,45 @@
   --dash-pad: 26px;
 }
 
+/* Text scale is independent from interface density. The middle setting is
+   the existing default, while the outer settings preserve the hierarchy
+   instead of scaling the whole canvas and its geometry. */
+[data-text-size='small'] {
+  --t-display: 20px;
+  --t-title: 16px;
+  --t-body: 14px;
+  --t-label: 12px;
+  --t-meta: 11px;
+  --legend-size: 10px;
+  --prose-size: 14px;
+  --composer-input-size: 14px;
+  --composer-line-height: 21px;
+}
+
+[data-text-size='medium'] {
+  --t-display: 21px;
+  --t-title: 17px;
+  --t-body: 15px;
+  --t-label: 13px;
+  --t-meta: 12px;
+  --legend-size: 11px;
+  --prose-size: 15px;
+  --composer-input-size: 15px;
+  --composer-line-height: 23px;
+}
+
+[data-text-size='large'] {
+  --t-display: 23px;
+  --t-title: 19px;
+  --t-body: 17px;
+  --t-label: 15px;
+  --t-meta: 14px;
+  --legend-size: 12px;
+  --prose-size: 17px;
+  --composer-input-size: 17px;
+  --composer-line-height: 26px;
+}
+
 /* The reading axis, resolved. Two tokens because the two have different bases
    — the thread's containing block is already inset by the scrollbar gutter it
    reserves, and the slot has to give the same gutter back before it measures —

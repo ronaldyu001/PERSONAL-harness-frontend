@@ -42,15 +42,23 @@ const DEFAULT_PREFS: Prefs = {
   reduceMotion: false,
   showHints: true,
   style: 'default',
+  textSize: 'medium',
 }
 
 const readPreferences = (): Prefs => {
   try {
-    const stored = JSON.parse(window.localStorage.getItem(PREFS_STORAGE_KEY) ?? '{}') as Partial<Prefs> & {
-      textSize?: 'sm' | 'md' | 'lg'
-    }
-    const migratedStyle =
-      stored.textSize === 'sm' ? 'snug' : stored.textSize === 'lg' ? 'roomy' : 'default'
+    const stored = JSON.parse(window.localStorage.getItem(PREFS_STORAGE_KEY) ?? '{}') as Omit<
+      Partial<Prefs>,
+      'textSize'
+    > & { textSize?: Prefs['textSize'] | 'sm' | 'md' | 'lg' }
+    const textSize =
+      stored.textSize === 'small' || stored.textSize === 'medium' || stored.textSize === 'large'
+        ? stored.textSize
+        : stored.textSize === 'sm'
+          ? 'small'
+          : stored.textSize === 'lg'
+            ? 'large'
+            : 'medium'
     return {
       theme: stored.theme === 'light' || stored.theme === 'dark' ? stored.theme : DEFAULT_PREFS.theme,
       palette:
@@ -65,7 +73,8 @@ const readPreferences = (): Prefs => {
       style:
         stored.style === 'snug' || stored.style === 'roomy' || stored.style === 'default'
           ? stored.style
-          : migratedStyle,
+          : DEFAULT_PREFS.style,
+      textSize,
     }
   } catch {
     return DEFAULT_PREFS
@@ -161,9 +170,12 @@ export default function App({ sendChat, loadConversations, readLogStream }: AppP
     toastTimer.current = window.setTimeout(() => setToast(null), 2200)
   }, [])
 
+  const closeSettings = useCallback(() => setSettingsOpen(false), [])
+
   const updatePreferences = useCallback((next: Prefs) => {
     document.documentElement.dataset.theme = next.theme
     document.documentElement.dataset.palette = next.palette
+    document.documentElement.dataset.textSize = next.textSize
     if (next.reduceMotion) {
       document.documentElement.dataset.reduceMotion = 'true'
     } else {
@@ -175,6 +187,7 @@ export default function App({ sendChat, loadConversations, readLogStream }: AppP
   useEffect(() => {
     document.documentElement.dataset.theme = prefs.theme
     document.documentElement.dataset.palette = prefs.palette
+    document.documentElement.dataset.textSize = prefs.textSize
     if (prefs.reduceMotion) {
       document.documentElement.dataset.reduceMotion = 'true'
     } else {
@@ -417,9 +430,12 @@ export default function App({ sendChat, loadConversations, readLogStream }: AppP
 
   const handleSend = useCallback(
     (text: string) => {
-      /* A stored conversation has no agent context behind it, so it cannot be
-         continued. The composer is disabled; this is the guard behind it. */
-      if (active?.origin === 'history') return
+      /* Sending wins a race with a history read. The read callback also checks
+         provenance before replacing messages, but aborting avoids doing work
+         whose result can no longer be authoritative. */
+      historyRequestRef.current?.abort()
+      historyRequestRef.current = null
+      setConvoLoading(false)
 
       setHistoryOpen(false)
       setSettingsOpen(false)
@@ -455,7 +471,14 @@ export default function App({ sendChat, loadConversations, readLogStream }: AppP
       } else {
         setConversations((prev) =>
           prev.map((c) =>
-            c.id === convoId ? { ...c, messages: [...c.messages, userMsg, assistantMsg] } : c,
+            c.id === convoId
+              ? {
+                  ...c,
+                  /* Reusing the stored id makes this the live conversation. */
+                  origin: 'local',
+                  messages: [...c.messages, userMsg, assistantMsg],
+                }
+              : c,
           ),
         )
       }
@@ -466,7 +489,7 @@ export default function App({ sendChat, loadConversations, readLogStream }: AppP
         assistantMsg.id,
         text,
         model,
-        currentConversation?.temporary ?? tempMode,
+        currentConversation ? Boolean(currentConversation.temporary) : tempMode,
       )
     },
     [active, enterConversationRoom, model, requestChat, tempMode],
@@ -478,7 +501,7 @@ export default function App({ sendChat, loadConversations, readLogStream }: AppP
      the message and model the failed turn already carried. */
   const handleRetry = useCallback(
     (assistantId: string) => {
-      if (!active || active.origin === 'history') return
+      if (!active) return
       const assistantIndex = active.messages.findIndex((item) => item.id === assistantId)
       const userMessage = active.messages
         .slice(0, assistantIndex)
@@ -543,7 +566,9 @@ export default function App({ sendChat, loadConversations, readLogStream }: AppP
           }
           setConversations((prev) =>
             prev.map((item) =>
-              item.id === id ? toConversation(detail, item.title) : item,
+              item.id === id && item.origin === 'history'
+                ? toConversation(detail, item.title)
+                : item,
             ),
           )
         })
@@ -662,6 +687,7 @@ export default function App({ sendChat, loadConversations, readLogStream }: AppP
         data-palette={prefs.palette}
         data-reduce-motion={prefs.reduceMotion || undefined}
         data-style={prefs.style}
+        data-text-size={prefs.textSize}
         /* Drives the signal precedence rule: while a turn is in flight the
            accent is claimed, so focus rings demote to the neutral token. */
         data-busy={isStreaming || undefined}
@@ -702,11 +728,13 @@ export default function App({ sendChat, loadConversations, readLogStream }: AppP
                   state={roomState}
                   threadVisible={threadVisible}
                   reduceMotion={prefs.reduceMotion}
+                  theme={prefs.theme}
                   onSend={handleSend}
                   onRetry={handleRetry}
                   onToast={showToast}
                   onNewConversation={newChat}
                   onInspectConversation={inspectConversation}
+                  onThemeChange={(theme) => updatePreferences({ ...prefs, theme })}
                 />
               )}
             </motion.div>
@@ -723,7 +751,6 @@ export default function App({ sendChat, loadConversations, readLogStream }: AppP
           onToggleTemporary={toggleTemporary}
           showHints={prefs.showHints}
           interfaceStyle={prefs.style}
-          readOnly={active?.origin === 'history'}
           autoFocus
           onArmedChange={setArmed}
           reduceMotion={prefs.reduceMotion}
@@ -750,7 +777,7 @@ export default function App({ sendChat, loadConversations, readLogStream }: AppP
           prefs={prefs}
           reduceMotion={prefs.reduceMotion}
           onChange={updatePreferences}
-          onClose={() => setSettingsOpen(false)}
+          onClose={closeSettings}
         />
 
         <Toast toast={toast} />

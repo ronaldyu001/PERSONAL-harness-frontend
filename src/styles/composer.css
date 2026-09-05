@@ -35,18 +35,6 @@
   border-color: var(--border-strong);
 }
 
-/* Read-only is a settled condition, not an error: the edge goes quiet rather
-   than raising an alarm, and the field stops inviting a cursor. */
-.composer--readonly {
-  border-style: solid;
-  border-color: var(--border-faint);
-}
-
-.composer--readonly .composer__input textarea {
-  cursor: default;
-  color: var(--text-secondary);
-}
-
 .composer__input {
   position: relative;
   overflow: hidden;
@@ -89,15 +77,6 @@
 
 .composer__spacer {
   flex: 1;
-}
-
-/* Stands where the row would be, so the composer keeps its height and the
-   reading axis does not shift when a stored conversation opens. */
-.composer__notice {
-  margin: var(--composer-row-space) 0 0;
-  font-size: var(--t-meta);
-  line-height: 1.45;
-  color: var(--text-secondary);
 }
 
 .composer__hint {
@@ -195,5 +174,3 @@
   background: var(--accent-fill);
   color: var(--accent-on-fill);
 }
-
-

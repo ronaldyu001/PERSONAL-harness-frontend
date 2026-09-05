@@ -163,7 +163,7 @@ export function Investigate({
               aria-busy={loading}
             >
               <RotateCw size={13} strokeWidth={1.8} aria-hidden="true" />
-              {loading ? 'Reading' : 'Read again'}
+              {loading ? 'Refreshing' : 'Refresh'}
             </button>
           </div>
         </header>
@@ -174,10 +174,11 @@ export function Investigate({
         <motion.div
           key={stream.id}
           ref={measureBody}
-          className="region__body bench__body"
+          className={`region__body bench__body${stacked ? ' bench__body--stacked' : ''}`}
           role="tabpanel"
           id={`bench-panel-${stream.id}`}
           aria-labelledby={`bench-tab-${stream.id}`}
+          aria-description={stream.summary}
           custom={streamDirection}
           variants={viewSlide(reduceMotion)}
           initial="initial"
@@ -189,24 +190,13 @@ export function Investigate({
             style={stacked ? undefined : { flex: `0 0 ${ledgerWidth}px` }}
           >
             <div className="bench__ledger-head">
-              <p className="bench__summary">{stream.summary}</p>
               {session && (
                 <p className="bench__focus">
-                  <span className="bench__focus-label">One conversation</span>
+                  <span className="bench__focus-label">Conversation</span>
                   <span className="bench__mono">{session.slice(0, 8)}</span>
                   <button type="button" className="link-btn" onClick={onClearSession}>
-                    Show every session
+                    All conversations
                   </button>
-                </p>
-              )}
-              {/* Where the records came from and when they were read: both
-                  are facts about this response, so neither is stated until
-                  there is one. */}
-              {data && (
-                <p className="bench__source">
-                  <span className="bench__mono">{data.source}</span>
-                  {data.capturedAt && <span>read at {formatClock(data.capturedAt)}</span>}
-                  {windowed && <span>most recent {formatCount(TRACE_WINDOW)}</span>}
                 </p>
               )}
               <Facets
@@ -215,52 +205,43 @@ export function Investigate({
                 counts={records}
                 onChange={(next) => setFacetId(next)}
               />
+              {/* Provenance matters once there is something to inspect, but
+                  it is reference detail rather than part of every scan. */}
+              {data && records.length > 0 && (
+                <details className="bench__source-disclosure">
+                  <summary>Source</summary>
+                  <p className="bench__source">
+                    <span className="bench__mono">{data.source}</span>
+                    {data.capturedAt && <span>Updated {formatClock(data.capturedAt)}</span>}
+                    {windowed && <span>Latest {formatCount(TRACE_WINDOW)}</span>}
+                  </p>
+                </details>
+              )}
               {/* A read that fails does not take the last one's records with
                   it: what is on the ledger was recorded and was read, and
                   hiding it would cost the reader more than the failure
                   did. */}
               {error && data && (
                 <p className="bench__stale" role="status">
-                  {error}{' '}
-                  <button type="button" className="link-btn" onClick={reload}>
-                    Try again
-                  </button>
+                  {error}
                 </p>
               )}
             </div>
 
             {opening ? (
               <p className="bench__note" role="status">
-                Reading {stream.unit[1]}&#8230;
+                Loading&#8230;
               </p>
             ) : error && !data ? (
-              <p className="bench__note" role="status">
-                {error}{' '}
-                <button type="button" className="link-btn" onClick={reload}>
-                  Try again
-                </button>
-              </p>
+              <p className="bench__note" role="status">{error}</p>
             ) : visible.length === 0 ? (
               <p className="bench__note">
                 {records.length > 0 ? (
-                  <>
-                    No {stream.unit[1]} match this filter.{' '}
-                    <button type="button" className="link-btn" onClick={() => setFacetId('all')}>
-                      Show all
-                    </button>
-                  </>
+                  <>No matches.</>
                 ) : session ? (
-                  <>
-                    Nothing was recorded under this conversation.{' '}
-                    <button type="button" className="link-btn" onClick={onClearSession}>
-                      Show every session
-                    </button>
-                  </>
+                  <>Nothing recorded for this conversation.</>
                 ) : (
-                  <>
-                    No {stream.unit[1]} have been recorded yet. They appear here as soon as
-                    Maia answers something.
-                  </>
+                  <>Nothing recorded yet.</>
                 )}
               </p>
             ) : (
@@ -283,11 +264,11 @@ export function Investigate({
                 left: ledgerWidth - RESIZER_THICKNESS / 2,
                 width: RESIZER_THICKNESS,
               }}
-              label="Resize the ledger"
+              label="Resize activity list"
               valueNow={ledgerWidth}
               valueMin={LEDGER_MIN}
               valueMax={ledgerMax}
-              valueText={`Ledger ${ledgerWidth} pixels wide`}
+              valueText={`Activity list ${ledgerWidth} pixels wide`}
               step={LEDGER_STEP}
               dragging={dragging}
               onDragStart={() => {
@@ -310,11 +291,7 @@ export function Investigate({
               <motion.div key={selected.id} {...readingSwap(reduceMotion)}>
                 <LogRecordView record={selected} onToast={onToast} />
               </motion.div>
-            ) : (
-              <p className="bench__note">
-                {opening ? 'Nothing open yet.' : 'Select a record to read it in full.'}
-              </p>
-            )}
+            ) : null}
           </div>
         </motion.div>
         </AnimatePresence>
@@ -557,10 +534,9 @@ function Ledger({
   return (
     <div className="ledger" ref={listRef} onKeyDown={onKeyDown}>
       {bands.map((band) => (
-        <section
+        <div
           key={band.key}
           className="ledger__band"
-          aria-label={bandLabel(band)}
         >
           {showConversations && (
             <h3 className="ledger__band-head">
@@ -588,8 +564,7 @@ function Ledger({
                     line in the column. */}
                 {chain && (
                   <p className="ledger__turn-label">
-                    <span>{turnShape(turn)}</span>
-                    <span className="bench__mono">{shortId(turn.key)}</span>
+                    {turnShape(turn)}
                   </p>
                 )}
                 <List className="ledger__list">
@@ -607,7 +582,7 @@ function Ledger({
               </div>
             )
           })}
-        </section>
+        </div>
       ))}
     </div>
   )
@@ -626,9 +601,6 @@ interface LedgerBand {
   turns: LedgerTurn[]
   total: number
 }
-
-const bandLabel = (band: LedgerBand) =>
-  band.session ? `Conversation ${shortId(band.session)}` : 'Temporary chat'
 
 const countOf = (total: number, one: string, many: string) =>
   `${formatCount(total)} ${total === 1 ? one : many}`
@@ -664,6 +636,7 @@ function LedgerRow({
       type="button"
       className={`ledger__row${selected ? ' ledger__row--on' : ''}`}
       aria-current={selected ? 'true' : undefined}
+      tabIndex={selected ? 0 : -1}
       onClick={() => onSelect(record.id)}
     >
       {step !== undefined && <span className="ledger__step">{step}</span>}

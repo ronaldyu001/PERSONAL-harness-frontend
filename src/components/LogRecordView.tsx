@@ -52,7 +52,7 @@ export function LogRecordView({
       <header className="record__head">
         <div className="record__identity">
           <OutcomeMark outcome={outcome} size={15} className="record__outcome" />
-          <p className="record__meaning">{outcome.meaning}</p>
+          <span className="visually-hidden">{outcome.meaning}</span>
         </div>
         <CopyRecord record={record} onToast={onToast} />
       </header>
@@ -62,7 +62,7 @@ export function LogRecordView({
           locate, not between it and the reading. The ledger no longer spells
           any of this out on every row, so this is where it is read. */}
       <dl className="record__meta">
-        <Meta label="Logged">{formatStamp(event.timestamp)}</Meta>
+        <Meta label="Time">{formatStamp(event.timestamp)}</Meta>
         <Meta label="Model" mono>
           {event.model}
         </Meta>
@@ -75,11 +75,11 @@ export function LogRecordView({
         ) : (
           <Meta label="Call">{event.model_call}</Meta>
         )}
-        <Meta label="Recorded">{event.mode === 'full' ? 'in full' : 'structure only'}</Meta>
-        <Meta label="Session" mono>
+        <Meta label="Mode">{event.mode === 'full' ? 'Full' : 'Structure'}</Meta>
+        <Meta label="Conversation" mono>
           {shortId(event.session_id)}
         </Meta>
-        <Meta label="Invocation" mono>
+        <Meta label="Turn" mono>
           {shortId(event.invocation_id)}
         </Meta>
       </dl>
@@ -119,36 +119,36 @@ function GateBody({ event, onToast }: { event: ResponseGateEvent; onToast: Toast
           )}
 
           {event.feedback && (
-            <Field label="Feedback returned to the model">
+            <Field label="Feedback">
               <Payload text={event.feedback} label="the feedback" onToast={onToast} />
             </Field>
           )}
 
           {!event.feedback && event.mode === 'structure' && (
-            <Absent reason="Feedback not recorded: structure mode keeps decisions and drops text." />
+            <Absent reason="Feedback not recorded in structure mode." />
           )}
         </Section>
       )}
 
       <Section
-        title="The answer it judged"
+        title="Answer"
         note={`${formatCount(event.candidate_characters)} characters`}
         open
       >
         {event.candidate ? (
           <Payload text={event.candidate} label="the answer" onToast={onToast} />
         ) : (
-          <Absent reason="Not recorded: structure mode keeps the length and drops the text." />
+          <Absent reason="Text not recorded in structure mode." />
         )}
       </Section>
 
       <GateContextBody event={event} onToast={onToast} />
 
-      <Section title="Tools" open>
+      <Section title="Tools">
         <dl className="record__meta">
           <Meta label="Available">{listOrDash(event.available_tools)}</Meta>
           <Meta label="Used">{listOrDash(event.tools_used)}</Meta>
-          <Meta label="Candidate message" mono>
+          <Meta label="Message" mono>
             {shortId(event.candidate_message_id)}
           </Meta>
         </dl>
@@ -175,12 +175,12 @@ function GateContextBody({ event, onToast }: { event: ResponseGateEvent; onToast
 
   if (!context) {
     return (
-      <Section title="What the gate read" open>
+      <Section title="Context">
         <Absent
           reason={
             event.mode === 'structure'
-              ? 'Not recorded: structure mode keeps decisions and drops text.'
-              : 'Not recorded: this evaluation predates the gate keeping what it read.'
+              ? 'Not recorded in structure mode.'
+              : 'Not recorded for this evaluation.'
           }
         />
       </Section>
@@ -192,11 +192,10 @@ function GateContextBody({ event, onToast }: { event: ResponseGateEvent; onToast
   const traces = context.tool_traces ?? []
 
   return (
-    <Section title="What the gate read" note={windowNote(context)} open>
+    <Section title="Context" note={windowNote(context)}>
       <Fold
-        title="Conversation window"
+        title="Conversation"
         note={countNote(conversation.length, 'message', 'messages')}
-        open={conversation.length > 0}
       >
         {conversation.length > 0 ? (
           <ol className="record__turns">
@@ -212,21 +211,20 @@ function GateContextBody({ event, onToast }: { event: ResponseGateEvent; onToast
                       onToast={onToast}
                     />
                   ) : (
-                    <Absent reason="This turn carried no text." />
+                    <Absent reason="No text." />
                   )}
                 </li>
               )
             })}
           </ol>
         ) : (
-          <Absent reason="Nothing preceded the candidate inside the window." />
+          <Absent reason="No preceding messages." />
         )}
       </Fold>
 
       <Fold
-        title="Tool evidence"
+        title="Evidence"
         note={countNote(traces.length, 'lookup', 'lookups')}
-        open={traces.length > 0}
       >
         {traces.length > 0 ? (
           <ul className="record__traces">
@@ -243,46 +241,45 @@ function GateContextBody({ event, onToast }: { event: ResponseGateEvent; onToast
                     onToast={onToast}
                   />
                 ) : (
-                  <Absent reason="The lookup returned nothing." />
+                  <Absent reason="No result." />
                 )}
               </li>
             ))}
           </ul>
         ) : (
-          <Absent reason="No tool ran inside the window, so the gate had no evidence to weigh." />
+          <Absent reason="No tool evidence." />
         )}
       </Fold>
 
       <Fold
-        title="Memories in force"
+        title="Memories"
         note={countNote(memories.length, 'memory', 'memories')}
-        open={memories.length > 0}
       >
         {memories.length > 0 ? (
           memories.map((memory, index) => (
             <Payload key={index} text={memory} label="the memories" onToast={onToast} />
           ))
         ) : (
-          <Absent reason="No memories were injected on the call this judged." />
+          <Absent reason="No memories." />
         )}
       </Fold>
 
       {/* Both of these are long and rarely the thing being checked, so they
           rest closed. The rubric is here at all because it is edited between
           runs, and a verdict read against the wrong one explains nothing. */}
-      <Fold title="Maia's system prompt" note="as it stood on this call">
+      <Fold title="System prompt">
         {context.system_prompt ? (
           <Payload text={context.system_prompt} label="the system prompt" onToast={onToast} />
         ) : (
-          <Absent reason="No system prompt was recorded for this call." />
+          <Absent reason="Not recorded." />
         )}
       </Fold>
 
-      <Fold title="The evaluator's rubric" note="the instruction that judged">
+      <Fold title="Rubric">
         {context.evaluator_prompt ? (
           <Payload text={context.evaluator_prompt} label="the rubric" onToast={onToast} />
         ) : (
-          <Absent reason="The rubric was not recorded on this evaluation." />
+          <Absent reason="Not recorded." />
         )}
       </Fold>
 
@@ -340,9 +337,7 @@ function ContextBody({ event, onToast }: { event: ModelContextEvent; onToast: To
                   onToast={onToast}
                 />
                 {message.artifact_excluded && (
-                  <p className="record__note">
-                    An artifact was attached to this tool result and withheld from the model.
-                  </p>
+                  <p className="record__note">Artifact withheld from the model.</p>
                 )}
               </li>
             )
@@ -367,11 +362,11 @@ function ContextBody({ event, onToast }: { event: ModelContextEvent; onToast: To
             onToast={onToast}
           />
         ) : (
-          <Absent reason="No system message was attached to this request." />
+          <Absent reason="No system message." />
         )}
       </Section>
 
-      <Section title="Tools offered" note={countNote(event.tools.length, 'tool', 'tools')}>
+      <Section title="Tools" note={countNote(event.tools.length, 'tool', 'tools')}>
         {event.tools.length > 0 ? (
           <ul className="record__tools">
             {event.tools.map((tool, index) => (
@@ -384,7 +379,7 @@ function ContextBody({ event, onToast }: { event: ModelContextEvent; onToast: To
             ))}
           </ul>
         ) : (
-          <Absent reason="No tools were offered on this call." />
+          <Absent reason="No tools." />
         )}
       </Section>
 
@@ -403,18 +398,18 @@ function MessageContent({
   onToast: Toast
 }) {
   if (message.content === undefined || message.content === null) {
-    return <Absent reason="Content not recorded: this call was logged in structure mode." />
+    return <Absent reason="Content not recorded in structure mode." />
   }
   const text = typeof message.content === 'string' ? message.content : stringify(message.content)
   if (text.length === 0) {
-    return <Absent reason="The message carried no text — only its tool calls." />
+    return <Absent reason="Tool calls only." />
   }
   return <Payload text={text} label={label} onToast={onToast} />
 }
 
 function Usage({ usage }: { usage: TokenUsage | null }) {
   return (
-    <Section title="Tokens" open>
+    <Section title="Tokens">
       {usage ? (
         <dl className="record__meta">
           <Meta label="Input" mono>
@@ -428,7 +423,7 @@ function Usage({ usage }: { usage: TokenUsage | null }) {
           </Meta>
         </dl>
       ) : (
-        <Absent reason="The provider reported no usage for this call." />
+        <Absent reason="Usage unavailable." />
       )}
     </Section>
   )

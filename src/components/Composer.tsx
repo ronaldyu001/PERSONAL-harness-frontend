@@ -21,8 +21,6 @@ export interface ComposerProps {
   onToggleTemporary: () => void
   showHints: boolean
   interfaceStyle: 'snug' | 'default' | 'roomy'
-  /** A stored conversation is readable but cannot be continued. */
-  readOnly?: boolean
   autoFocus?: boolean
   /** Raised while the composer holds a sendable draft, so the shell can
       arbitrate which single element is allowed to carry the signal. */
@@ -39,7 +37,6 @@ export function Composer({
   onToggleTemporary,
   showHints,
   interfaceStyle,
-  readOnly = false,
   autoFocus,
   onArmedChange,
 }: ComposerProps) {
@@ -51,12 +48,13 @@ export function Composer({
   const replicaRef = useRef<HTMLDivElement>(null)
   const modelButtonRef = useRef<HTMLButtonElement>(null)
 
-  const canSend = text.trim().length > 0 && !streaming && !readOnly
+  const canSend = text.trim().length > 0 && !streaming
 
   useEffect(() => {
     onArmedChange?.(canSend)
   }, [canSend, onArmedChange])
   const currentModel = MODELS.find((item) => item.id === model) ?? MODELS[0]
+  const hasModelChoice = MODELS.length > 1
 
   useLayoutEffect(() => {
     const replica = replicaRef.current
@@ -66,8 +64,8 @@ export function Composer({
   }, [text, interfaceStyle])
 
   useEffect(() => {
-    if (autoFocus && !readOnly) textareaRef.current?.focus()
-  }, [autoFocus, readOnly])
+    if (autoFocus) textareaRef.current?.focus()
+  }, [autoFocus])
 
   const submit = () => {
     if (!canSend) return
@@ -88,9 +86,7 @@ export function Composer({
   }
 
   return (
-    <div
-      className={`composer${temporary ? ' composer--temp' : ''}${readOnly ? ' composer--readonly' : ''}`}
-    >
+    <div className={`composer${temporary ? ' composer--temp' : ''}`}>
       <motion.div
         className="composer__input"
         animate={{ height: inputHeight }}
@@ -101,9 +97,8 @@ export function Composer({
           ref={textareaRef}
           value={text}
           rows={1}
-          placeholder={readOnly ? 'This conversation is read-only' : 'Ask Maia anything'}
+          placeholder="Ask Maia anything"
           aria-label="Message Maia"
-          disabled={readOnly}
           onChange={(event) => setText(event.target.value)}
           onKeyDown={handleKeyDown}
         />
@@ -113,16 +108,8 @@ export function Composer({
         </div>
       </motion.div>
 
-      {/* Read-only drops the row entirely: a model picker and a send
-          button that cannot fire are worse than absent. The composer keeps
-          its place on the reading axis either way. */}
-      {readOnly ? (
-        <p className="composer__notice" role="status">
-          Maia keeps no context for a stored conversation. Start a new chat to keep
-          talking.
-        </p>
-      ) : (
-        <div className="composer__row">
+      <div className="composer__row">
+        {hasModelChoice && (
           <div className="composer__model-slot">
             <button
               type="button"
@@ -176,70 +163,70 @@ export function Composer({
               </div>
             </Popover>
           </div>
+        )}
 
-          <Tooltip
-            label={temporary ? 'Temporary chat on, hidden from history' : 'Temporary chat'}
-            side="top"
+        <Tooltip
+          label={temporary ? 'Temporary chat on, hidden from history' : 'Temporary chat'}
+          side="top"
+        >
+          <button
+            type="button"
+            className={`icon-btn icon-btn--sm${temporary ? ' icon-btn--accent' : ''}`}
+            aria-label="Toggle temporary chat"
+            aria-pressed={temporary}
+            onClick={onToggleTemporary}
           >
+            <MessageSquareDashed size={16} strokeWidth={1.8} />
+          </button>
+        </Tooltip>
+
+        <div className="composer__spacer" />
+
+        <AnimatePresence>
+          {showHints && (canSend || streaming) && (
+            <motion.span
+              className="composer__hint"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+            >
+              {streaming ? (
+                <>
+                  <kbd>Esc</kbd> to stop
+                </>
+              ) : (
+                <>
+                  <kbd>&#9166;</kbd> to send
+                </>
+              )}
+            </motion.span>
+          )}
+        </AnimatePresence>
+
+        {streaming ? (
+          <Tooltip label="Stop generating" shortcut="Esc" side="top">
             <button
               type="button"
-              className={`icon-btn icon-btn--sm${temporary ? ' icon-btn--accent' : ''}`}
-              aria-label="Toggle temporary chat"
-              aria-pressed={temporary}
-              onClick={onToggleTemporary}
+              className="send-btn send-btn--stop"
+              aria-label="Stop generating"
+              onClick={onStop}
             >
-              <MessageSquareDashed size={16} strokeWidth={1.8} />
+              <Square size={10} strokeWidth={0} fill="currentColor" />
             </button>
           </Tooltip>
-
-          <div className="composer__spacer" />
-
-          <AnimatePresence>
-            {showHints && !readOnly && (canSend || streaming) && (
-              <motion.span
-                className="composer__hint"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.15 }}
-              >
-                {streaming ? (
-                  <>
-                    <kbd>Esc</kbd> to stop
-                  </>
-                ) : (
-                  <>
-                    <kbd>&#9166;</kbd> to send
-                  </>
-                )}
-              </motion.span>
-            )}
-          </AnimatePresence>
-
-          {streaming ? (
-            <Tooltip label="Stop generating" shortcut="Esc" side="top">
-              <button
-                type="button"
-                className="send-btn send-btn--stop"
-                aria-label="Stop generating"
-                onClick={onStop}
-              >
-                <Square size={10} strokeWidth={0} fill="currentColor" />
-              </button>
-            </Tooltip>
-          ) : (
-            <button
-              type="button"
-              className="send-btn"
-              aria-label="Send message"
-              disabled={!canSend}
-              onClick={submit}
-            >
-              <ArrowUp size={16} strokeWidth={1.8} />
-            </button>
-          )}
-        </div>
-      )}
+        ) : (
+          <button
+            type="button"
+            className="send-btn"
+            aria-label="Send message"
+            disabled={!canSend}
+            onClick={submit}
+          >
+            <ArrowUp size={16} strokeWidth={1.8} />
+          </button>
+        )}
+      </div>
     </div>
   )
 }

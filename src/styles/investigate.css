@@ -78,6 +78,7 @@
 
 .region--bench {
   flex: 1 1 auto;
+  container: investigate / inline-size;
 }
 
 /* The channel selector sits in the head, between the legend and the flag —
@@ -118,16 +119,23 @@
   flex: 0 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 12px var(--panel-pad) 10px;
+  gap: 7px;
+  padding: 10px var(--panel-pad);
   border-bottom: var(--seam) solid var(--border-faint);
 }
 
-.bench__summary {
+.bench__focus {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
   margin: 0;
   font-size: var(--t-meta);
-  line-height: 1.5;
   color: var(--text-secondary);
+}
+
+.bench__focus-label {
+  color: var(--text-tertiary);
 }
 
 .bench__source {
@@ -140,10 +148,25 @@
   color: var(--text-tertiary);
 }
 
-/* Holds the width of its longer label, so saying "Reading" does not narrow
+.bench__source-disclosure {
+  color: var(--text-tertiary);
+  font-size: var(--t-meta);
+}
+
+.bench__source-disclosure > summary {
+  width: max-content;
+  cursor: pointer;
+  list-style-position: inside;
+}
+
+.bench__source-disclosure[open] > summary {
+  margin-bottom: 5px;
+}
+
+/* Holds the width of its longer label, so saying "Refreshing" does not narrow
    the control under the cursor that just pressed it. */
 .bench__reread {
-  min-width: 108px;
+  min-width: 88px;
   justify-content: center;
 }
 
@@ -444,22 +467,12 @@
 
 .record__identity {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
   min-width: 0;
 }
 
 .record__outcome {
   font-size: var(--t-title);
   font-weight: var(--w-title);
-}
-
-.record__meaning {
-  margin: 0;
-  max-width: 68ch;
-  font-size: var(--t-body);
-  line-height: 1.5;
-  color: var(--text-secondary);
 }
 
 /* ── The meta line ──────────────────────────────────────────── */
@@ -537,7 +550,7 @@
 
 .record__section-head:focus-visible,
 .record__fold-head:focus-visible {
-  outline: 2px solid var(--ring-active);
+  outline: 2px solid var(--ring-active, var(--ring));
   outline-offset: 3px;
   border-radius: var(--r-xs);
 }
@@ -634,7 +647,7 @@
 }
 
 .record__copy:focus-visible {
-  outline: 2px solid var(--ring-active);
+  outline: 2px solid var(--ring-active, var(--ring));
   outline-offset: 2px;
 }
 
@@ -778,7 +791,19 @@
 
 /* The bench is a two-column reading. Below this it becomes one column with
    the ledger on top: a 336px list and a record side by side stop being
-   either at that width. */
+   either at that width. The measured class handles a narrow Maia stage even
+   when the browser itself is wide. */
+.bench__body--stacked {
+  flex-direction: column;
+}
+
+.bench__body--stacked .bench__ledger {
+  flex: 0 1 auto !important;
+  max-height: 44%;
+  border-right: none;
+  border-bottom: var(--seam) solid var(--border-faint);
+}
+
 @media (max-width: 900px) {
   .bench__body {
     flex-direction: column;
@@ -802,5 +827,34 @@
 @media (max-width: 680px) {
   .record {
     --record-pad-x: var(--thread-mobile-pad-x);
+  }
+}
+
+@container investigate (max-width: 600px) {
+  .region--bench > .region__head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'legend action'
+      'tabs tabs';
+    height: auto;
+    min-height: var(--workspace-header-height);
+    padding-block: 8px;
+    row-gap: 7px;
+  }
+
+  .region--bench > .region__head .region__legend {
+    grid-area: legend;
+  }
+
+  .region--bench > .region__head .bench__tabs {
+    grid-area: tabs;
+    width: 100%;
+    max-width: none;
+    margin-left: 0;
+  }
+
+  .region--bench > .region__head .region__head-end {
+    grid-area: action;
   }
 }

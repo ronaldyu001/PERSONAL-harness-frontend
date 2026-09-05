@@ -79,7 +79,7 @@ export function ConversationAside({
             {models.length > 0 ? models.map(modelName).join(', ') : '—'}
           </Fact>
           <Fact label="Kept">
-            {conversation.temporary ? 'No — temporary' : stored ? 'Stored, read-only' : 'Yes'}
+            {conversation.temporary ? 'No — temporary' : stored ? 'Yes — from history' : 'Yes'}
           </Fact>
         </dl>
       </section>
